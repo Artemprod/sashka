@@ -1,0 +1,26 @@
+# Virtual Environment
+venv/
+venv3/
+*.pyc
+__pycache__/
+
+# PyCharm
+.idea/
+
+# .vscode
+.vscode/
+
+# Mac
+.DS_Store
+
+# poetry
+*.lock
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Python Sensitive Files
+*.env
+*.pyc
+
+poetry.lock
