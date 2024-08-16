@@ -1,6 +1,9 @@
 import asyncio
+from functools import partial
+from typing import Awaitable, Coroutine, Callable
 
 from pyrogram import Client, errors, idle, raw
+from pyrogram.handlers import MessageHandler
 
 from src.dispatcher.communicators.reggestry import BaseCommunicator
 
@@ -18,10 +21,11 @@ from src.telegram_client.exceptions.connection import ClientConnectionError, NoC
 class Manager:
     auth_attempts = 4
 
-    def __init__(self, client: Client = None):
+    def __init__(self, client: Client = None,
+                 coro: Callable[..., Coroutine] = None, plug=None):
         self.app: Client = client
-
-
+        self.coro: Callable[..., Coroutine] = coro
+        self.plug = plug
 
     async def set_up_devise_settings(self):
         ...
@@ -124,6 +128,11 @@ class Manager:
             print(f"An unexpected authorization error occurred: {e}")
             raise ClientAuthorizationConnectionError(message=e) from e
 
+    async def run_coro(self):
+        if self.coro:
+            print(f"coro is starting")
+            asyncio.create_task(self.coro(self.app))
+
     async def run(self, communicator: BaseCommunicator):
 
         try:
@@ -132,7 +141,11 @@ class Manager:
                 await self.authorize(communicator)
 
             await self.app.invoke(raw.functions.updates.GetState())
+            self.app.plugins = self.plug
             await self.app.initialize()
+            self.app.me = await self.app.get_me()
+
+            await self.run_coro()
 
             await idle()
 
