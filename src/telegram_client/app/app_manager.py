@@ -6,6 +6,7 @@ from pyrogram import Client, errors, idle, raw
 from pyrogram.handlers import MessageHandler
 
 from src.dispatcher.communicators.reggestry import BaseCommunicator
+from src.telegram_client.create_client_event.pyro_router import Router
 
 from src.telegram_client.exceptions.autrization import ClientAuthorizationConnectionError, MaxAttemptsExceededError
 from src.telegram_client.exceptions.connection import ClientConnectionError, NoClientError
@@ -21,14 +22,15 @@ from src.telegram_client.exceptions.connection import ClientConnectionError, NoC
 class Manager:
     auth_attempts = 4
 
-    def __init__(self, client: Client = None,
-                 coro: Callable[..., Coroutine] = None, plug=None):
+    def __init__(self, client: Client = None, ):
         self.app: Client = client
-        self.coro: Callable[..., Coroutine] = coro
-        self.plug = plug
 
     async def set_up_devise_settings(self):
         ...
+
+    def include_router(self, router: Router):
+        for handler, group in router.get_handlers():
+            self.app.add_handler(handler, group)
 
     async def init_client(self):
         if self.app is None:
@@ -128,10 +130,14 @@ class Manager:
             print(f"An unexpected authorization error occurred: {e}")
             raise ClientAuthorizationConnectionError(message=e) from e
 
-    async def run_coro(self):
-        if self.coro:
-            print(f"coro is starting")
-            asyncio.create_task(self.coro(self.app))
+    async def initialize(self):
+        if not self.app.is_connected:
+            raise ConnectionError("Can't initialize a disconnected client")
+        if self.app.is_initialized:
+            raise ConnectionError("Client is already initialized")
+        await self.app.dispatcher.start()
+        self.app.updates_watchdog_task = asyncio.create_task(self.app.updates_watchdog())
+        self.app.is_initialized = True
 
     async def run(self, communicator: BaseCommunicator):
 
@@ -141,11 +147,9 @@ class Manager:
                 await self.authorize(communicator)
 
             await self.app.invoke(raw.functions.updates.GetState())
-            self.app.plugins = self.plug
-            await self.app.initialize()
-            self.app.me = await self.app.get_me()
 
-            await self.run_coro()
+            await self.initialize()
+            self.app.me = await self.app.get_me()
 
             await idle()
 

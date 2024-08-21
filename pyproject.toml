@@ -16,6 +16,7 @@ uvicorn = "^0.30.5"
 pytest-asyncio = "^0.23.8"
 loguru = "^0.7.2"
 fastapi-websocket-rpc = "^0.1.25"
+faststream = {extras = ["nats"], version = "^0.5.18"}
 
 
 [build-system]

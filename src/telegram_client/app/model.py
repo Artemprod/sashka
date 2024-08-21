@@ -29,7 +29,7 @@ class ClientConfigDTO(BaseModel):
     password: Optional[str] = None
     workdir: str = Field(default_factory=lambda: str(Path(sys.argv[0]).parent))
     plugins: Optional[Dict] = None
-    parse_mode: ParseMode = ParseMode.DEFAULT
+    parse_mode: ParseMode = None
 
     class Config:
         arbitrary_types_allowed = True
