@@ -1,15 +1,10 @@
-import logging
 import os.path
-from typing import Any, Union
 
 import pytest
 from pyrogram import Client
-from pyrogram.errors import SessionPasswordNeeded
 
 from src.dispatcher.communicators.reggestry import BaseCommunicator
-from src.telegram_client.app.app_manager import Manager
-from dataclasses import dataclass
-from contextlib import nullcontext as does_not_raise
+from src.telegram_client.client import Manager
 
 from testdata import TEST_CASES, TestDataCases
 

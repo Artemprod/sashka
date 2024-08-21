@@ -18,3 +18,11 @@ class MaxAttemptsExceededError(AuthorizationError):
         super().__init__(
             f"Max auth try {message} "
         )
+
+class AutorizationFaildError(AuthorizationError):
+    """Exception raised unexpected error occured."""
+
+    def __init__(self, message=None):
+        super().__init__(
+            f"Auth faild {message} "
+        )

@@ -1,14 +1,14 @@
 import uvicorn
 from fastapi import FastAPI
 
-from src.api.routers.session import session_router
+from src.api.routers.clients.client import clients_router
 
 
 def create_server(lifespan=None):
     server = FastAPI(lifespan=lifespan,
                      title="APPLICATION",
                      )
-    server.include_router(session_router)
+    server.include_router(clients_router)
 
     return server
 

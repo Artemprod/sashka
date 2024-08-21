@@ -1,7 +1,7 @@
 from pyrogram import filters, Client
 from pyrogram.types import Message
 
-from src.telegram_client.create_client_event.pyro_router import Router
+from src.telegram_client.client.roters.router import Router
 
 answ_router = Router(name="my_router")
 

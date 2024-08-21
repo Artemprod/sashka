@@ -7,22 +7,20 @@
 import asyncio
 from contextlib import asynccontextmanager
 
-from faststream import FastStream, ContextRepo, context, Context
+from faststream import FastStream, ContextRepo
 from faststream.nats import NatsBroker
 
-from src.telegram_client.create_client_event.container import ClientContainer
-from src.telegram_client.create_client_event.handler_clietn import client_router
-
-
-
+from src.telegram_client.client.container import ClientsManager
+from src.database.database_t import database
+from src.telegram_client.app.routers.handler_clietn import client_router
+from src.database.connections.redis_connect import RedisClient
 
 
 @asynccontextmanager
 async def lifespan(context: ContextRepo):
-    container = ClientContainer()
+    container = ClientsManager(database=database,redis_client=RedisClient())
     context.set_global("container", container)
     yield
-
 
 
 

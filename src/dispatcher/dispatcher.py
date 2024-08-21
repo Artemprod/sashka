@@ -1,6 +1,6 @@
 
 from src.dispatcher.communicators.reggestry import CommunicatorRegistryBase
-from src.telegram_client.app.app_manager import Manager
+from src.telegram_client.client import Manager
 
 
 class Dispatcher:
