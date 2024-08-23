@@ -28,7 +28,6 @@ class ClientConfigDTO(BaseModel):
     phone_code: Optional[str] = None
     password: Optional[str] = None
     workdir: str = Field(default_factory=lambda: str(Path(sys.argv[0]).parent))
-    plugins: Optional[Dict] = None
     parse_mode: ParseMode = None
 
     class Config:

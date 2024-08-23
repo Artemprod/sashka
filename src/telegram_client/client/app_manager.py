@@ -2,6 +2,7 @@ import asyncio
 
 from pyrogram import Client, errors, idle, raw
 
+from src.database.repository.storage import RepoStorage
 from src.dispatcher.communicators.reggestry import BaseCommunicator, ConsoleCommunicator
 from src.telegram_client.client.roters.router import Router
 
@@ -20,8 +21,10 @@ from src.telegram_client.exceptions.connection import ClientConnectionError, NoC
 class Manager:
     auth_attempts = 4
 
-    def __init__(self, client: Client = None,
+    def __init__(self,
+                 client: Client = None,
                  communicator: BaseCommunicator = ConsoleCommunicator()):
+        
         self.app: Client = client
         self._communicator = communicator
         self.session_string = None
@@ -78,7 +81,7 @@ class Manager:
                 code_enter_attempts = 0
 
                 while code_enter_attempts < Manager.auth_attempts:
-                    code = await self.communicator.get_code()
+                    code = await self._communicator.get_code()
 
                     try:
                         await self.app.sign_in(phone_number=self.app.phone_number,
@@ -89,12 +92,12 @@ class Manager:
 
                     except errors.PhoneCodeInvalid:
                         print("The phone code you entered is invalid.")
-                        await self.communicator.send_error(message="The phone code you entered is invalid.")
+                        await self._communicator.send_error(message="The phone code you entered is invalid.")
                         code_enter_attempts += 1
 
                     except errors.PhoneCodeExpired:
                         print("The phone code you entered has expired.")
-                        await self.communicator.send_error(message="The phone code you entered has expired.")
+                        await self._communicator.send_error(message="The phone code you entered has expired.")
                         break
 
                     except errors.SessionPasswordNeeded:
@@ -111,28 +114,28 @@ class Manager:
                 send_code_attempt += 1
 
             print("Exceeded the maximum number of attempts.")
-            await self.communicator.send_error(message="Exceeded the maximum number of attempts.")
+            await self._communicator.send_error(message="Exceeded the maximum number of attempts.")
             raise MaxAttemptsExceededError("Exceeded the maximum number of attempts.")
 
         except errors.PasswordHashInvalid:
             print('The cloud password is wrong.')
-            await self.communicator.send_error(message='The cloud password is wrong.')
+            await self._communicator.send_error(message='The cloud password is wrong.')
             raise
 
         except MaxAttemptsExceededError:
             print("Exceeded the maximum number of attempts.")
-            await self.communicator.send_error(message="Exceeded the maximum number of attempts wait.")
+            await self._communicator.send_error(message="Exceeded the maximum number of attempts wait.")
             raise
 
         except errors.ApiIdInvalid:
             print("Api id invalid.")
-            await self.communicator.send_error(message="Api id invalid.")
+            await self._communicator.send_error(message="Api id invalid.")
             raise
 
 
         except errors.PhoneNumberInvalid:
             print("The phone number you entered is invalid.")
-            await self.communicator.send_error(message="The phone number you entered is invalid.")
+            await self._communicator.send_error(message="The phone number you entered is invalid.")
             raise
 
         except Exception as e:
@@ -148,12 +151,12 @@ class Manager:
         self.app.updates_watchdog_task = asyncio.create_task(self.app.updates_watchdog())
         self.app.is_initialized = True
 
-    async def run(self, communicator: BaseCommunicator):
+    async def run(self):
 
         try:
             await self.init_client()
             if not await self.is_authorize():
-                await self.authorize(communicator)
+                await self.authorize()
 
             await self.app.invoke(raw.functions.updates.GetState())
 
@@ -167,23 +170,23 @@ class Manager:
 
         except errors.SessionExpired:
             print("Сессия истекла, требуется повторная авторизация")
-            await self.run(communicator)
+            await self.run()
             await asyncio.sleep(120)
 
         except errors.SessionRevoked:
             print("Сессия отозвана, требуется повторная авторизация")
-            await self.run(communicator)
+            await self.run()
             await asyncio.sleep(120)
 
         except errors.PeerFlood:
             print("Флуд ошибка ")
-            await self.communicator.send_error(message="Флуд ошибка")
+            await self._communicator.send_error(message="Флуд ошибка")
             raise
 
         except errors.PhoneNumberBanned as e:
             print(f"Ошибка: Номер телефона заблокирован. {str(e)}")
             self.is_banned = True
-            await self.communicator.send_error(message="The phone code you entered is invalid")
+            await self._communicator.send_error(message="The phone code you entered is invalid")
             raise
 
         except Exception as e:

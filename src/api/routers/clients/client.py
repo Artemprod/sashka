@@ -8,7 +8,7 @@ clients_router = APIRouter(
 
 
 @clients_router.post("/authorize")
-async def start_session(request: Request):
+async def authorize_client(request: Request):
     ...
 
 

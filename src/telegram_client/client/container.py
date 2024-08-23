@@ -1,9 +1,15 @@
 import asyncio
+import datetime
 import pickle
 import uuid
+from dataclasses import Field
+from typing import Dict, Any
 
+import pyrogram
+from faststream.nats import NatsBroker
 from pyrogram import Client
 
+from src.database.repository.storage import RepoStorage
 from src.dispatcher.communicators.reggestry import ConsoleCommunicator
 from src.telegram_client.client.model import ClientConfigDTO
 from src.database.database_t import DictDatabase
@@ -38,75 +44,66 @@ class SingletonMeta(type):
 
 
 class ClientsManager(metaclass=SingletonMeta):
-    """
-    Класс для управления клиентами с использованием паттерна Singleton.
-    """
+    """Класс для управления клиентами с использованием паттерна Singleton."""
 
-    def __init__(self, database: DictDatabase, redis_client: RedisClient):
-        self._database = database
-        self._redis_client = redis_client
-        self.managers = {}
+    def __init__(self, repository: RepoStorage, redis_connection_manager: RedisClient, ):
+        self._repository = repository
+        self._redis_connection_manager = redis_connection_manager
+        self.managers: Dict[str, Manager] = {}
         self.gather_loops()
 
     @property
-    def database(self):
-        return self._database
+    def repository(self) -> RepoStorage:
+        return self._repository
 
     @property
-    def redis_client(self):
-        return self._redis_client
+    def redis_client(self) -> RedisClient:
+        return self._redis_connection_manager
 
-    @database.setter
-    def database(self, new_database):
-        self._database = new_database
+    @repository.setter
+    def repository(self, new_repository: RepoStorage):
+        self._repository = new_repository
 
     @redis_client.setter
-    def redis_client(self, new_redis_client):
-        self._redis_client = new_redis_client
+    def redis_client(self, new_redis_connection_manager: RedisClient):
+        self._redis_connection_manager = new_redis_connection_manager
 
-
-    async def create_client_connection(self, client_configs: ClientConfigDTO, communicator, routers: list):
-        client = Client(**client_configs.to_dict())
+    async def create_client_connection(self, client_configs: ClientConfigDTO, communicator: Any, routers: list):
+        client = Client(**client_configs.dict())
         manager = Manager(client=client, communicator=communicator)
+        self.include_routers(manager, routers)
+        asyncio.create_task(manager.run())
+        self.managers[client_configs.name] = manager
 
-        # TODO Можно вынести в отдельный метод
+    def include_routers(self, manager: Manager, routers: list):
         for router in routers:
             manager.include_router(router)
-        asyncio.create_task(manager.run())
-
-        # FIXME Вот тут нейминг измени подумай как
-        name = str(uuid.uuid4())[:6]
-        self.managers[name] = manager
-        # TODO Вот тут сервисный слой для управления базой и репой
-        self.database.save(name, manager)
 
     async def update_client_statuses(self):
         while True:
-            data: dict = {}
+            data = {}
             for name, manager in self.managers.items():
-                name: str
-                manager: Manager
                 data[name] = {
                     "is_connected": manager.app.is_connected,
                     "is_authorized": manager.is_authorize_status,
                     "session": manager.session_string,
                     "is_banned": manager.is_banned
-
                 }
-            redis_connection = await self.redis_client.get_connection()
-            await redis_connection.set("CONNECTIONS", pickle.dumps(data), ex=15)
 
-            # TODO Удалить после тестов
-            statuses_bytes = await self.redis_client.get_current_client_connections("CONNECTIONS")
-            print(statuses_bytes)
+            redis_connection = await self._redis_connection_manager.get_connection()
+            await redis_connection.set("CONNECTIONS", pickle.dumps(data), ex=15)
+            logger.debug(f"Client statuses updated in Redis: {data}")
             await asyncio.sleep(10)
 
-    def get_client_by_name(self, name: str):
-        manager: Manager = self.managers[name]
-        return manager.app
+    def get_client_by_name(self, name: str) -> Any:
+        manager = self.managers.get(name)
+        if manager:
+            return manager.app
+        logger.warning(f"Client with name {name} not found")
+        return None
 
     def stop_client(self, name: str):
-        manager: Manager = self.managers.get(name)
+        manager = self.managers.get(name)
         if manager:
             manager.app.stop()
             logger.info(f"Stopped client with name {name}")
@@ -114,27 +111,41 @@ class ClientsManager(metaclass=SingletonMeta):
             logger.warning(f"Client with name {name} not found")
 
     def restart_client(self, name: str):
-        self.stop_client(name)
-        manager = self.managers[name]
-        asyncio.create_task(manager.run(communicator=ConsoleCommunicator()))
-        logger.info(f"Restarted client with name {name}")
+        manager = self.managers.get(name)
+        if manager:
+            self.stop_client(name)
+            asyncio.create_task(manager.run())
+            logger.info(f"Restarted client with name {name}")
+        else:
+            logger.warning(f"Client with name {name} not found")
 
     def delete_client(self, name: str):
         manager = self.managers.pop(name, None)
         if manager:
-            self.database.delete(name)
+            self._repository.client_repo.delete(name)
             logger.info(f"Deleted client with name {name}")
+        else:
+            logger.warning(f"Client with name {name} not found")
 
-    def _load_managers_from_db(self):
-        db_managers = self.database.get_all()
-        for name, manager in db_managers.items():
-            if name and manager not in self.managers:
-                self.managers[name] = manager
+    # TODO сделать загрузку из базы имеющихся клиентов
+    # async def _load_managers_from_db(self):
+    #     logger.info("loading data ...")
+    #     db_managers = await self._repository.client_repo.get_all()
+    #     for client in db_managers:
+    #         if client.name and client not in self.managers:
+    #             client = Client(**ClientConfigDTO(**client.to_dict()).dict())
+    #             manager = Manager(client=client, communicator=ConsoleCommunicator())
+    #             self.include_routers(manager, routers)
+    #         self.managers[client_configs.name] = manager
+    #     logger.info("Managers loaded from database")
 
-    # Запуск при первом запуске системы запускаем всех клиентов которые находятся в оперативной памяти
+    # async def start(self):
+    #     await self._load_managers_from_db()
+    #     return asyncio.gather(*[manager.run() for manager in self.managers.values() if manager],
+    #                           self.update_client_statuses(),
+    #                           )
+
     def gather_loops(self):
-        self._load_managers_from_db()
-        return asyncio.gather(
-            *[manager.run(communicator=ConsoleCommunicator()) for manager in self.managers.values() if manager],
-            self.update_client_statuses(),
-        )
+        return asyncio.gather(*[manager.run() for manager in self.managers.values() if manager],
+                              self.update_client_statuses(),
+                              )

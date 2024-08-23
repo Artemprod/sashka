@@ -21,7 +21,7 @@ async def pub():
             name=f"test_{uuid.uuid4()}",
             api_id="17349",
             api_hash="344583e45741c457fe1862106095a5eb",
-            phone_number=f"999660{randint(1000, 9999)}",
+            phone_number=f"999660{randint(1111, 9999)}",
             password='89671106966',
             test_mode=True,
             parse_mode='markdown'

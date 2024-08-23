@@ -1,0 +1,3 @@
+class Resercher:
+    def __init__(self):
+        ...

@@ -27,5 +27,10 @@ class DictDatabase(IDatabase):
     def get_all(self):
         return self.data
 
+class CommonDictDatabase(DictDatabase):
+    def save(self, name, obj):
+        self.data[name] = obj
+
 
 database = DictDatabase()
+comon_database = CommonDictDatabase()

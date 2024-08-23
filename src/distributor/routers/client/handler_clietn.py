@@ -1,5 +1,5 @@
 from faststream import Context
-from faststream.nats import NatsRouter
+from faststream.nats import NatsRouter, NatsBroker
 from pyrogram import Client
 
 from src.dispatcher.communicators.reggestry import ConsoleCommunicator
@@ -8,15 +8,6 @@ from src.telegram_client.client.roters.new_income_message.answer_mesg_router imp
 from src.telegram_client.client.container import ClientsManager
 
 client_router = NatsRouter()
-
-
-
-# def create_manager(client_configs: dict) -> Manager:
-#     client = Client(**client_configs)
-#     manager = Manager(client=client)
-#     manager.include_router(answ_router)
-#     return manager
-
 
 
 @client_router.subscriber("create_clietn", )
@@ -31,6 +22,9 @@ async def create_client(message, context=Context()):
     # тут возможно какато валидация или доа логика
     await container.create_client_connection(client_configs=dto, routers=[answ_router], communicator=ConsoleCommunicator())
     print(container.managers)
+    async with NatsBroker() as broker:
+        message = client_configs
+        await broker.publish(message, subject="save_client")
 
 
 

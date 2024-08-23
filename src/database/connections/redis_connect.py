@@ -26,7 +26,7 @@ class RedisClient:
             return statuses
 
     # TODO Добавить класс DTO для отдельного коннекта
-    async def get_client_connection(self, connection_name, client_name:str):
+    async def get_client_connection_info(self, connection_name, client_name:str):
 
         redis_connection = await self.get_connection()
         statuses_bytes = await redis_connection.get(connection_name)
