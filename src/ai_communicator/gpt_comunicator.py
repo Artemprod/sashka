@@ -14,10 +14,22 @@ class GptCommunicator:
 
     async def send_response(self, text: str, assistant: AIAssistant) -> str:
         try:
-            messages: List[GPTMessage] = [
-                GPTMessage(role=GPTRole.USER, content=assistant.user_prompt + text)]
+            messages: List[GPTMessage] = [GPTMessage(role=GPTRole.USER, content=text)]
             system_message: GPTMessage = GPTMessage(role=GPTRole.SYSTEM, content=assistant.assistant_prompt)
             result = await self.gpt_client.complete(messages, system_message)
+        except Exception as e:
+            raise NoResponseFromChatGptSError(exception=e) from e
+        else:
+            return result
+
+    async def send_context(self, context: list, assistant: AIAssistant) -> str:
+        try:
+            messages: List[GPTMessage] = [GPTMessage(role=message_dict['role'], content=message_dict['content']) for
+                                          message_dict in context]
+            system_message: GPTMessage = GPTMessage(role=GPTRole.SYSTEM, content=assistant.assistant_prompt)
+            print(messages)
+            result = await self.gpt_client.complete(messages, system_message)
+
         except Exception as e:
             raise NoResponseFromChatGptSError(exception=e) from e
         else:

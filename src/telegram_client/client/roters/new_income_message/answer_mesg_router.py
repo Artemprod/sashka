@@ -6,9 +6,11 @@ from pyrogram.types import Message
 
 from src.ai_communicator.gpt_comunicator import GptCommunicator
 from src.ai_communicator.model import assistant_aggressive
+from src.resrcher.user_manager import change_user_status
+
 from src.services.openai_api_package.chat_gpt_package.client import GPTClient
 from src.services.openai_api_package.chat_gpt_package.model import GPTOptions
-from src.telegram_client.client.roters.new_income_message.filtters import hello_filter, in_research
+from src.telegram_client.client.roters.new_income_message.filtters import  in_research
 from src.telegram_client.client.roters.router import Router
 from src.utils.convert_to_dict import message_to_dict
 
@@ -25,9 +27,14 @@ comunicator  = GptCommunicator(gpt_client=gpt_client)
 @answ_router.message(filters.create(in_research))
 async def ai_answer(message: Message, **kwargs):
     print(message)
+    stop_word = "STOP"
     client: Client = kwargs['client']
     response = await comunicator.send_response(text=message.text, assistant=assistant_aggressive)
+    if stop_word in response:
+        await change_user_status(user_id=message.from_user.id)
+        response.replace(stop_word, '')
     await client.send_message(message.from_user.id, text=response)
+
 
 @answ_router.message(not filters.create(in_research))
 async def send_to_disterbuter(message: Message, **kwargs):
