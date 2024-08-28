@@ -7,16 +7,26 @@ from src.resrcher.user_manager import UserManager
 from src.database.database_t import comon_database as reserch_database
 
 
-class Researcher:
+class BaseResearcher:
+    ...
+
+
+class TelegramResearcher(BaseResearcher):
+
     def __init__(self, research: UserResearch):
         self.database = reserch_database
         self.research = research
         self.user_manager = UserManager()
         self.communicator = Communicator()
 
+        self.settings = {
+            "delay_is_research_time_over":60,
+            "delay_is_users_over":10
+        }
+
     async def create_research(self) -> UserResearch:
         # Поставить статус wait
-        #сохранить иследование в базу данных
+        # сохранить иследование в базу данных
         # добавить пользователей в базу данных присвоить статсу wait
 
         self.database.reserch_database.save(self.research.research_id, self.research)
@@ -34,7 +44,7 @@ class Researcher:
             print('статус иследования ', self.research.status)
             difference = self.research.end_date - date.today()
             days = difference.days
-            await asyncio.sleep(1)
+            await asyncio.sleep(self.settings.get('delay_is_research_time_over', 60))
         else:
             # TODO Всех пользователей в статус done
             event.set()
@@ -53,7 +63,7 @@ class Researcher:
                     break
                 print('проверяю пользователей в прогрессе их вот столько', reserch_database.data['user_in_progress'])
                 users = len(reserch_database.data['user_in_progress'])
-                await asyncio.sleep(1)
+                await asyncio.sleep(self.settings.get('delay_is_users_over', 10))
             else:
                 # TODO Всех пользователей в статус done
                 event.set()
@@ -85,7 +95,8 @@ class Researcher:
         self.research.status = 2
         # TODO Всех пользователей в статус done
         # TODO Сохранить все данные в базу данных
-        if self.research.status == 2 and await self.user_manager.set_all_user_status_done(research_id=self.research.research_id):
+        if self.research.status == 2 and await self.user_manager.set_all_user_status_done(
+                research_id=self.research.research_id):
             print("иследование завершено")
 
     async def run_research(self):
@@ -102,6 +113,9 @@ class Researcher:
 
     def abort_research(self, ):
         self.research.status = 4
+
+    def pause_research(self):
+        self.research.status = 5
 
     def get_research_info(self, ):
         print(self.research)
