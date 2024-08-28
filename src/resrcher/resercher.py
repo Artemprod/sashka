@@ -20,14 +20,18 @@ class TelegramResearcher(BaseResearcher):
         self.communicator = Communicator()
 
         self.settings = {
-            "delay_is_research_time_over":60,
-            "delay_is_users_over":10
+            "delay_is_research_time_over": 60,
+            "delay_is_users_over": 10
         }
 
     async def create_research(self) -> UserResearch:
+        """Функция создает иследования в базе данных и назначает необходимые данные """
+
         # Поставить статус wait
         # сохранить иследование в базу данных
         # добавить пользователей в базу данных присвоить статсу wait
+        # Добавить ассистентов из базы
+        # Назначить клиента из базы дааных
 
         self.database.reserch_database.save(self.research.research_id, self.research)
         return self.research

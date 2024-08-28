@@ -1,14 +1,15 @@
 from datetime import datetime
 
 from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean
+from sqlalchemy.orm import relationship
 
 from src.database.postgres.models.base import ModelBase
 
 
-class Client(ModelBase):
-    __tablename__ = "client"
+class TelegramClient(ModelBase):
+    __tablename__ = "telegram_clients"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    telegram_client_id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
     api_id = Column(String(255), nullable=False)
     api_hash = Column(String(255), nullable=False)
@@ -24,5 +25,6 @@ class Client(ModelBase):
     workdir = Column(String(1024), nullable=True)  # увеличено до 1024
     created_at = Column(TIMESTAMP, default=datetime.now(), nullable=False)
 
+    messages = relationship("AssistantMessage", back_populates="telegram_client")
     def __repr__(self):
         return f"<Client {self.name}>"
