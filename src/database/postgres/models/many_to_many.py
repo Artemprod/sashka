@@ -2,20 +2,24 @@ from datetime import datetime
 
 from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-
-from src.database.postgres.models.base import ModelBase
-
-
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from src.database.postgres.models.base import ModelBase, intpk, str_1024, created_at, str_2048, str_10
 
 
 class UserResearch(ModelBase):
     __tablename__ = 'user_research'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    date = Column(DateTime)
-    status_id = Column(Integer, ForeignKey('research_status_name.status_id'))
-    user_id = Column(Integer, ForeignKey('users.user_id'))
-    research_id = Column(Integer, ForeignKey('researches.research_id'))
 
-    user = relationship("User", back_populates="researches")
-    research = relationship("Research")
-    status = relationship("ResearchStatusName")
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey('users.user_id',
+                   ondelete="CASCADE"),
+        primary_key=True
+    )
+
+    research_id: Mapped[int] = mapped_column(
+        ForeignKey('researches.research_id',
+                   ondelete="CASCADE"),
+        primary_key=True,
+
+    )
+
+    created_at: Mapped[created_at]

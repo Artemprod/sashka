@@ -1,30 +1,37 @@
 from datetime import datetime
 
 from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from src.database.postgres.models.base import ModelBase
+from src.database.postgres.models.base import ModelBase, intpk, str_1024, created_at, str_2048, str_10
 
 
 class TelegramClient(ModelBase):
     __tablename__ = "telegram_clients"
 
-    telegram_client_id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(255), nullable=False)
-    api_id = Column(String(255), nullable=False)
-    api_hash = Column(String(255), nullable=False)
-    app_version = Column(String(255), nullable=True)
-    device_model = Column(String(255), nullable=True)
-    system_version = Column(String(255), nullable=True)
-    lang_code = Column(String(5), nullable=True)
-    test_mode = Column(Boolean, nullable=True, default=False)
-    session_string = Column(String(2048), nullable=True)  # увеличено до 2048
-    phone_number = Column(String(255), nullable=True)  # увеличено до 255
-    password = Column(String(1024), nullable=True)  # увеличено до 1024
-    parse_mode = Column(String(50), nullable=True, default='HTML')
-    workdir = Column(String(1024), nullable=True)  # увеличено до 1024
-    created_at = Column(TIMESTAMP, default=datetime.now(), nullable=False)
+    telegram_client_id: Mapped[intpk]
+    name: Mapped[str] = mapped_column(nullable=False)
+    api_id: Mapped[str] = mapped_column(nullable=False)
+    api_hash: Mapped[str] = mapped_column(nullable=False)
+    app_version: Mapped[str] = mapped_column(nullable=False)
+    device_model: Mapped[str] = mapped_column(nullable=False)
+    system_version: Mapped[str] = mapped_column(nullable=False)
+    lang_code: Mapped[str_10] = mapped_column(nullable=True)
+    test_mode: Mapped[bool] = mapped_column(nullable=False, default=False)
+    session_string: Mapped[str_2048] = mapped_column(nullable=True)  # увеличено до 2048
+    phone_number: Mapped[str] = mapped_column(nullable=True)
+    password: Mapped[str_1024] = mapped_column(nullable=True)
+    parse_mode: Mapped[str] = mapped_column(nullable=True, default='HTML')
+    workdir: Mapped[str_1024] = mapped_column(nullable=True)  # увеличено до 1024
+    created_at: Mapped[created_at]
 
-    messages = relationship("AssistantMessage", back_populates="telegram_client")
+    messages:Mapped[list["AssistantMessage"]] = relationship(
+        back_populates="telegram_client")
+
+    researches:Mapped[list["Research"]] = relationship(
+        back_populates="telegram_client"
+    )
+
+
     def __repr__(self):
         return f"<Client {self.name}>"

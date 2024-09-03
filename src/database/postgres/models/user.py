@@ -1,29 +1,50 @@
 from datetime import datetime
+from typing import Optional
 
-from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean, ForeignKey, DateTime
+from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean, ForeignKey, DateTime, Index
 from sqlalchemy.orm import relationship
 
-from src.database.postgres.models.base import ModelBase
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from src.database.postgres.models.base import ModelBase, intpk, str_1024, created_at, str_2048, str_10
 
 
 class User(ModelBase):
     __tablename__ = 'users'
-    user_id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String)
-    second_name = Column(String)
-    phone_number = Column(String)
-    tg_user_id = Column(String)
-    friend_bot_data = Column(String)
-    tg_link = Column(String)
-    is_verified = Column(Boolean)
-    is_voice = Column(Boolean)
-    is_photo = Column(Boolean)
-    is_video = Column(Boolean)
-    last_online_date = Column(DateTime)
-    language_code = Column(String)
+    user_id: Mapped[intpk]
+    name: Mapped[str]
+    second_name: Mapped[Optional[str]]
+    phone_number: Mapped[Optional[str]]
 
-    statuses = relationship("UserStatus", back_populates="user")
-    researches = relationship("UserResearch", back_populates="user")
-    messages = relationship("UserMessage", back_populates="user")
+    tg_user_id: Mapped[int] = mapped_column(nullable=False, unique=True)
 
+    tg_link: Mapped[Optional[str]]
+    is_verified: Mapped[Optional[bool]]
+    is_scam: Mapped[Optional[bool]]
+    is_fake: Mapped[Optional[bool]]
+    is_premium: Mapped[Optional[bool]]
+    last_online_date: Mapped[Optional[datetime]]
+    language_code: Mapped[Optional[str]]
 
+    status_id: Mapped[int] = mapped_column(ForeignKey("user_status_name.status_id"))
+    created_at: Mapped[created_at]
+
+    status: Mapped["UserStatusName"] = relationship(
+        back_populates="users",
+
+    )
+
+    messages: Mapped[list["UserMessage"]] = relationship(
+        back_populates="user")
+
+    assistant_messages: Mapped[list["AssistantMessage"]] = relationship(
+        back_populates="to_user"
+    )
+
+    researches: Mapped[list["Research"]] = relationship(
+        back_populates="users",
+        secondary="user_research"
+    )
+
+    # __table_args__ = (
+    #     Index("user_id_index", "tg_user_id","name" ,"" )
+    # )

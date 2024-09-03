@@ -12,6 +12,28 @@ from src.resrcher.user_manager import ping_users, set_all_user_status_done
 
 
 def create_research(info) -> UserResearch:
+    """
+
+    1. Получить данные об иследовании
+     - Собрать информацию о пользователях ( менеджер пользователей )
+
+    2. Получить статус WAIT для иследования
+    3. Получить статус WAIT для пользователя
+
+    4. Привязать клиента
+        - Выбрать подходящего клиента ( менеджер клиента )
+    5. Привязать ассистента
+        - выбрать подходящего асситента ( менеджер асиситентов
+
+    6. Сохоанить данные в базу
+    7. Поставить статтус ожидания для иследования
+    8. Положить пользователей в базу данных
+    9. Поставить им статус ожидания
+    10. Привязать пользователй к иследованию
+
+    :param info:
+    :return:
+    """
     research = UserResearch(
         owner="Artem",
         client="",
@@ -29,6 +51,8 @@ def create_research(info) -> UserResearch:
 
 async def is_research_time_over(research_id, event):
     research: UserResearch = reserch_database.get(name=research_id)
+
+    # TODO можно сразу вычислять в базе и выдвать дни
     days = (research.end_date - research.start_date).days
     while days > 0:
         if research.status != 1:
@@ -48,6 +72,7 @@ async def is_research_time_over(research_id, event):
 
 async def is_users_over(research_id, event):
     research: UserResearch = reserch_database.get(name=research_id)
+
     if not len(reserch_database.data['user_in_progress']) != 0:
         print('Нету пользователей в иследовании')
         #TODO Подумать что возвращает
@@ -66,6 +91,7 @@ async def is_users_over(research_id, event):
             print(f"Звершил иследование закончилоись пользоавтели {research.theme}")
 
 
+
 async def start_research(research_id):
     """
     Задача начать иследование разослав сообщения пользоватеям
@@ -76,6 +102,7 @@ async def start_research(research_id):
 
     research: UserResearch = reserch_database.get(name=research_id)
     research.status = 1
+
     # расссылка пиветсвенного сообщения и все
     await send_first_message(user_ids=reserch_database.data['user_in_progress'])
 

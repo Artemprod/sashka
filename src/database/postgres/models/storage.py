@@ -3,15 +3,16 @@ from datetime import datetime
 from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 
-from src.database.postgres.models.base import ModelBase
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from src.database.postgres.models.base import ModelBase, intpk, str_1024, created_at, str_2048, str_10
 
 
 class S3VoiceStorage(ModelBase):
     __tablename__ = 's3_voice_storage'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    path = Column(String)
-    file_name = Column(String)
-    date = Column(TIMESTAMP, default=datetime.now(), nullable=False)
-    voice_messages_id = Column(Integer, ForeignKey('voice_messages.voice_message_id'))
+    id: Mapped[intpk]
+    path: Mapped[str_1024]
+    file_name: Mapped[str_1024]
+    created_at: Mapped[created_at]
 
-    voice_message = relationship("VoiceMessage", back_populates="storage")
+    voice_messages_id: Mapped[int] = mapped_column(ForeignKey('voice_messages.voice_message_id'))
+    voice_message:Mapped["VoiceMessage"] = relationship(back_populates="storage")

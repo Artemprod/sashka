@@ -13,11 +13,11 @@ from src.resrcher.user_cimmunication import send_first_message
 # TODO бесконечный цикл или цикл по завершению всех в прогресс?
 class UserManager:
 
-    def __init__(self,settings):
+    def __init__(self, settings):
         self.settings = settings
 
     async def ping_users(self):
-        #TODO Добавить возмодность условия пинга на реакцию если есть реакция или нет
+        # TODO Добавить возмодность условия пинга на реакцию если есть реакция или нет
         '''Пингует пользователей, у которых прошло определенное время с момента последнего сообщения от бота'''
 
         conditions = {
@@ -72,6 +72,13 @@ class UserManager:
                 reserch_database.data['user_in_progress'].remove(user)
         return True
 
+    async def collect_user_information(self):
+        """
+        Собирает информацию о пользщователе
+        :return:
+        """
+        ...
+
     async def add_user(self, user_id, research_id):
         research: UserResearch = reserch_database.get(name=research_id)
         research.user_ids.append(int(user_id))
@@ -86,6 +93,3 @@ class UserManager:
         reserch_database.data['user_in_progress'].remove(user_id)
         reserch_database.data['done'].append(user_id)
         print(f"Список пользователей в done  {reserch_database.data['done']}")
-
-
-
