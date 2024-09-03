@@ -41,10 +41,10 @@ class VoiceMessage(ModelBase):
 
     user_message_id: Mapped[int] = mapped_column(ForeignKey('user_messages.user_message_id'))
 
-    user_message:Mapped["UserMessage"] = relationship(
+    user_message: Mapped["UserMessage"] = relationship(
         back_populates="voice_message")
 
-    storage:Mapped["S3VoiceStorage"] = relationship(
+    storage: Mapped["S3VoiceStorage"] = relationship(
         back_populates="voice_message")
 
 
@@ -60,7 +60,7 @@ class AssistantMessage(ModelBase):
     assistant_id: Mapped[int] = mapped_column(ForeignKey('assistants.assistant_id'))
     telegram_client_id: Mapped[int] = mapped_column(ForeignKey('telegram_clients.telegram_client_id'))
 
-    to_user:Mapped["User"] = relationship(
+    to_user: Mapped["User"] = relationship(
         back_populates="assistant_messages"
     )
 
@@ -69,3 +69,5 @@ class AssistantMessage(ModelBase):
 
     telegram_client: Mapped["TelegramClient"] = relationship(
         back_populates="messages")
+
+

@@ -8,7 +8,7 @@ from typing import Union, Optional, Dict
 from pyrogram.enums import ParseMode
 
 
-# Предполагается, что этот класс определен в проекте
+
 APP_VERSION = f"Pyrogram {__version__}"
 DEVICE_MODEL = f"{platform.python_implementation()} {platform.python_version()}"
 SYSTEM_VERSION = f"{platform.system()} {platform.release()}"

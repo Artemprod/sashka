@@ -18,6 +18,7 @@ from src.database.postgres.models.storage import S3VoiceStorage
 from src.database.postgres.models.user import User
 from src.database.postgres.t_data_objects import users_list, clients, user_message, voice_message, assistant_message, \
     user_research, user_statuses, research_statuses, assistant_list, reserches_list
+from src.database.repository.research import ResearchRepositoryFullModel
 from src.schemas.assistant import AssistantDTO
 from src.schemas.research import ResearchPost
 from src.schemas.user import UserDTO
@@ -460,7 +461,11 @@ async def first_run():
     await drop_tables()
     await create_tables()
     await load_data()
-
+async def run_q():
+    rep = ResearchRepositoryFullModel(session=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
+    res = await rep.get_research_by_status(status_name=ResearchStatusEnum.WAIT)
+    print(res)
+    print()
 
 if __name__ == '__main__':
-    asyncio.run(user_done())
+    asyncio.run(run_q())
