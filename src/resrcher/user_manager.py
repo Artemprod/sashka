@@ -75,6 +75,7 @@ class UserManager:
     async def collect_user_information(self):
         """
         Собирает информацию о пользщователе
+        задача в очередь
         :return:
         """
         ...
