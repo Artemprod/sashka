@@ -17,8 +17,10 @@ from src.database.postgres.models.status import ResearchStatusName, UserStatusNa
 from src.database.postgres.models.storage import S3VoiceStorage
 from src.database.postgres.models.user import User
 from src.database.postgres.t_data_objects import users_list, clients, user_message, voice_message, assistant_message, \
-    user_research, user_statuses, research_statuses, assistant_list, reserches_list
+    user_research, user_statuses, research_statuses, assistant_list, reserches_list, research_owner, service
+from src.database.repository.owner import ResearchOwnerRepositoryFullModel
 from src.database.repository.research import ResearchRepositoryFullModel
+from src.database.repository.user import UserRepositoryFullModel
 from src.schemas.assistant import AssistantDTO
 from src.schemas.research import ResearchPost
 from src.schemas.user import UserDTO
@@ -38,6 +40,8 @@ async def create_tables():
 
 async def load_data():
     async with session.async_session_factory() as coonection:
+        coonection.add(service)
+        coonection.add(research_owner)
         coonection.add_all(clients)
         coonection.add_all(user_statuses)
         coonection.add_all(research_statuses)
@@ -462,8 +466,8 @@ async def first_run():
     await create_tables()
     await load_data()
 async def run_q():
-    rep = ResearchRepositoryFullModel(session=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
-    res = await rep.get_research_by_status(status_name=ResearchStatusEnum.WAIT)
+    rep = ResearchOwnerRepositoryFullModel(db_session_manager=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
+    res = await rep.get_owner_by_id(owner_id=1)
     print(res)
     print()
 

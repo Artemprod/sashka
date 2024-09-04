@@ -24,44 +24,37 @@ class ResearchRepository(BaseRepository):
 
     async def save_new_research(self, values: dict):
         async with (self.db_session_manager.async_session_factory() as session):
-            stmt = insert(Research).values(**values).returning(Research)
-            new_research = await session.execute(stmt)
-            await session.commit()
-            return new_research.scalar_one()
+            async with session.begin():  # использовать транзакцию
+                stmt = insert(Research).values(**values).returning(Research)
+                new_research = await session.execute(stmt)
+                await session.commit()
+                return new_research.scalar_one()
 
     async def get_research_by_id(self, research_id):
         """
         Достает иследование по его id со всеми вложенными в него данными
-        в будущем подумать это в этом репозитории или для такого запросы отдельный репозиторий на уровень абстракции еще выше
-
-        В выдаче испольует:
-
-        User
-            status
-            UserMessage
-
-        Assistant
-            AssistantMessage
-
-        ResearchStatusName
-        TelegramClient
 
         :param research_id:
         :return:
         """
         async with (self.db_session_manager.async_session_factory() as session):
-            query = (select(Research).filter(Research.research_id == research_id))
+            async with session.begin():  # использовать транзакцию
+                query = (select(Research).filter(Research.research_id == research_id))
 
-            execute = await session.execute(query)
-            research = execute.scalars().first()
-            return research
+                execute = await session.execute(query)
+                research = execute.scalars().first()
+                return research
+    async def get_research_by_owner(self, owner):
+        """
 
-    async def get_research_by_id(self, research_id):
+        """
         async with (self.db_session_manager.async_session_factory() as session):
-            query = (select(Research).filter(Research.research_id == research_id))
-            execute = await session.execute(query)
-            research = execute.scalars().first()
-            return research
+            async with session.begin():  # использовать транзакцию
+                query = (select(Research).filter(Research.research_id == research_id))
+
+                execute = await session.execute(query)
+                research = execute.scalars().first()
+                return research
 
     async def update_research(self):
         ...
@@ -85,10 +78,11 @@ class ResearchRepositoryFullModel(BaseRepository):
         :return:
         """
         async with (self.db_session_manager.async_session_factory() as session):
-            query = self.main_query().filter(Research.research_id == research_id)
-            execute = await session.execute(query)
-            research = execute.unique().scalars().first()
-            return research
+            async with session.begin():  # использовать транзакцию
+                query = self.main_query().filter(Research.research_id == research_id)
+                execute = await session.execute(query)
+                research = execute.unique().scalars().first()
+                return research
 
     async def get_research_by_status(self, status_name: ResearchStatusEnum):
         """
@@ -97,11 +91,12 @@ class ResearchRepositoryFullModel(BaseRepository):
         :return:
         """
         async with (self.db_session_manager.async_session_factory() as session):
-            query = self.main_query().filter(Research.status.has(ResearchStatusName.status_name == status_name))
+            async with session.begin():  # использовать транзакцию
+                query = self.main_query().filter(Research.status.has(ResearchStatusName.status_name == status_name))
 
-            execute = await session.execute(query)
-            research = execute.unique().scalars().all()
-            return research
+                execute = await session.execute(query)
+                research = execute.unique().scalars().all()
+                return research
 
     def main_query(self):
         """
@@ -109,7 +104,7 @@ class ResearchRepositoryFullModel(BaseRepository):
         в будущем подумать это в этом репозитории или для такого запросы отдельный репозиторий на уровень абстракции еще выше
 
         В выдаче испольует:
-
+        ResearchOwner
         User
             status
             UserMessage
@@ -125,6 +120,7 @@ class ResearchRepositoryFullModel(BaseRepository):
         """
         query = (
             select(Research)
+            .options(joinedload(Research.owner))
             .options(selectinload(Research.users)
                      .options(selectinload(User.status))
                      .options(joinedload(User.messages)

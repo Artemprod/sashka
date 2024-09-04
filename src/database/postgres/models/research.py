@@ -11,10 +11,10 @@ from src.database.postgres.models.base import ModelBase, intpk, str_1024, create
 class Research(ModelBase):
     __tablename__ = 'researches'
     research_id: Mapped[intpk]
-    owner: Mapped[str]
-    name: Mapped[str]
-    title: Mapped[str]
-    theme: Mapped[str]
+    owner_id: Mapped[int] = mapped_column(ForeignKey("research_owners.owner_id"))
+    name: Mapped[Optional[str]]
+    title: Mapped[Optional[str]]
+    theme: Mapped[Optional[str]]
     start_date: Mapped[datetime]
     end_date: Mapped[datetime]
     created_at: Mapped[created_at]
@@ -25,6 +25,10 @@ class Research(ModelBase):
     research_status_id: Mapped[int] = mapped_column(ForeignKey('research_status_name.status_id'))
     assistant_id: Mapped[int] = mapped_column(ForeignKey('assistants.assistant_id'))
     telegram_client_id: Mapped[int] = mapped_column(ForeignKey('telegram_clients.telegram_client_id'))
+
+    owner:Mapped["ResearchOwner"] = relationship(
+        back_populates="researches"
+    )
 
     users: Mapped[list["User"]] = relationship(
         back_populates="researches",

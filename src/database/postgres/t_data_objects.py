@@ -6,6 +6,8 @@ from src.database.postgres.models.enum_types import UserStatusEnum, ResearchStat
 from src.database.postgres.models.many_to_many import UserResearch
 from src.database.postgres.models.message import AssistantMessage, VoiceMessage, UserMessage
 from src.database.postgres.models.research import Research
+from src.database.postgres.models.research_owner import ResearchOwner
+from src.database.postgres.models.services import Services
 from src.database.postgres.models.status import UserStatusName, ResearchStatusName
 from src.database.postgres.models.user import User
 user_statuses = [
@@ -23,8 +25,17 @@ research_statuses = [
     ResearchStatusName(status_name=ResearchStatusEnum.PAUSE),
     ResearchStatusName(status_name=ResearchStatusEnum.ABORTED)
 ]
-
-
+service = Services(name='telegram')
+research_owner = ResearchOwner(
+name="John",
+second_name="Doe",
+phone_number="+1234567890",
+tg_link="https://t.me/johndoe",
+last_online_date=datetime.datetime.utcnow(),
+service_id=1,
+language_code="ru",
+created_at=datetime.datetime.utcnow(),
+)
 
 user1 = User(
     name="John",
@@ -235,7 +246,7 @@ client3 = TelegramClient(
 clients = [client1, client2, client3]
 
 research1 = Research(
-    owner="John Doe",
+    owner_id=1,
     name="Market Research",
     title="2024 Market Trends",
     theme="Economics",
@@ -250,7 +261,7 @@ research1 = Research(
 )
 
 research2 = Research(
-    owner="Jane Doe",
+    owner_id=1,
     name="Social Media Research",
     title="Influence of Social Media",
     theme="Sociology",
