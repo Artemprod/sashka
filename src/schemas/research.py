@@ -2,35 +2,42 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
 
-
-class ResearchPost(BaseModel):
-    owner: str
-    name: str
-    title: str
-    theme: str
-    assistant_id:int
-    start_date: datetime
-    end_date: datetime
-    description: Optional[str]
-    additional_information: Optional[str] # название компании и тд тп
-    users: list
-
-
-
-
-
 class ResearchDTO(BaseModel):
-    research_id: int
-    owner: str
-    name: str
-    title: str
-    theme: str
+
+    research_uuid: Optional[str] = None
+    owner_id: int
+    name: Optional[str] = None
+    title: Optional[str] = None
+    theme: Optional[str] = None
     start_date: datetime
     end_date: datetime
-    created_at: datetime
-    updated_id: int
-    additional_information: Optional[str]
+
+
+    descriptions: Optional[str] = None
+    additional_information: Optional[str] = None
+
+    research_status_id: int
     assistant_id: int
+    telegram_client_id: int
+
+
+
+
+
+
+
+# class ResearchDTO(BaseModel):
+#     research_id: int
+#     owner: str
+#     name: str
+#     title: str
+#     theme: str
+#     start_date: datetime
+#     end_date: datetime
+#     created_at: datetime
+#     updated_id: int
+#     additional_information: Optional[str]
+#     assistant_id: int
 
 
 class UserResearchDTO(BaseModel):
@@ -39,3 +46,17 @@ class UserResearchDTO(BaseModel):
     status_id: int
     user_id: int
     research_id: int
+
+
+class ResearchOwnerDTO(BaseModel):
+
+    name: str
+    second_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    service_owner_id: int
+    tg_link: Optional[str] = None
+    language_code: Optional[str] = None
+
+
+    class Config:
+        orm_mode = True

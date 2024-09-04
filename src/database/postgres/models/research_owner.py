@@ -15,8 +15,9 @@ class ResearchOwner(ModelBase):
     name: Mapped[str]
     second_name: Mapped[Optional[str]]
     phone_number: Mapped[Optional[str]]
-    tg_link: Mapped[Optional[str]]
+    service_owner_id:Mapped[int]
 
+    tg_link: Mapped[Optional[str]]
     last_online_date: Mapped[Optional[datetime]]
     language_code: Mapped[Optional[str]]
     created_at: Mapped[created_at]

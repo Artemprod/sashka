@@ -4,6 +4,8 @@ from src.database.postgres.models.assistants import Assistant
 from src.database.repository.base import BaseRepository
 
 
+
+
 class AssistantRepository(BaseRepository):
 
     async def save_new_assistant(self, values: dict):

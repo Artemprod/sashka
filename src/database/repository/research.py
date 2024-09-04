@@ -11,6 +11,7 @@ from src.database.postgres.models.research import Research
 from src.database.postgres.models.assistants import Assistant
 from src.database.postgres.models.message import UserMessage, VoiceMessage
 from src.database.postgres.models.client import TelegramClient
+from src.database.postgres.models.research_owner import ResearchOwner
 from src.database.postgres.models.status import ResearchStatusName
 from src.database.postgres.models.storage import S3VoiceStorage
 from src.database.postgres.models.user import User
@@ -44,14 +45,14 @@ class ResearchRepository(BaseRepository):
                 execute = await session.execute(query)
                 research = execute.scalars().first()
                 return research
-    async def get_research_by_owner(self, owner):
+
+    async def get_research_by_owner(self, owner_id):
         """
 
         """
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
-                query = (select(Research).filter(Research.research_id == research_id))
-
+                query = (select(Research).filter(Research.owner.has(ResearchOwner.owner_id == owner_id)))
                 execute = await session.execute(query)
                 research = execute.scalars().first()
                 return research
@@ -136,3 +137,10 @@ class ResearchRepositoryFullModel(BaseRepository):
             .options(joinedload(Research.telegram_client))
         )
         return query
+
+
+class ResearchRepo:
+
+    def __init__(self, database_session_manager: DatabaseSessionManager):
+        self.short = ResearchRepository(database_session_manager)
+        self.full = ResearchRepositoryFullModel(database_session_manager)

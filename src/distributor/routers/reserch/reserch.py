@@ -21,3 +21,6 @@ async def distribute_message(message, context=Context()):
     #     message = {'client_id': message['client'], "text": "это вот из клиента через очередь которая по кругу которая управляет распределением сообщений"}
     #     await broker.publish(message, subject="send_message")
 
+
+# @reserch_router.subscriber("resrech_gather_information")
+# async def distribute_message(message, context=Context()):

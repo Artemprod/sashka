@@ -4,6 +4,7 @@ import datetime
 from sqlalchemy import select, func, cast, Integer, and_
 from sqlalchemy.orm import aliased, selectinload, joinedload
 
+from datasourse_for_test.resercch_imirtation import research_im_1
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.postgres.models.assistants import Assistant
 from src.database.postgres.models.base import ModelBase
@@ -20,9 +21,11 @@ from src.database.postgres.t_data_objects import users_list, clients, user_messa
     user_research, user_statuses, research_statuses, assistant_list, reserches_list, research_owner, service
 from src.database.repository.owner import ResearchOwnerRepositoryFullModel
 from src.database.repository.research import ResearchRepositoryFullModel
+from src.database.repository.storage import RepoStorage
 from src.database.repository.user import UserRepositoryFullModel
+from src.resrcher.resercher import TelegramResearcher
 from src.schemas.assistant import AssistantDTO
-from src.schemas.research import ResearchPost
+
 from src.schemas.user import UserDTO
 
 session = DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
@@ -280,86 +283,86 @@ async def convert_to_dto():
         print(user_dto)
 
 
-async def new_research():
-    """
-            1. Получить данные об иследовании
-            2. Получить статус WAIT для иследования
-            3. Получить статус WAIT для пользователя
-            4. Привязать клиента
-            5. Привязать ассистента
-            6. Сохоанить данные в базу
-            7. Поставить статтус ожидания для иследования
-            8. Положить пользователей в базу данных
-            9. Поставить им статус ожидания
-            10. Привязать пользователй к иследованию
-
-            """
-
-    research = ResearchPost(
-        owner="Artem",
-        name="Инсайтер ",
-        title="Кастдев",
-        theme="Воволеченность пользщвоателей ",
-        description="То то то и это",
-        start_date=datetime.datetime.now(),
-        end_date=datetime.datetime(2024, 9, 3, 13, 0, 0),
-        additional_information="Какая то инфа дополнительная",
-        assistant_id=1,
-        users=[123, 321, 234, 566, 789, 345],
-    )
-    # User
-
-    async with session.async_session_factory() as connection:
-        # Получить Стаус ожидания
-        # Получить Ассистента
-
-        reserch_status_exec = await connection.execute(
-            select(ResearchStatusName).filter(ResearchStatusName.status_name == ResearchStatusEnum.WAIT)
-        )
-        reserch_status = reserch_status_exec.scalars().first()
-
-        user_status_exec = await connection.execute(
-            select(UserStatusName).filter(UserStatusName.status_name == UserStatusEnum.WAIT)
-        )
-        user_status = user_status_exec.scalars().first()
-
-        client_exec = await connection.execute(select(TelegramClient).filter(TelegramClient.telegram_client_id == 1))
-        client = client_exec.scalars().first()
-
-        reserch = Research(
-            owner=research.owner,
-            name=research.name,
-            title=research.title,
-            theme=research.theme,
-            start_date=research.start_date,
-            end_date=research.end_date,
-            descriptions=str(research.description),
-            additional_information=research.additional_information,
-            research_status_id=reserch_status.status_id,
-            assistant_id=research.assistant_id,
-            telegram_client_id=client.telegram_client_id
-
-        )
-        connection.add(reserch)
-
-        await connection.flush()
-
-
-        for user_id in research.users:
-            user = User(
-                name="Unknown",
-                tg_user_id=user_id,
-                status_id=user_status.status_id,
-            )
-            connection.add(user)
-            await connection.flush()
-            user_r = UserResearch(
-                user_id=user.user_id,
-                research_id=reserch.research_id,
-            )
-            connection.add(user_r)
-        await connection.commit()
-    return reserch
+# async def new_research():
+#     """
+#             1. Получить данные об иследовании
+#             2. Получить статус WAIT для иследования
+#             3. Получить статус WAIT для пользователя
+#             4. Привязать клиента
+#             5. Привязать ассистента
+#             6. Сохоанить данные в базу
+#             7. Поставить статтус ожидания для иследования
+#             8. Положить пользователей в базу данных
+#             9. Поставить им статус ожидания
+#             10. Привязать пользователй к иследованию
+#
+#             """
+#
+#     research = ResearchPost(
+#         owner="Artem",
+#         name="Инсайтер ",
+#         title="Кастдев",
+#         theme="Воволеченность пользщвоателей ",
+#         description="То то то и это",
+#         start_date=datetime.datetime.now(),
+#         end_date=datetime.datetime(2024, 9, 3, 13, 0, 0),
+#         additional_information="Какая то инфа дополнительная",
+#         assistant_id=1,
+#         users=[123, 321, 234, 566, 789, 345],
+#     )
+#     # User
+#
+#     async with session.async_session_factory() as connection:
+#         # Получить Стаус ожидания
+#         # Получить Ассистента
+#
+#         reserch_status_exec = await connection.execute(
+#             select(ResearchStatusName).filter(ResearchStatusName.status_name == ResearchStatusEnum.WAIT)
+#         )
+#         reserch_status = reserch_status_exec.scalars().first()
+#
+#         user_status_exec = await connection.execute(
+#             select(UserStatusName).filter(UserStatusName.status_name == UserStatusEnum.WAIT)
+#         )
+#         user_status = user_status_exec.scalars().first()
+#
+#         client_exec = await connection.execute(select(TelegramClient).filter(TelegramClient.telegram_client_id == 1))
+#         client = client_exec.scalars().first()
+#
+#         reserch = Research(
+#             owner=research.owner,
+#             name=research.name,
+#             title=research.title,
+#             theme=research.theme,
+#             start_date=research.start_date,
+#             end_date=research.end_date,
+#             descriptions=str(research.description),
+#             additional_information=research.additional_information,
+#             research_status_id=reserch_status.status_id,
+#             assistant_id=research.assistant_id,
+#             telegram_client_id=client.telegram_client_id
+#
+#         )
+#         connection.add(reserch)
+#
+#         await connection.flush()
+#
+#
+#         for user_id in research.users:
+#             user = User(
+#                 name="Unknown",
+#                 tg_user_id=user_id,
+#                 status_id=user_status.status_id,
+#             )
+#             connection.add(user)
+#             await connection.flush()
+#             user_r = UserResearch(
+#                 user_id=user.user_id,
+#                 research_id=reserch.research_id,
+#             )
+#             connection.add(user_r)
+#         await connection.commit()
+#     return reserch
 
 
 async def start_research(reserch_id):
@@ -471,5 +474,13 @@ async def run_q():
     print(res)
     print()
 
+async def t_research_creation():
+    storage = RepoStorage(database_session_manager=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
+    res = TelegramResearcher(research=research_im_1, repository=storage)
+    record = await res.create_research()
+    print(record)
+    print()
+
+
 if __name__ == '__main__':
-    asyncio.run(run_q())
+    asyncio.run(t_research_creation())

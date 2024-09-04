@@ -11,6 +11,7 @@ from src.database.postgres.models.base import ModelBase, intpk, str_1024, create
 class Research(ModelBase):
     __tablename__ = 'researches'
     research_id: Mapped[intpk]
+    research_uuid:Mapped[Optional[str]]
     owner_id: Mapped[int] = mapped_column(ForeignKey("research_owners.owner_id"))
     name: Mapped[Optional[str]]
     title: Mapped[Optional[str]]

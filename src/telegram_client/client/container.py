@@ -46,19 +46,28 @@ class SingletonMeta(type):
 class ClientsManager(metaclass=SingletonMeta):
     """Класс для управления клиентами с использованием паттерна Singleton."""
 
-    def __init__(self, repository: RepoStorage, redis_connection_manager: RedisClient, ):
+    def __init__(self, repository: RepoStorage, redis_connection_manager: RedisClient, routers: list = None):
         self._repository = repository
         self._redis_connection_manager = redis_connection_manager
+        self._routers = routers
         self.managers: Dict[str, Manager] = {}
-        self.gather_loops()
+        # self.gather_loops()
 
     @property
     def repository(self) -> RepoStorage:
         return self._repository
 
     @property
+    def routers(self) -> list:
+        return self._routers
+
+    @property
     def redis_client(self) -> RedisClient:
         return self._redis_connection_manager
+
+    @routers.setter
+    def routers(self, new_routers: list):
+        self._routers = new_routers
 
     @repository.setter
     def repository(self, new_repository: RepoStorage):
@@ -68,10 +77,16 @@ class ClientsManager(metaclass=SingletonMeta):
     def redis_client(self, new_redis_connection_manager: RedisClient):
         self._redis_connection_manager = new_redis_connection_manager
 
-    async def create_client_connection(self, client_configs: ClientConfigDTO, communicator: Any, routers: list):
+    def add_router(self, new_router):
+        self._routers.append(new_router)
+
+    async def create_client_connection(self, client_configs: ClientConfigDTO, communicator: Any, ):
         client = Client(**client_configs.dict())
         manager = Manager(client=client, communicator=communicator)
-        self.include_routers(manager, routers)
+        if self._routers:
+            self.include_routers(manager, self.routers)
+        else:
+            print("No routers for client")
         asyncio.create_task(manager.run())
         self.managers[client_configs.name] = manager
 
@@ -135,17 +150,19 @@ class ClientsManager(metaclass=SingletonMeta):
             if client.name and client not in self.managers:
                 client = Client(**ClientConfigDTO(**client.to_dict()).dict())
                 manager = Manager(client=client, communicator=ConsoleCommunicator())
-                self.include_routers(manager, routers)
-            self.managers[client_configs.name] = manager
+                if self._routers:
+                    self.include_routers(manager, self.routers)
+                else:
+                    print("No routers for client")
+                self.managers[client.name] = manager
         logger.info("Managers loaded from database")
 
-    # async def start(self):
-    #     await self._load_managers_from_db()
-    #     return asyncio.gather(*[manager.run() for manager in self.managers.values() if manager],
-    #                           self.update_client_statuses(),
-    #                           )
-
-    def gather_loops(self):
+    async def start(self):
+        await self._load_managers_from_db()
         return asyncio.gather(*[manager.run() for manager in self.managers.values() if manager],
                               self.update_client_statuses(),
                               )
+    # def gather_loops(self):
+    #     return asyncio.gather(*[manager.run() for manager in self.managers.values() if manager],
+    #                           self.update_client_statuses(),
+    #                           )

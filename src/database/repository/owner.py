@@ -5,6 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from sqlalchemy import delete, insert, select, update
 
+from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.postgres.models.enum_types import UserStatusEnum
 from src.database.postgres.models.research import Research
 
@@ -41,6 +42,15 @@ class ResearchOwnerRepository(BaseRepository):
                 # TODO Конгвертация в DTO
                 return user
 
+    async def get_owner_by_service_id(self, service_id):
+        async with (self.db_session_manager.async_session_factory() as session):
+            async with session.begin():  # использовать транзакцию
+                execution = await session.execute(
+                    select(ResearchOwner).filter(ResearchOwner.service_owner_id == service_id)
+                )
+                user = execution.scalars().one_or_none()
+                # TODO Конгвертация в DTO
+                return user
     async def delete_owner_by_owner_id(self, owner_id):
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
@@ -105,3 +115,11 @@ class ResearchOwnerRepositoryFullModel(BaseRepository):
         )
 
         return query
+
+
+class OwnerRepo:
+
+    def __init__(self,database_session_manager: DatabaseSessionManager ):
+        self.short = ResearchOwnerRepository(database_session_manager)
+        self.full = ResearchOwnerRepositoryFullModel(database_session_manager)
+

@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import random
 from datetime import date
 
 from faststream.nats import NatsBroker
@@ -7,13 +8,14 @@ from faststream.nats import NatsBroker
 from datasourse_for_test.resercch_imirtation import UserResearch
 
 from src.database.database_t import comon_database as reserch_database
-from src.resrcher.user_cimmunication import send_first_message
+from src.database.postgres.t_data_objects import example_users
+from src.schemas.user import UserDTO
 
 
 # TODO бесконечный цикл или цикл по завершению всех в прогресс?
 class UserManager:
 
-    def __init__(self, settings):
+    def __init__(self, settings=None):
         self.settings = settings
 
     async def ping_users(self):
@@ -72,13 +74,28 @@ class UserManager:
                 reserch_database.data['user_in_progress'].remove(user)
         return True
 
-    async def collect_user_information(self):
+    async def collect_user_information(self, user_telegram_id):
         """
         Собирает информацию о пользщователе
         задача в очередь
         :return:
         """
-        ...
+        rand_user = random.choice(example_users)
+        user = UserDTO(tg_user_id=user_telegram_id,
+                       **rand_user)
+        return user
+
+    async def collect_users_information(self, user_telegram_ids: list[int]):
+        """
+        Собирает информацию о пользщователе
+        задача в очередь
+        :return:
+        """
+        users_dto = []
+        for telegram_id in user_telegram_ids:
+            user = await self.collect_user_information(telegram_id)
+            users_dto.append(user)
+        return users_dto
 
     async def add_user(self, user_id, research_id):
         research: UserResearch = reserch_database.get(name=research_id)

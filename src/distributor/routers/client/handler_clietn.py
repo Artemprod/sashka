@@ -20,7 +20,8 @@ async def create_client(message, context=Context()):
     dto = ClientConfigDTO(**client_configs)
     # manager: Manager = create_manager(dto.to_dict())
     # тут возможно какато валидация или доа логика
-    await container.create_client_connection(client_configs=dto, routers=[answ_router], communicator=ConsoleCommunicator())
+    container.routers = [answ_router]
+    await container.create_client_connection(client_configs=dto, communicator=ConsoleCommunicator())
     print(container.managers)
     async with NatsBroker() as broker:
         message = client_configs

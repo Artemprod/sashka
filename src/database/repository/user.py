@@ -5,7 +5,9 @@ from sqlalchemy.orm import joinedload
 
 from sqlalchemy import delete, insert, select, update
 
+from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.postgres.models.enum_types import UserStatusEnum
+from src.database.postgres.models.many_to_many import UserResearch
 from src.database.postgres.models.research import Research
 
 from src.database.postgres.models.message import UserMessage, VoiceMessage, AssistantMessage
@@ -58,7 +60,7 @@ class UserRepository(BaseRepository):
                 # TODO Конгвертация в DTO
                 return users
 
-    async def change_user_status(self, telegram_id, status: UserStatusEnum):
+    async def change_status_one_user(self, telegram_id, status: UserStatusEnum):
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 sub = (select(UserStatusName.status_id)
@@ -118,6 +120,11 @@ class UserRepository(BaseRepository):
                 session.commit()
                 return deleted
 
+    async def bind_research(self, user_id, research_id):
+        async with (self.db_session_manager.async_session_factory() as session):
+            async with session.begin():  # использовать транзакцию
+                stmt = insert(UserResearch).values(user_id=user_id,research_id=research_id)
+                await session.execute(stmt)
 
 class UserRepositoryFullModel(BaseRepository):
     """
@@ -195,3 +202,11 @@ class UserRepositoryFullModel(BaseRepository):
         )
 
         return query
+
+
+class UserInResearchRepo:
+
+    def __init__(self, database_session_manager: DatabaseSessionManager):
+        self.short = UserRepository(database_session_manager)
+        self.full = UserRepositoryFullModel(database_session_manager)
+

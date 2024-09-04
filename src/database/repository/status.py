@@ -1,5 +1,6 @@
 from sqlalchemy import select
 
+from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.postgres.models.enum_types import UserStatusEnum, ResearchStatusEnum
 from src.database.postgres.models.status import UserStatusName, ResearchStatusName
 from src.database.repository.base import BaseRepository
@@ -27,3 +28,11 @@ class ResearchStatusRepository(BaseRepository):
                 )
                 research_status = research_status_exec.scalars().first()
                 return research_status
+
+
+class StatusRepo:
+
+    def __init__(self, database_session_manager: DatabaseSessionManager):
+        self.user_status = UserStatusRepository(database_session_manager)
+        self.research_status = ResearchStatusRepository(database_session_manager)
+

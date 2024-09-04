@@ -11,7 +11,6 @@ from src.services.openai_api_package.chat_gpt_package.client import GPTClient
 from src.services.openai_api_package.chat_gpt_package.model import GPTOptions
 
 
-
 class BaseCommunicator:
     ...
 class Communicator(BaseCommunicator):

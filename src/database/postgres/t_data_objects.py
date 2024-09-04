@@ -30,6 +30,7 @@ research_owner = ResearchOwner(
 name="John",
 second_name="Doe",
 phone_number="+1234567890",
+service_owner_id=1234,
 tg_link="https://t.me/johndoe",
 last_online_date=datetime.datetime.utcnow(),
 service_id=1,
@@ -424,3 +425,57 @@ user_research13 = UserResearch(
 
 user_research  = [user_research1,user_research2,user_research3,user_research4,user_research5,user_research6,user_research7,user_research8,user_research9,user_research10,user_research11,user_research12,user_research13]
 
+example_users = [
+    {
+        'name': 'John',
+        'second_name': 'Doe',
+        'phone_number': '+1234567890',
+
+        'tg_link': '@john_doe',
+        'is_verified': True,
+        'is_scam': False,
+        'is_fake': False,
+        'is_premium': True,
+        'last_online_date':  datetime.datetime(2023, 10, 1, 15, 30),
+        'language_code': 'en'
+    },
+    {
+        'name': 'Jane',
+        'second_name': 'Smith',
+        'phone_number': None,
+
+        'tg_link': '@jane_smith',
+        'is_verified': False,
+        'is_scam': None,
+        'is_fake': None,
+        'is_premium': False,
+        'last_online_date': None,
+        'language_code': 'fr'
+    },
+    {
+        'name': 'Alice',
+        'second_name': None,
+        'phone_number': '+9876543210',
+
+        'tg_link': '@alice_wonderland',
+        'is_verified': None,
+        'is_scam': None,
+        'is_fake': True,
+        'is_premium': None,
+        'last_online_date': datetime.datetime(2023, 9, 20, 10, 45),
+        'language_code': 'de'
+    },
+    {
+        'name': 'Bob',
+        'second_name': 'Builder',
+        'phone_number': '+5555555555',
+
+        'tg_link': '@bob_the_builder',
+        'is_verified': True,
+        'is_scam': False,
+        'is_fake': False,
+        'is_premium': True,
+        'last_online_date':  datetime.datetime(2023, 8, 15, 8, 20),
+        'language_code': 'es'
+    },
+]
