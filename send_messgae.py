@@ -6,7 +6,7 @@ from src.ai_communicator.gpt_comunicator import GptCommunicator
 from src.services.openai_api_package.chat_gpt_package.client import GPTClient
 from src.services.openai_api_package.chat_gpt_package.model import GPTOptions
 
-OPENAI_API_KEY = 'sk-proj-LSnGH068fmd9T4IcOaluT3BlbkFJbnQKEA40YkcJUb12yLTa'
+
 options = GPTOptions(api_key=OPENAI_API_KEY, model_name='gpt-4o', max_message_count=3, temperature=1,
                      max_return_tokens=1000)
 
