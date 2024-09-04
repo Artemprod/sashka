@@ -128,16 +128,16 @@ class ClientsManager(metaclass=SingletonMeta):
             logger.warning(f"Client with name {name} not found")
 
     # TODO сделать загрузку из базы имеющихся клиентов
-    # async def _load_managers_from_db(self):
-    #     logger.info("loading data ...")
-    #     db_managers = await self._repository.client_repo.get_all()
-    #     for client in db_managers:
-    #         if client.name and client not in self.managers:
-    #             client = Client(**ClientConfigDTO(**client.to_dict()).dict())
-    #             manager = Manager(client=client, communicator=ConsoleCommunicator())
-    #             self.include_routers(manager, routers)
-    #         self.managers[client_configs.name] = manager
-    #     logger.info("Managers loaded from database")
+    async def _load_managers_from_db(self):
+        logger.info("loading data ...")
+        db_managers = await self._repository.client_repo.get_all()
+        for client in db_managers:
+            if client.name and client not in self.managers:
+                client = Client(**ClientConfigDTO(**client.to_dict()).dict())
+                manager = Manager(client=client, communicator=ConsoleCommunicator())
+                self.include_routers(manager, routers)
+            self.managers[client_configs.name] = manager
+        logger.info("Managers loaded from database")
 
     # async def start(self):
     #     await self._load_managers_from_db()
