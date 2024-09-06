@@ -17,7 +17,7 @@ class Communicator(BaseCommunicator):
     conversation_context = {}
 
 
-    options = GPTOptions(api_key=OPENAI_API_KEY, model_name='gpt-4o', max_message_count=20, temperature=1,
+    options = GPTOptions(api_key="OPENAI_API_KEY", model_name='gpt-4o', max_message_count=20, temperature=1,
                          max_return_tokens=1000)
 
     gpt_client = GPTClient(options=options)

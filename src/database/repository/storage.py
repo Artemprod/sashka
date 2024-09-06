@@ -1,6 +1,7 @@
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.assistant import AssistantRepository
 from src.database.repository.client import ClientRepository
+from src.database.repository.data_cash import ResearchDataCashRepository
 from src.database.repository.owner import OwnerRepo
 from src.database.repository.research import ResearchRepo
 from src.database.repository.status import StatusRepo
@@ -22,6 +23,7 @@ class RepoStorage(BaseRepoStorage):
         self._research_repo = ResearchRepo(self._db_manager)
         self._status_repo = StatusRepo(self._db_manager)
         self._user_in_research_repo = UserInResearchRepo(self._db_manager)
+        self._research_cash_repo = ResearchDataCashRepository(self._db_manager)
 
     @property
     def client_repo(self):
@@ -45,3 +47,6 @@ class RepoStorage(BaseRepoStorage):
     @property
     def user_in_research_repo(self):
         return self._user_in_research_repo
+    @property
+    def research_cash_repo(self):
+        return self._research_cash_repo

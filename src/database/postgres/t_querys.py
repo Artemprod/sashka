@@ -19,6 +19,7 @@ from src.database.postgres.models.storage import S3VoiceStorage
 from src.database.postgres.models.user import User
 from src.database.postgres.t_data_objects import users_list, clients, user_message, voice_message, assistant_message, \
     user_research, user_statuses, research_statuses, assistant_list, reserches_list, research_owner, service
+from src.database.repository.data_cash import ResearchDataCashRepository
 from src.database.repository.owner import ResearchOwnerRepositoryFullModel
 from src.database.repository.research import ResearchRepositoryFullModel
 from src.database.repository.storage import RepoStorage
@@ -476,11 +477,14 @@ async def run_q():
 
 async def t_research_creation():
     storage = RepoStorage(database_session_manager=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
-    res = TelegramResearcher(research=research_im_1, repository=storage)
-    record = await res.create_research()
-    print(record)
+    # res = TelegramResearcher(research=research_im_1, repository=storage)
+    # record = await res.create_research()
+    # await res.refresh_data(record.research_id)
+    # print(record)
+    # print()
+    cash = ResearchDataCashRepository(db_session_manager=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
+    res = await cash.get_cash_information(research_id=20)
     print()
-
 
 if __name__ == '__main__':
     asyncio.run(t_research_creation())

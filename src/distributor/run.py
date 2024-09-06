@@ -5,7 +5,9 @@
 
 
 import asyncio
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from environs import Env
 from faststream import FastStream, ContextRepo
@@ -22,7 +24,7 @@ from src.database.connections.redis_connect import RedisClient
 
 env = Env()
 env.read_env('.env')
-
+sys.path.append(str(Path(__file__).parent.parent))
 
 @asynccontextmanager
 async def lifespan(context: ContextRepo):
