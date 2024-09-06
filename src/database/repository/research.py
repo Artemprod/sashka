@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 
 from sqlalchemy.orm import selectinload, joinedload
 
@@ -57,10 +58,35 @@ class ResearchRepository(BaseRepository):
                 research = execute.scalars().first()
                 return research
 
-    async def update_research(self):
-        ...
+    async def change_research_status(self, research_id, status: ResearchStatusEnum):
+        """
+        Меняет статус исследования по id на указанный
 
-    async def change_research_status(self):
+        :param research_id:
+        :param status:
+        :return:
+        """
+        async with self.db_session_manager.async_session_factory() as session:
+            async with session.begin():  # использовать транзакцию
+                status_query = (
+                    select(ResearchStatusName.status_id)
+                    .where(ResearchStatusName.status_name == status)
+                    .scalar_subquery()
+                )
+
+                stmt = (
+                    update(Research)
+                    .where(Research.research_id == research_id)
+                    .values(research_status_id=status_query, updated_at=datetime.datetime.now())
+                    .returning(Research)
+                )
+
+                execution = await session.execute(stmt)
+                await session.commit()
+                # TODO: сделать DTO класс
+                return execution.scalars().one()
+
+    async def update_research(self):
         ...
 
     async def get_all_researches_with_status(self, status):

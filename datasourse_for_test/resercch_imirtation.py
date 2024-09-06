@@ -63,7 +63,7 @@ research_im_1 = UserResearch(
     status=0,
     start_date=date(2024, 7, 1),
     end_date=date(2024, 7, 31),
-    user_ids=[random.randint(11100,999999) for i in range(4)],
+    user_ids=[random.randint(9000000,999999000) for i in range(4)],
     assistant_id=1
 )
 comon_database.save(research_im_1.research_uuid, research_im_1)

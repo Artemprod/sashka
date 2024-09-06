@@ -50,6 +50,16 @@ class UserRepository(BaseRepository):
                 # TODO Конгвертация в DTO
                 return user
 
+    async def get_users_by_research_id(self, research_id):
+        async with (self.db_session_manager.async_session_factory() as session):
+            async with session.begin():  # использовать транзакцию
+                execution = await session.execute(
+                    select(User).filter(User.researches.any(Research.research_id==research_id))
+                )
+                users = execution.scalars().all()
+                # TODO Конгвертация в DTO
+                return users
+
     async def get_users_with_status(self, status: UserStatusEnum) -> list:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию

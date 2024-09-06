@@ -477,14 +477,16 @@ async def run_q():
 
 async def t_research_creation():
     storage = RepoStorage(database_session_manager=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
-    # res = TelegramResearcher(research=research_im_1, repository=storage)
+    res = TelegramResearcher(research=research_im_1, repository=storage)
+
+    # await storage.research_repo.short.change_research_status(research_id=20, status=ResearchStatusEnum.DONE)
     # record = await res.create_research()
-    # await res.refresh_data(record.research_id)
+    await res.run_research()
     # print(record)
     # print()
-    cash = ResearchDataCashRepository(db_session_manager=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
-    res = await cash.get_cash_information(research_id=20)
-    print()
+    # cash = ResearchDataCashRepository(db_session_manager=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
+    # res = await cash.get_cash_information(research_id=20)
+    # print()
 
 if __name__ == '__main__':
     asyncio.run(t_research_creation())

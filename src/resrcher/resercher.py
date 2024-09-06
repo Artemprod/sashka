@@ -62,7 +62,7 @@ class TelegramResearcher(BaseResearcher):
         await self._bind_users_to_research(db_users, db_research.research_id)
         # TODO Тут вернуть DTO класс с иследованием полным
         saved_research = await self._get_saved_research(db_research.research_id)
-        self.research_data.research_id = saved_research
+        self.research_data.research_id = saved_research.research_id
         return saved_research
 
     async def _get_user_status(self, status_name: UserStatusEnum) -> Any:
@@ -169,71 +169,135 @@ class TelegramResearcher(BaseResearcher):
         :param event: asyncio.Event для завершения проверки статуса.
         """
         while not event.is_set():
-            if self.research_data.status != ResearchStatusEnum.IN_PROGRESS:
-                print(f"Завершил исследование по изменению статуса {self.research_data.theme}")
+            if self.research_data.research_status != ResearchStatusEnum.IN_PROGRESS:
+                print(f"Завершил исследование по изменению статуса {self.research_data}")
                 event.set()
                 break
 
             await asyncio.sleep(self.settings.get('delay_is_users_over', 10))
 
-    async def start_research(self):
+    async def start_up_research(self) -> None:
         """
-        Задача начать иследование разослав сообщения пользоватеям
+        Задача начать исследование, разослав сообщения пользователям
+
         :param research_id:
         :param client_id:
         :return:
         """
-        # поставить статус иследования 1 (в работе)
-        # первести всех пользователей в стус в работе
-        # отправить приветсвенное сообщение
-        self.research.status = 1
-        # расссылка пиветсвенного сообщения и все
-        await self.communicator.send_first_message(user_ids=reserch_database.data['user_in_progress'])
+        # TODO сделай проверку на то все ли данные есть каких данных нет дособрать
+        # Поставить статус исследования 1 (в работе)
+        await self.database_repository.research_repo.short.change_research_status(
+            research_id=self.research_data.research_id,
+            status=ResearchStatusEnum.IN_PROGRESS
+        )
+        user_group = await self._get_user_in_research()
+        # Перевести всех пользователей в статус "в работе"
+        await self.database_repository.user_in_research_repo.short.change_status_group_of_user(
+            user_group=user_group,
+            status=UserStatusEnum.IN_PROGRESS
+        )
+        # Отправить приветственное сообщение всем пользователям
+        await self.communicator.send_first_message(user_ids=user_group)
+        print("Все приветсвенныые сообщение отправил в запуске")
+        return
 
-    async def complete_research(self, event):
-        """Функция отсанавливаетс иследование перводя его статус в необходимый если выполняется какое то из условий
-        статусы
-        2 - готово
-        уведомить что закончено
+    async def complete_research(self, event: asyncio.Event) -> None:
         """
-        """Какая то логика которая долджна выполнятся по зварешению иследования """
-
+        Функция останавливает исследование, переводя его статус в необходимый, если выполняется какое-то из условий.
+        """
         print('Жду сигнала к завершению ...')
-        # Что тут мождно впендюрить ? нуджно что то ?
-        await event.wait()
-        # поставить статус в базе данных на  ResearchStatusEnum.DONE
 
-        self.research.status = 2
-        # TODO Всех пользователей которые остались со статусами in progres в статус done
-        # TODO Сохранить все данные в базу данных
-        # проверить что иследование точно заврешилось ( стастус иследования done все пользователи done ) и если все ок
-        # True else False ( обработка False )
-        if self.research.status == 2 and await self.user_manager.set_all_user_status_done(
-                research_id=self.research.research_id):
-            print("иследование завершено")
+        # Ждем сигнала для завершения
+        await event.wait()
+
+        # Получение всех пользователей, участвующих в исследовании
+        user_group = await self._get_user_in_research()
+
+        # Обновление статуса исследования в базе данных на "DONE"
+        await self.database_repository.research_repo.short.change_research_status(
+            research_id=self.research_data.research_id,
+            status=ResearchStatusEnum.DONE
+        )
+
+        # Обновление статуса всех пользователей, участвующих в исследовании на "DONE"
+        await self.database_repository.user_in_research_repo.short.change_status_group_of_user(
+            user_group=user_group,
+            status=UserStatusEnum.DONE
+        )
+
+        # Проверка статуса исследования на "DONE" и что никто из пользователей не находится в процессе
+        if (self.research_data.research_status == ResearchStatusEnum.DONE and
+                self.research_data.user_in_progress == 0):
+            print("Исследование завершено")
+            # TODO: отправить в шину данных сообщение, что исследование завершено (отправка в сервис уведомлений)
+            # await self.notify_completion()
+        else:
+            print("Исследование не завершено")
+            print(f"Статус исследования: {self.research_data.research_status}")
+            print(f"Пользователи в процессе: {self.research_data.user_in_progress}")
+
+            # TODO: обработать случаи, когда исследование не завершено, и причины, почему оно не завершено
+            # await self.handle_incomplete_research()
+
+    async def _get_user_in_research(self):
+        users_in_research = await self.database_repository.user_in_research_repo.short.get_users_by_research_id(
+            research_id=self.research_data.research_id
+        )
+        return [user.tg_user_id for user in users_in_research]
 
     async def run_research(self):
         event = asyncio.Event()
-        await self.create_research()
-        await self.start_research()
-
+        print("Иследование запустилось в run ")
         # запустить отслеживание сигналов завершения
-        ping_task = self.user_manager.ping_users()
-        is_research_time_over_task = self._is_research_time_over(event)
-        is_users_over_task = self._is_users_over(event)
-        stop_task = self.complete_research(event)
-        return await asyncio.gather(ping_task, is_research_time_over_task, is_users_over_task, stop_task)
+        # ping_task = self.user_manager.ping_users()
+        cash_task = asyncio.create_task(self._start_cashing(event))
+        try:
+            # Основная логика
+            await self.create_research()
 
-    def abort_research(self, ):
-        self.research.status = 4
+            await self.start_up_research()
 
-    def pause_research(self):
-        self.research.status = 5
+            is_research_time_over_task = self._is_research_time_over(event)
+            is_users_over_task = self._is_users_over(event)
+            is_status_done = self._is_status_done(event)
+            stop_task = self.complete_research(event)
 
-    def get_research_info(self, ):
-        print(self.research)
+            await asyncio.gather(
+                is_status_done,
+                is_research_time_over_task,
+                is_users_over_task,
+                stop_task
+            )
 
-    async def refresh_data(self, event: asyncio.Event) -> None:
+        finally:
+            # Завершить задачу кэширования
+            event.set()
+            await cash_task
+            print("Завершение задачи кэширования.")
+
+
+    async def abort_research(self):
+        await self.database_repository.research_repo.short.change_research_status(
+            research_id=self.research_data.research_id,
+            status=ResearchStatusEnum.ABORTED
+        )
+        print("ABBORTED RESEARCH")
+
+    async def pause_research(self):
+        await self.database_repository.research_repo.short.change_research_status(
+            research_id=self.research_data.research_id,
+            status=ResearchStatusEnum.PAUSE
+        )
+        print("PASUE RESEARCH")
+
+    async def get_research_info(self, ):
+        full_info = await self.database_repository.research_repo.full.get_research_by_id(
+            research_id=self.research_data.research_id)
+        print("Вот полная инфа")
+        print(full_info)
+        return full_info
+
+    async def _start_cashing(self, event: asyncio.Event) -> None:
         """
         Обновляет данные в классе из базы.
         Зависит от события.
@@ -244,30 +308,33 @@ class TelegramResearcher(BaseResearcher):
 
         :param event: asyncio.Event для завершения обновления данных.
         """
+        while not self.research_data.research_id:
+            await asyncio.sleep(1)
         # Спросим первый раз, есть ли данные в кэше
         research_data = await self.data_cash.get_research_data(research=self.research_data.research_id)
 
         if not research_data:
             # Если данных нет, асинхронно обновляем данные из базы и записываем их в кэш
-            await self.update_cash()
+            await self._update_cash()
 
         # Пока событие не установлено, обновляем данные в заданном интервале
         refresh_interval = 5  # Вынесите в настройки, например, self.config.cache_refresh_interval
 
         while not event.is_set():
-            await self.update_cash()
-            await self.get_cash()
+            await self._update_cash()
+            await self._get_cash()
+            print("Кэш данные обновлены ", self.research_data)
             await asyncio.sleep(refresh_interval)
         else:
             print("Обновление данных по заврегшению")
-            await self.update_cash()
-            await self.get_cash()
+            await self._update_cash()
+            await self._get_cash()
 
-    async def update_cash(self) -> None:
+    async def _update_cash(self) -> None:
         """
         Обновляет кэш данными из базы данных.
         """
-        research_data_from_db: ResearchCashDTO = await self.database_repository.client_repo.research_cash_repo(
+        research_data_from_db: ResearchCashDTO = await self.database_repository.research_cash_repo.get_cash_information(
             research_id=self.research_data.research_id
         )
         # Асинхронное обновление данных в Redis
@@ -275,12 +342,10 @@ class TelegramResearcher(BaseResearcher):
                                                  data=research_data_from_db.dict())
         self.research_data = ResearchCashDTO(**research_data_from_db.dict())
 
-    async def get_cash(self) -> None:
+    async def _get_cash(self) -> None:
         """
         Получает данные из кэша и обновляет атрибуты класса.
         """
         cashing_data = await self.data_cash.get_research_data(research=self.research_data.research_id)
         # Обновляем атрибуты экземпляра класса на основе данных из кэша
         self.research_data = ResearchCashDTO(**cashing_data)
-
-
