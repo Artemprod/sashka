@@ -24,11 +24,9 @@ class User(ModelBase):
     is_premium: Mapped[Optional[bool]]
     last_online_date: Mapped[Optional[datetime]]
     language_code: Mapped[Optional[str]]
-
-    status_id: Mapped[int] = mapped_column(ForeignKey("user_status_name.status_id"))
     created_at: Mapped[created_at]
 
-    status: Mapped["UserStatusName"] = relationship(
+    status: Mapped["UserStatus"] = relationship(
         back_populates="users",
 
     )

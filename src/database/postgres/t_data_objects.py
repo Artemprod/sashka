@@ -8,34 +8,38 @@ from src.database.postgres.models.message import AssistantMessage, VoiceMessage,
 from src.database.postgres.models.research import Research
 from src.database.postgres.models.research_owner import ResearchOwner
 from src.database.postgres.models.services import Services
-from src.database.postgres.models.status import UserStatusName, ResearchStatusName
+from src.database.postgres.models.status import UserStatus, ResearchStatus
 from src.database.postgres.models.user import User
+
 user_statuses = [
-    UserStatusName(status_name=UserStatusEnum.FREE),
-    UserStatusName(status_name=UserStatusEnum.WAIT),
-    UserStatusName(status_name=UserStatusEnum.IN_PROGRESS),
-    UserStatusName(status_name=UserStatusEnum.DONE)
+    UserStatus(status_name=UserStatusEnum.FREE, user_id=1, created_at=datetime.datetime.utcnow(),
+                   updated_at=datetime.datetime.utcnow()),
+    UserStatus(status_name=UserStatusEnum.WAIT, user_id=2, created_at=datetime.datetime.utcnow(),
+                   updated_at=datetime.datetime.utcnow()),
+    UserStatus(status_name=UserStatusEnum.IN_PROGRESS, user_id=3, created_at=datetime.datetime.utcnow(),
+                   updated_at=datetime.datetime.utcnow()),
+    UserStatus(status_name=UserStatusEnum.DONE, user_id=4, created_at=datetime.datetime.utcnow(),
+                   updated_at=datetime.datetime.utcnow())
 ]
 
 # Создание объектов для таблицы research_status_name
 research_statuses = [
-    ResearchStatusName(status_name=ResearchStatusEnum.WAIT),
-    ResearchStatusName(status_name=ResearchStatusEnum.IN_PROGRESS),
-    ResearchStatusName(status_name=ResearchStatusEnum.DONE),
-    ResearchStatusName(status_name=ResearchStatusEnum.PAUSE),
-    ResearchStatusName(status_name=ResearchStatusEnum.ABORTED)
+    ResearchStatus(status_name=ResearchStatusEnum.WAIT, research_id=1, created_at=datetime.datetime.utcnow(),
+                       updated_at=datetime.datetime.utcnow()),
+    ResearchStatus(status_name=ResearchStatusEnum.IN_PROGRESS, research_id=2, created_at=datetime.datetime.utcnow(),
+                       updated_at=datetime.datetime.utcnow()),
 ]
 service = Services(name='telegram')
 research_owner = ResearchOwner(
-name="John",
-second_name="Doe",
-phone_number="+1234567890",
-service_owner_id=1234,
-tg_link="https://t.me/johndoe",
-last_online_date=datetime.datetime.utcnow(),
-service_id=1,
-language_code="ru",
-created_at=datetime.datetime.utcnow(),
+    name="John",
+    second_name="Doe",
+    phone_number="+1234567890",
+    service_owner_id=1234,
+    tg_link="https://t.me/johndoe",
+    last_online_date=datetime.datetime.utcnow(),
+    service_id=1,
+    language_code="ru",
+    created_at=datetime.datetime.utcnow(),
 )
 
 user1 = User(
@@ -51,7 +55,7 @@ user1 = User(
     last_online_date=datetime.datetime.utcnow(),
     language_code="en",
     created_at=datetime.datetime.utcnow(),
-    status_id=1
+
 )
 
 user2 = User(
@@ -67,66 +71,66 @@ user2 = User(
     last_online_date=datetime.datetime.utcnow(),
     language_code="fr",
     created_at=datetime.datetime.utcnow(),
-    status_id=1
+
 )
 user3 = User(
     user_id=3, name="Alice", second_name="Smith", phone_number="+1987654321", tg_user_id=3,
     tg_link="https://t.me/alicesmith", is_verified=True, is_scam=False, is_fake=False, is_premium=False,
-    last_online_date=datetime.datetime.now(), language_code="de", created_at=datetime.datetime.now(), status_id=1
+    last_online_date=datetime.datetime.now(), language_code="de", created_at=datetime.datetime.now(),
 )
 
 user4 = User(
     user_id=4, name="Bob", second_name=None, phone_number="+1230987654", tg_user_id=4,
     tg_link="https://t.me/bob", is_verified=False, is_scam=False, is_fake=True, is_premium=True,
-    last_online_date=datetime.datetime.now(), language_code="en", created_at=datetime.datetime.now(), status_id=1
+    last_online_date=datetime.datetime.now(), language_code="en", created_at=datetime.datetime.now(),
 )
 
 user5 = User(
     user_id=5, name="Carol", second_name="Johnson", phone_number=None, tg_user_id=5,
     tg_link="https://t.me/caroljohnson", is_verified=False, is_scam=True, is_fake=False, is_premium=False,
-    last_online_date=datetime.datetime.now(), language_code="es", created_at=datetime.datetime.now(), status_id=1
+    last_online_date=datetime.datetime.now(), language_code="es", created_at=datetime.datetime.now(),
 )
 
 user6 = User(
     user_id=6, name="Dave", second_name="Brown", phone_number="+1098765432", tg_user_id=6,
     tg_link="https://t.me/davebrown", is_verified=True, is_scam=False, is_fake=False, is_premium=False,
-    last_online_date=datetime.datetime.now(), language_code="it", created_at=datetime.datetime.now(), status_id=1
+    last_online_date=datetime.datetime.now(), language_code="it", created_at=datetime.datetime.now(),
 )
 
 user7 = User(
     user_id=7, name="Eve", second_name=None, phone_number="+0987654321", tg_user_id=7,
     tg_link="https://t.me/eve", is_verified=False, is_scam=False, is_fake=True, is_premium=True,
-    last_online_date=datetime.datetime.now(), language_code="ru", created_at=datetime.datetime.now(), status_id=1
+    last_online_date=datetime.datetime.now(), language_code="ru", created_at=datetime.datetime.now(),
 )
 
 user8 = User(
     user_id=8, name="Frank", second_name="Taylor", phone_number="+1234567890", tg_user_id=8,
     tg_link="https://t.me/franktaylor", is_verified=True, is_scam=True, is_fake=False, is_premium=False,
-    last_online_date=datetime.datetime.now(), language_code="ja", created_at=datetime.datetime.now(), status_id=1
+    last_online_date=datetime.datetime.now(), language_code="ja", created_at=datetime.datetime.now(),
 )
 
 user9 = User(
     user_id=9, name="Grace", second_name="Wilson", phone_number=None, tg_user_id=9,
     tg_link="https://t.me/gracewilson", is_verified=False, is_scam=False, is_fake=False, is_premium=True,
-    last_online_date=datetime.datetime.now(), language_code="zh", created_at=datetime.datetime.now(), status_id=1
+    last_online_date=datetime.datetime.now(), language_code="zh", created_at=datetime.datetime.now(),
 )
 
 user10 = User(
     user_id=10, name="Henry", second_name=None, phone_number="+2345678901", tg_user_id=10,
     tg_link="https://t.me/henry", is_verified=True, is_scam=False, is_fake=True, is_premium=False,
-    last_online_date=datetime.datetime.now(), language_code="ar", created_at=datetime.datetime.now(), status_id=1
+    last_online_date=datetime.datetime.now(), language_code="ar", created_at=datetime.datetime.now(),
 )
 
 user11 = User(
     user_id=11, name="Ivy", second_name="Garcia", phone_number="+9112345678", tg_user_id=11,
     tg_link="https://t.me/ivygarcia", is_verified=True, is_scam=False, is_fake=False, is_premium=True,
-    last_online_date=datetime.datetime.now(), language_code="ko", created_at=datetime.datetime.now(), status_id=1
+    last_online_date=datetime.datetime.now(), language_code="ko", created_at=datetime.datetime.now(),
 )
 
 user12 = User(
     user_id=12, name="Jack", second_name="Anderson", phone_number=None, tg_user_id=12,
     tg_link="https://t.me/jackanderson", is_verified=False, is_scam=True, is_fake=False, is_premium=False,
-    last_online_date=datetime.datetime.now(), language_code="pt", created_at=datetime.datetime.now(), status_id=1
+    last_online_date=datetime.datetime.now(), language_code="pt", created_at=datetime.datetime.now(),
 )
 
 users_list = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10, user11, user12]
@@ -223,7 +227,7 @@ assistant_aggressive = Assistant(
     user_prompt="Чего тебе надо?",
     created_at=datetime.datetime.now()
 )
-assistant_list = [assistant_formal, assistant_informal,assistant_aggressive]
+assistant_list = [assistant_formal, assistant_informal, assistant_aggressive]
 # Создание трёх тестовых клиентов
 client1 = TelegramClient(
     telegram_client_id=1, name="ClientAlpha", api_id="123456", api_hash="abcdef1234567890abcdef1234567890",
@@ -257,7 +261,7 @@ research1 = Research(
     additional_information="Detailed analysis on market trends for 2024",
     assistant_id=1,
     telegram_client_id=1,
-    research_status_id=1
+
 
 )
 
@@ -272,11 +276,10 @@ research2 = Research(
     additional_information=None,
     assistant_id=2,
     telegram_client_id=2,
-    research_status_id=1
+
 )
 
-
-reserches_list = [research1,research2]
+reserches_list = [research1, research2]
 
 user_message1 = UserMessage(
     user_message_id=1, from_user=1, chat=101, forwarded_from=None, reply_to_message_id=None, media=False,
@@ -293,7 +296,7 @@ user_message3 = UserMessage(
     media=False, edit_date=datetime.datetime.utcnow(), voice=False, text="Hello!", created_at=datetime.datetime.utcnow()
 )
 
-user_message = [user_message3, user_message1,user_message2]
+user_message = [user_message3, user_message1, user_message2]
 
 # VoiceMessage instances for user_message2
 voice_message1 = VoiceMessage(
@@ -313,7 +316,8 @@ voice_message3 = VoiceMessage(
 voice_message = [voice_message2, voice_message1, voice_message3]
 # AssistantMessage instances for client1
 assistant_message1 = AssistantMessage(
-    assistant_message_id=1, text="How can I assist you?", chat_id=101, to_user_id=1, created_at=datetime.datetime.utcnow(),
+    assistant_message_id=1, text="How can I assist you?", chat_id=101, to_user_id=1,
+    created_at=datetime.datetime.utcnow(),
     assistant_id=1, telegram_client_id=client1.telegram_client_id
 )
 
@@ -323,17 +327,15 @@ assistant_message2 = AssistantMessage(
 )
 
 assistant_message3 = AssistantMessage(
-    assistant_message_id=3, text="Please provide more details.", chat_id=103, to_user_id=3, created_at=datetime.datetime.utcnow(),
+    assistant_message_id=3, text="Please provide more details.", chat_id=103, to_user_id=3,
+    created_at=datetime.datetime.utcnow(),
     assistant_id=2, telegram_client_id=client1.telegram_client_id
 )
 
-assistant_message = [assistant_message1,assistant_message2, assistant_message3]
-
-
+assistant_message = [assistant_message1, assistant_message2, assistant_message3]
 
 user_research1 = UserResearch(
     created_at=datetime.datetime.utcnow(),
-
 
     user_id=1,
     research_id=1
@@ -423,7 +425,9 @@ user_research13 = UserResearch(
     research_id=1
 )
 
-user_research  = [user_research1,user_research2,user_research3,user_research4,user_research5,user_research6,user_research7,user_research8,user_research9,user_research10,user_research11,user_research12,user_research13]
+user_research = [user_research1, user_research2, user_research3, user_research4, user_research5, user_research6,
+                 user_research7, user_research8, user_research9, user_research10, user_research11, user_research12,
+                 user_research13]
 
 example_users = [
     {
@@ -436,7 +440,7 @@ example_users = [
         'is_scam': False,
         'is_fake': False,
         'is_premium': True,
-        'last_online_date':  datetime.datetime(2023, 10, 1, 15, 30),
+        'last_online_date': datetime.datetime(2023, 10, 1, 15, 30),
         'language_code': 'en'
     },
     {
@@ -475,7 +479,7 @@ example_users = [
         'is_scam': False,
         'is_fake': False,
         'is_premium': True,
-        'last_online_date':  datetime.datetime(2023, 8, 15, 8, 20),
+        'last_online_date': datetime.datetime(2023, 8, 15, 8, 20),
         'language_code': 'es'
     },
 ]

@@ -28,8 +28,7 @@ async def create_client(message, context=Context()):
         await broker.publish(message, subject="save_client")
 
 
-
-@client_router.subscriber("send_message", )
+@client_router.subscriber("send_first_message", )
 async def send_message(message, context=Context()):
     """отправляет сообщение """
     container: ClientsManager = context.get("container")
@@ -42,13 +41,29 @@ async def send_message(message, context=Context()):
     msg_data = await client.send_message(user.id, text=mesage)
     print(msg_data)
 
-@client_router.subscriber("send_message_from_reserch", )
-async def send_message(message, context=Context()):
-    """отправляет сообщение """
-    container: ClientsManager = context.get("container")
-    client: Client = container.get_client_by_name(name=message["client_id"])
-    mesage = message['text']
-    uer_id = int(message['uer_id'])
-    print(mesage)
-    msg_data = await client.send_message(uer_id, text=mesage)
-    print(msg_data)
+
+
+# @client_router.subscriber("send_message", )
+# async def send_message(message, context=Context()):
+#     """отправляет сообщение """
+#     container: ClientsManager = context.get("container")
+#     # Парсинг и валидация данных
+#     # Делегирую создание клиента
+#     client: Client = container.get_client_by_name(name=message["client_id"])
+#     mesage = message['text']
+#     print(mesage)
+#     user = await client.get_chat("aitestings")
+#     msg_data = await client.send_message(user.id, text=mesage)
+#     print(msg_data)
+#
+#
+# @client_router.subscriber("send_message_from_reserch", )
+# async def send_message(message, context=Context()):
+#     """отправляет сообщение """
+#     container: ClientsManager = context.get("container")
+#     client: Client = container.get_client_by_name(name=message["client_id"])
+#     mesage = message['text']
+#     uer_id = int(message['uer_id'])
+#     print(mesage)
+#     msg_data = await client.send_message(uer_id, text=mesage)
+#     print(msg_data)

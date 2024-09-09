@@ -1,3 +1,4 @@
+import datetime
 import random
 from dataclasses import dataclass, field, asdict
 from datetime import date
@@ -61,8 +62,8 @@ research_im_1 = UserResearch(
     title="Анализ использования Telegram-каналов",
     theme="Поведение пользователей в Telegram-каналах",
     status=0,
-    start_date=date(2024, 7, 1),
-    end_date=date(2024, 7, 31),
+    start_date=datetime.datetime.now(),
+    end_date = datetime.datetime.now() + datetime.timedelta(minutes=3),
     user_ids=[random.randint(9000000,999999000) for i in range(4)],
     assistant_id=1
 )

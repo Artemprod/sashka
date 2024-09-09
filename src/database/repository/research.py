@@ -13,7 +13,7 @@ from src.database.postgres.models.assistants import Assistant
 from src.database.postgres.models.message import UserMessage, VoiceMessage
 from src.database.postgres.models.client import TelegramClient
 from src.database.postgres.models.research_owner import ResearchOwner
-from src.database.postgres.models.status import ResearchStatusName
+from src.database.postgres.models.status import ResearchStatus
 from src.database.postgres.models.storage import S3VoiceStorage
 from src.database.postgres.models.user import User
 from src.database.repository.base import BaseRepository
@@ -58,33 +58,7 @@ class ResearchRepository(BaseRepository):
                 research = execute.scalars().first()
                 return research
 
-    async def change_research_status(self, research_id, status: ResearchStatusEnum):
-        """
-        Меняет статус исследования по id на указанный
 
-        :param research_id:
-        :param status:
-        :return:
-        """
-        async with self.db_session_manager.async_session_factory() as session:
-            async with session.begin():  # использовать транзакцию
-                status_query = (
-                    select(ResearchStatusName.status_id)
-                    .where(ResearchStatusName.status_name == status)
-                    .scalar_subquery()
-                )
-
-                stmt = (
-                    update(Research)
-                    .where(Research.research_id == research_id)
-                    .values(research_status_id=status_query, updated_at=datetime.datetime.now())
-                    .returning(Research)
-                )
-
-                execution = await session.execute(stmt)
-                await session.commit()
-                # TODO: сделать DTO класс
-                return execution.scalars().one()
 
     async def update_research(self):
         ...
@@ -119,7 +93,7 @@ class ResearchRepositoryFullModel(BaseRepository):
         """
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
-                query = self.main_query().filter(Research.status.has(ResearchStatusName.status_name == status_name))
+                query = self.main_query().filter(Research.status.has(ResearchStatus.status_name == status_name))
 
                 execute = await session.execute(query)
                 research = execute.unique().scalars().all()
@@ -159,7 +133,7 @@ class ResearchRepositoryFullModel(BaseRepository):
             .options(joinedload(Research.assistant)
                      .options(joinedload(Assistant.messages))
                      )
-            .options(joinedload(Research.status).load_only(ResearchStatusName.status_name))
+            .options(joinedload(Research.status).load_only(ResearchStatus.status_name))
             .options(joinedload(Research.telegram_client))
         )
         return query

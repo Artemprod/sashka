@@ -13,7 +13,7 @@ from src.database.postgres.models.research import Research
 from src.database.postgres.models.message import UserMessage, VoiceMessage, AssistantMessage
 from src.database.postgres.models.research_owner import ResearchOwner
 
-from src.database.postgres.models.status import UserStatusName
+from src.database.postgres.models.status import UserStatus
 
 from src.database.postgres.models.user import User
 from src.database.repository.base import BaseRepository

@@ -23,7 +23,7 @@ class Research(ModelBase):
     descriptions: Mapped[Optional[str]]
     additional_information: Mapped[Optional[str]]
 
-    research_status_id: Mapped[int] = mapped_column(ForeignKey('research_status_name.status_id'))
+
     assistant_id: Mapped[int] = mapped_column(ForeignKey('assistants.assistant_id'))
     telegram_client_id: Mapped[int] = mapped_column(ForeignKey('telegram_clients.telegram_client_id'))
 
@@ -40,7 +40,7 @@ class Research(ModelBase):
         back_populates="research"
     )
 
-    status: Mapped["ResearchStatusName"] = relationship(
+    status: Mapped["ResearchStatus"] = relationship(
         back_populates="researches")
 
     telegram_client: Mapped["TelegramClient"] = relationship(

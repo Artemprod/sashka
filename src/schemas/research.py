@@ -16,7 +16,6 @@ class ResearchDTO(BaseModel):
     descriptions: Optional[str] = None
     additional_information: Optional[str] = None
 
-    research_status_id: int
     assistant_id: int
     telegram_client_id: int
 

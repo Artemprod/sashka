@@ -13,7 +13,7 @@ from src.database.postgres.models.enum_types import ResearchStatusEnum, UserStat
 from src.database.postgres.models.many_to_many import UserResearch
 from src.database.postgres.models.message import AssistantMessage, UserMessage
 from src.database.postgres.models.research import Research
-from src.database.postgres.models.status import ResearchStatusName, UserStatusName
+from src.database.postgres.models.status import ResearchStatus, UserStatus
 
 from src.database.postgres.models.storage import S3VoiceStorage
 from src.database.postgres.models.user import User
@@ -47,8 +47,7 @@ async def load_data():
         coonection.add(service)
         coonection.add(research_owner)
         coonection.add_all(clients)
-        coonection.add_all(user_statuses)
-        coonection.add_all(research_statuses)
+
         await coonection.commit()
         coonection.add_all(users_list)
         coonection.add_all(assistant_list)
@@ -57,7 +56,10 @@ async def load_data():
         coonection.add_all(user_message)
         coonection.add_all(voice_message)
         coonection.add_all(assistant_message)
+
         await coonection.commit()
+        coonection.add_all(user_statuses)
+        coonection.add_all(research_statuses)
         coonection.add_all(user_research)
         await coonection.commit()
 
@@ -318,12 +320,12 @@ async def convert_to_dto():
 #         # Получить Ассистента
 #
 #         reserch_status_exec = await connection.execute(
-#             select(ResearchStatusName).filter(ResearchStatusName.status_name == ResearchStatusEnum.WAIT)
+#             select(ResearchStatus).filter(ResearchStatus.status_name == ResearchStatusEnum.WAIT)
 #         )
 #         reserch_status = reserch_status_exec.scalars().first()
 #
 #         user_status_exec = await connection.execute(
-#             select(UserStatusName).filter(UserStatusName.status_name == UserStatusEnum.WAIT)
+#             select(UserStatus).filter(UserStatus.status_name == UserStatusEnum.WAIT)
 #         )
 #         user_status = user_status_exec.scalars().first()
 #
@@ -375,12 +377,12 @@ async def start_research(reserch_id):
     async with session.async_session_factory() as connection:
         # Получить статусы исследования и пользователя IN_PROGRESS за один запрос
         research_status_exec = await connection.execute(
-            select(ResearchStatusName).filter(ResearchStatusName.status_name == ResearchStatusEnum.IN_PROGRESS)
+            select(ResearchStatus).filter(ResearchStatus.status_name == ResearchStatusEnum.IN_PROGRESS)
         )
         research_status = research_status_exec.scalars().first()
 
         user_status_exec = await connection.execute(
-            select(UserStatusName).filter(UserStatusName.status_name == UserStatusEnum.IN_PROGRESS)
+            select(UserStatus).filter(UserStatus.status_name == UserStatusEnum.IN_PROGRESS)
         )
         user_status = user_status_exec.scalars().first()
 
@@ -410,12 +412,12 @@ async def stop_research(reserch_id=None):
 
         # Получить статусы исследования и пользователя IN_PROGRESS за один запрос
         research_status_exec = await connection.execute(
-            select(ResearchStatusName).filter(ResearchStatusName.status_name == ResearchStatusEnum.DONE)
+            select(ResearchStatus).filter(ResearchStatus.status_name == ResearchStatusEnum.DONE)
         )
         research_status = research_status_exec.scalars().first()
 
         user_status_exec = await connection.execute(
-            select(UserStatusName).filter(UserStatusName.status_name == UserStatusEnum.DONE)
+            select(UserStatus).filter(UserStatus.status_name == UserStatusEnum.DONE)
         )
         user_status = user_status_exec.scalars().first()
 
@@ -438,7 +440,7 @@ async def stop_research(reserch_id=None):
 async def user_done(user_tg_id: int = 123):
     async with session.async_session_factory() as connection:
         user_status_exec = await connection.execute(
-            select(UserStatusName).filter(UserStatusName.status_name == UserStatusEnum.DONE)
+            select(UserStatus).filter(UserStatus.status_name == UserStatusEnum.DONE)
         )
         user_status = user_status_exec.scalars().first()
 
@@ -453,7 +455,7 @@ async def user_done(user_tg_id: int = 123):
 async def user_wait(user_tg_id: int = 123):
     async with session.async_session_factory() as connection:
         user_status_exec = await connection.execute(
-            select(UserStatusName).filter(UserStatusName.status_name == UserStatusEnum.WAIT)
+            select(UserStatus).filter(UserStatus.status_name == UserStatusEnum.WAIT)
         )
         user_status = user_status_exec.scalars().first()
 
@@ -469,17 +471,24 @@ async def first_run():
     await drop_tables()
     await create_tables()
     await load_data()
+
+
 async def run_q():
-    rep = ResearchOwnerRepositoryFullModel(db_session_manager=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
+    rep = ResearchOwnerRepositoryFullModel(db_session_manager=DatabaseSessionManager(
+        database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
     res = await rep.get_owner_by_id(owner_id=1)
     print(res)
     print()
 
+
 async def t_research_creation():
-    storage = RepoStorage(database_session_manager=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
+    storage = RepoStorage(database_session_manager=DatabaseSessionManager(
+        database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
     res = TelegramResearcher(research=research_im_1, repository=storage)
 
-    # await storage.research_repo.short.change_research_status(research_id=20, status=ResearchStatusEnum.DONE)
+    # await storage.research_repo.short.change_research_status(research_id=1, status=ResearchStatusEnum.DONE)
+    # await storage.user_in_research_repo.short.change_status_one_user(telegram_id=1, status=UserStatusEnum.WAIT)
+    # await storage.user_in_research_repo.short.change_status_group_of_user(user_group=[1,2,3], status=UserStatusEnum.WAIT)
     # record = await res.create_research()
     await res.run_research()
     # print(record)
@@ -487,6 +496,7 @@ async def t_research_creation():
     # cash = ResearchDataCashRepository(db_session_manager=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
     # res = await cash.get_cash_information(research_id=20)
     # print()
+
 
 if __name__ == '__main__':
     asyncio.run(t_research_creation())

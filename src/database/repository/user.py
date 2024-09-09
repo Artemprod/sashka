@@ -1,7 +1,7 @@
 import asyncio
+import datetime
 
 from sqlalchemy.orm import joinedload
-
 
 from sqlalchemy import delete, insert, select, update
 
@@ -12,7 +12,7 @@ from src.database.postgres.models.research import Research
 
 from src.database.postgres.models.message import UserMessage, VoiceMessage, AssistantMessage
 
-from src.database.postgres.models.status import  UserStatusName
+from src.database.postgres.models.status import UserStatus
 
 from src.database.postgres.models.user import User
 from src.database.repository.base import BaseRepository
@@ -54,73 +54,13 @@ class UserRepository(BaseRepository):
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 execution = await session.execute(
-                    select(User).filter(User.researches.any(Research.research_id==research_id))
+                    select(User).filter(User.researches.any(Research.research_id == research_id))
                 )
                 users = execution.scalars().all()
                 # TODO Конгвертация в DTO
                 return users
 
-    async def get_users_with_status(self, status: UserStatusEnum) -> list:
-        async with (self.db_session_manager.async_session_factory() as session):
-            async with session.begin():  # использовать транзакцию
-                execution = await session.execute(
-                    select(User).filter(User.status.has(UserStatusName.status_name == status))
-                )
-                users = execution.scalars().all()
-                # TODO Конгвертация в DTO
-                return users
 
-    async def change_status_one_user(self, telegram_id, status: UserStatusEnum):
-        async with (self.db_session_manager.async_session_factory() as session):
-            async with session.begin():  # использовать транзакцию
-                sub = (select(UserStatusName.status_id)
-                       .where(UserStatusName.status_name == status)
-                       .scalar_subquery())
-
-                stmt = (update(User)
-                        .values(status_id=sub)
-                        .where(User.tg_user_id == telegram_id)
-                        .returning(User)
-                        )
-
-                updated = await session.execute(stmt)
-                await session.commit()
-                return updated.scalar_one()
-
-    async def change_status_group_of_user(self, user_group: list[int], status: UserStatusEnum):
-        """
-        Обновляет статусы у всех пользователей
-        1. найти id статуса в базе
-        2. для кааждого пользователя поменять
-        :param user_group:
-        :param status:
-        :return:
-        """
-        async with self.db_session_manager.async_session_factory() as session:
-            async with session.begin():  # использовать транзакцию
-                # Получаем идентификатор статуса
-                sub = (
-                    select(UserStatusName.status_id)
-                    .where(UserStatusName.status_name == status)
-                    .scalar_subquery()
-                )
-
-                updated_users = []
-
-                for telegram_id in user_group:
-                    stmt = (
-                        update(User)
-                        .values(status_id=sub)
-                        .where(User.tg_user_id == telegram_id)
-                        .returning(User)
-                    )
-                    result = await session.execute(stmt)
-                    updated_user = result.scalar_one_or_none()
-                    if updated_user:
-                        updated_users.append(updated_user)
-
-                await session.commit()
-                return updated_users
 
     async def delete_user(self, telegram_id):
         async with self.db_session_manager.async_session_factory() as session:
@@ -133,8 +73,9 @@ class UserRepository(BaseRepository):
     async def bind_research(self, user_id, research_id):
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
-                stmt = insert(UserResearch).values(user_id=user_id,research_id=research_id)
+                stmt = insert(UserResearch).values(user_id=user_id, research_id=research_id)
                 await session.execute(stmt)
+
 
 class UserRepositoryFullModel(BaseRepository):
     """
@@ -162,7 +103,7 @@ class UserRepositoryFullModel(BaseRepository):
         """
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():
-                query = self.main_query().filter(User.status.has(UserStatusName.status_name == status))
+                query = self.main_query().filter(User.status.has(UserStatus.status_name == status))
                 execute = await session.execute(query)
                 research = execute.unique().scalars().all()
                 return research
@@ -219,4 +160,3 @@ class UserInResearchRepo:
     def __init__(self, database_session_manager: DatabaseSessionManager):
         self.short = UserRepository(database_session_manager)
         self.full = UserRepositoryFullModel(database_session_manager)
-
