@@ -472,7 +472,6 @@ async def first_run():
     await create_tables()
     await load_data()
 
-
 async def run_q():
     rep = ResearchOwnerRepositoryFullModel(db_session_manager=DatabaseSessionManager(
         database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
