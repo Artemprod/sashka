@@ -30,10 +30,10 @@ sys.path.append(str(Path(__file__).parent.parent))
 async def lifespan(context: ContextRepo):
     repository: RepoStorage = RepoStorage(DatabaseSessionManager(database_url=env("DATABASE_URL")))
     redis_connection_manager: RedisClient = RedisClient()
-    container = ClientsManager(repository=repository, redis_connection_manager=redis_connection_manager)
-    await container.start()
+    # container = ClientsManager(repository=repository, redis_connection_manager=redis_connection_manager)
+    # await container.start()
 
-    context.set_global("container", container)
+    # context.set_global("container", container)
     context.set_global("repository", repository)
     context.set_global("redis_connection_manager", redis_connection_manager)
     yield

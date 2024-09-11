@@ -27,6 +27,8 @@ class ClientRepository(BaseRepository):
             # TODO конвертация в модель
             return result
 
+
+
     async def get_client_by_name(self, name: str) -> Optional[ClientModel]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(ClientModel).where(ClientModel.name == name)
