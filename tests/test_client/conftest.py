@@ -5,7 +5,7 @@ import pytest
 from environs import Env
 from pyrogram import Client
 
-from src.dispatcher.communicators.reggestry import ConsoleCommunicator
+from src_v0.dispatcher.communicators.reggestry import ConsoleCommunicator
 
 test_phone = "9996601212"
 test_password = "89671106966"

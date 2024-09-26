@@ -4,7 +4,7 @@ from dataclasses import dataclass, field, asdict
 from datetime import date
 from typing import List
 
-from src.database.database_t import comon_database
+from src_v0.database.database_t import comon_database
 
 
 @dataclass

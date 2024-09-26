@@ -4,7 +4,7 @@ from random import randint
 
 from faststream.nats import NatsBroker
 
-from src.telegram_client.client.model import ClientConfigDTO
+from src_v0.telegram_client.client.model import ClientConfigDTO
 
 # client_configs = ClientConfigDTO(
 #         name="test",

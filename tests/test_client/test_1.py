@@ -3,8 +3,8 @@ import os.path
 import pytest
 from pyrogram import Client
 
-from src.dispatcher.communicators.reggestry import BaseCommunicator
-from src.telegram_client.client import Manager
+from src_v0.dispatcher.communicators.reggestry import BaseCommunicator
+from src_v0.telegram_client.client import Manager
 
 from testdata import TEST_CASES, TestDataCases
 

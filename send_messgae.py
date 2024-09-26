@@ -2,9 +2,9 @@ import asyncio
 
 from faststream.nats import NatsBroker
 
-from src.ai_communicator.gpt_comunicator import GptCommunicator
-from src.services.openai_api_package.chat_gpt_package.client import GPTClient
-from src.services.openai_api_package.chat_gpt_package.model import GPTOptions
+from src_v0.ai_communicator.gpt_comunicator import GptCommunicator
+from src_v0.services.openai_api_package.chat_gpt_package.client import GPTClient
+from src_v0.services.openai_api_package.chat_gpt_package.model import GPTOptions
 
 
 options = GPTOptions(api_key=OPENAI_API_KEY, model_name='gpt-4o', max_message_count=3, temperature=1,

@@ -5,7 +5,7 @@ from contextlib import nullcontext as does_not_raise
 import pytest
 from pyrogram.errors import PhoneNumberInvalid, PhoneCodeInvalid, ApiIdInvalid, HashInvalid, PasswordHashInvalid
 
-from src.telegram_client.exceptions.autrization import MaxAttemptsExceededError
+from src_v0.telegram_client.exceptions.autrization import MaxAttemptsExceededError
 
 test_api_id = '17349'
 test_api_hash = "344583e45741c457fe1862106095a5eb"

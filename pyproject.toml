@@ -25,6 +25,9 @@ sqlalchemy = "^2.0.32"
 alembic = "^1.13.2"
 asyncpg = "^0.29.0"
 openai = "^1.42.0"
+numpy = "^2.1.1"
+tzlocal = "^5.2"
+nats-py = "^2.9.0"
 
 
 [build-system]
