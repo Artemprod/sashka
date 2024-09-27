@@ -1,7 +1,9 @@
 import datetime
+from typing import Optional, List
 
 from sqlalchemy import select, update, insert, values, and_
 
+from src.schemas.status import UserStatusDTO, ResearchStatusDTO
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.postgres.models.enum_types import UserStatusEnum, ResearchStatusEnum
 from src_v0.database.postgres.models.research import Research
@@ -11,59 +13,27 @@ from src_v0.database.repository.base import BaseRepository
 
 
 class UserStatusRepository(BaseRepository):
-    async def add_user_status(self, values: dict):
+    async def add_user_status(self, values: dict) -> UserStatusDTO:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 stmt = insert(UserStatus).values(**values).returning(UserStatus)
                 new_user = await session.execute(stmt)
                 await session.commit()
-                return new_user.scalar_one()
+                return UserStatusDTO.model_validate(new_user.scalar(), from_attributes=True)
 
-    async def get_status(self, status_name: UserStatusEnum):
+    async def get_status(self, status_name: UserStatusEnum) -> Optional[UserStatusDTO]:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 user_status_exec = await session.execute(
                     select(UserStatus).filter(UserStatus.status_name == status_name)
                 )
-                user_status = user_status_exec.scalars().first()
-                return user_status
+                user_status = user_status_exec.scalar()
+                return UserStatusDTO.model_validate(user_status, from_attributes=True)
 
-    async def get_users_with_status(self, status: UserStatusEnum) -> list:
-        async with (self.db_session_manager.async_session_factory() as session):
-            async with session.begin():  # использовать транзакцию
-                execution = await session.execute(
-                    select(User).filter(User.status.has(UserStatus.status_name == status))
-                )
-                users = execution.scalars().all()
-                # TODO Конгвертация в DTO
-                return users
 
-    async def get_users_by_research_with_status(self, research_id:int, status: UserStatusEnum) -> list:
-        async with (self.db_session_manager.async_session_factory() as session):
-            async with session.begin():  # использовать транзакцию
-                execution = await session.execute(
-                    select(User).filter(and_(User.researches.any(Research.research_id==research_id),User.status.has(UserStatus.status_name == status)))
-                )
-                users = execution.scalars().all()
-                # TODO Конгвертация в DTO
-                return users
 
-    async def change_status_one_user(self, telegram_id, status: UserStatusEnum):
-        async with (self.db_session_manager.async_session_factory() as session):
-            async with session.begin():  # использовать транзакцию
-                sub_user = select(User.user_id).where(User.tg_user_id == telegram_id).scalar_subquery()
-
-                stmt = (update(UserStatus)
-                        .values(status_name=status, updated_at=datetime.datetime.now())
-                        .where(UserStatus.user_id == sub_user)
-                        .returning(UserStatus)
-                        )
-
-                updated = await session.execute(stmt)
-                await session.commit()
-                return updated.scalar_one()
-
-    async def change_status_group_of_user(self, user_group: list[int], status: UserStatusEnum):
+    async def update_status_group_of_user(self, user_group: list[int], status: UserStatusEnum) -> Optional[
+        List[UserStatusDTO]]:
         """
         Обновляет статусы у всех пользователей
         1. найти id статуса в базе
@@ -73,56 +43,55 @@ class UserStatusRepository(BaseRepository):
         :return:
         """
         async with self.db_session_manager.async_session_factory() as session:
-            async with session.begin():  # использовать транзакцию
-                # Получаем идентификатор статуса
+            async with session.begin():
+                # Получить все user_id для заданных telegram_id одним запросом
+                user_ids_subquery = select(User.user_id).filter(User.tg_user_id.in_(user_group)).subquery()
 
-                updated_statuses = []
+                # Обновить статусы всех пользователей, найденных в подзапросе
+                stmt = (
+                    update(UserStatus)
+                    .values(status_name=status, updated_at=datetime.datetime.now())
+                    .where(UserStatus.user_id.in_(select(user_ids_subquery.c.user_id)))
+                    .returning(UserStatus)
+                )
+                result = await session.execute(stmt)
+                updated_statuses = result.scalars().all()
 
-                for telegram_id in user_group:
-                    sub_user = select(User.user_id).where(User.tg_user_id == telegram_id).scalar_subquery()
-
-                    stmt = (update(UserStatus)
-                            .values(status_name=status, updated_at=datetime.datetime.now())
-                            .where(UserStatus.user_id == sub_user)
-                            .returning(UserStatus)
-                            )
-                    result = await session.execute(stmt)
-                    updated_status = result.scalar_one_or_none()
-                    if updated_status:
-                        updated_statuses.append(updated_status)
-
-                await session.commit()
-                return updated_statuses
+                if updated_statuses:
+                    await session.commit()
+                    return [UserStatusDTO.model_validate(status, from_attributes=True) for status in updated_statuses]
+                else:
+                    return None
 
 
 class ResearchStatusRepository(BaseRepository):
 
-    async def add_research_status(self, values: dict):
+    async def add_research_status(self, values: dict) -> ResearchStatusDTO:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 stmt = insert(ResearchStatus).values(**values).returning(ResearchStatus)
                 new_user = await session.execute(stmt)
                 await session.commit()
-                return new_user.scalar_one()
+                return ResearchStatusDTO.model_validate(new_user.scalar_one(), from_attributes=True)
 
-    async def get_status(self, status_name: ResearchStatusEnum):
+    async def get_status(self, status_name: ResearchStatusEnum) -> ResearchStatusDTO:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 research_status_exec = await session.execute(
                     select(ResearchStatus).filter(ResearchStatus.status_name == status_name)
                 )
                 research_status = research_status_exec.scalars().first()
-                return research_status
+                return ResearchStatusDTO.model_validate(research_status, from_attributes=True)
 
-    async def get_research_status(self, research_id):
+    async def get_research_status(self, research_id) -> ResearchStatusDTO:
         async with (self.db_session_manager.async_session_factory() as session):
             research_status_exec = await session.execute(
                 select(ResearchStatus).filter(ResearchStatus.research_id == research_id)
             )
             research_status = research_status_exec.scalars().one()
-            return research_status
+            return ResearchStatusDTO.model_validate(research_status, from_attributes=True)
 
-    async def change_research_status(self, research_id, status: ResearchStatusEnum):
+    async def change_research_status(self, research_id, status: ResearchStatusEnum) -> Optional[ResearchStatusDTO]:
         """
         Меняет статус исследования по id на указанный
 
@@ -131,19 +100,23 @@ class ResearchStatusRepository(BaseRepository):
         :return:
         """
         async with self.db_session_manager.async_session_factory() as session:
-            async with session.begin():  # использовать транзакцию
-
+            async with session.begin():
+                # Обновляем статус исследования по ID
                 stmt = (
                     update(ResearchStatus)
                     .where(ResearchStatus.research_id == research_id)
-                    .values(status_name=status, updated_at=datetime.datetime.now())
+                    .values(status_name=status, updated_at=datetime.datetime.utcnow())
                     .returning(ResearchStatus)
                 )
+                result = await session.execute(stmt)
+                updated_status = result.scalar_one_or_none()
 
-                execution = await session.execute(stmt)
-                await session.commit()
-                # TODO: сделать DTO класс
-                return execution.scalars().one()
+                # Проверяем, был ли обновлен статус
+                if updated_status:
+                    await session.commit()
+                    return ResearchStatusDTO.model_validate(updated_status, from_attributes=True)
+                else:
+                    return None
 
 
 class StatusRepo:

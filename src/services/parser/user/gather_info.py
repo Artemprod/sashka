@@ -35,7 +35,8 @@ class TelegramUserInformationCollector(UserInformationCollector):
         await self.broker.close()
         logger.info("Соединение с брокером закрыто")
 
-    async def collect_users_information(self, user_telegram_ids: List[int], client_name: str) -> Optional[List[UserDTO]]:
+    async def collect_users_information(self, user_telegram_ids: List[int], client_name: str) -> Optional[
+        List[UserDTO]]:
         for attempt in range(TelegramUserInformationCollector.MAX_RETRIES):
             try:
                 users = await self._attempt_collect_info(user_telegram_ids, client_name, attempt)
@@ -49,11 +50,11 @@ class TelegramUserInformationCollector(UserInformationCollector):
             except Exception as e:
                 logger.error(f"Произошла ошибка: {e}. Попытка {attempt + 1}")
 
-
         logger.error(f"Не удалось получить ответ после {TelegramUserInformationCollector.MAX_RETRIES} попыток.")
         return None
 
-    async def _attempt_collect_info(self, user_telegram_ids: List[int], client_name: str, attempt: int) -> Optional[List[UserDTO]]:
+    async def _attempt_collect_info(self, user_telegram_ids: List[int], client_name: str, attempt: int) -> Optional[
+        List[UserDTO]]:
         logger.info(f"Отправляю запрос: Попытка {attempt + 1}")
         response = await self.broker.publish(
             headers={
@@ -71,15 +72,26 @@ class TelegramUserInformationCollector(UserInformationCollector):
         logger.warning(f"Не удалось получить ответ: Попытка {attempt + 1}")
         return
 
-    async def parse_users_info(self, response: str) -> List[UserDTO]:
+    async def user_generator(self, response):
         response_model = ResponseModel.model_validate_json(response)
-        users = await asyncio.gather(*(self.convert_to_user_dto(user_data) for user_data in response_model.response.data))
-        return list(users) if users else None
+        for user_data in response_model.response.data:
+            yield user_data
 
+    async def parse_users_info(self, response: str) -> List[UserDTO]:
+        users = []
+        users_generator = self.user_generator(response=response)
+        async for user in users_generator:
+            users.append(await self.convert_to_user_dto(user))
+        return list(users) if users else None
 
     @staticmethod
     async def convert_to_user_dto(user_data: UserDTOQueue) -> UserDTO:
         return UserDTO(**user_data.dict())
+
+    # async def parse_users_info(self, response: str) -> List[UserDTO]:
+    #     response_model = ResponseModel.model_validate_json(response)
+    #     users = await asyncio.gather(*(self.convert_to_user_dto(user_data) for user_data in response_model.response.data))
+    #     return list(users) if users else None
 
 
 # class APIUserInformationCollector(UserInformationCollector):

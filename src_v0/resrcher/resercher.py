@@ -15,7 +15,7 @@ from src_v0.resrcher.open_ai_namager import OpenAiresponser
 from src_v0.resrcher.user_cimmunication import Communicator
 from src_v0.resrcher.user_manager import UserManager
 from src_v0.database.database_t import comon_database as reserch_database
-from src_v0.schemas.research import ResearchDTO, ResearchOwnerDTO
+from src_v0.schemas.research import ResearchOwnerDTO
 from src_v0.schemas.user import UserDTO
 
 
@@ -285,12 +285,7 @@ class TelegramResearcher(BaseResearcher):
         )
         print("PASUE RESEARCH")
 
-    async def get_research_info(self, ):
-        full_info = await self.database_repository.research_repo.full.get_research_by_id(
-            research_id=self.research_data.research_id)
-        print("Вот полная инфа")
-        print(full_info)
-        return full_info
+
 
     # async def _start_cashing(self, event: asyncio.Event) -> None:
     #     """

@@ -35,7 +35,7 @@ class ResearchRepository(BaseRepository):
                 result = new_research.scalar_one()
                 return ResearchDTOFull.model_validate(result, from_attributes=True)
 
-    async def get_research_by_id(self, research_id)->ResearchDTOFull:
+    async def get_research_by_id(self, research_id) -> ResearchDTOFull:
         """
         Достает иследование по его id со всеми вложенными в него данными
 
@@ -51,12 +51,10 @@ class ResearchRepository(BaseRepository):
                 if research:
                     return ResearchDTOFull.model_validate(research, from_attributes=True)
                 else:
-                    raise ObjectDoesNotExist(orm_object=Research.__name__, msg=f" research with id {research_id} not found")
+                    raise ObjectDoesNotExist(orm_object=Research.__name__,
+                                             msg=f" research with id {research_id} not found")
 
-
-
-
-    async def get_research_by_owner(self, owner_id)->ResearchDTOFull:
+    async def get_research_by_owner(self, owner_id) -> ResearchDTOFull:
         """
 
         """
@@ -83,7 +81,7 @@ class ResearchRepositoryFullModel(BaseRepository):
         Когда мне нужны сложные джонины со всей инофрмацие я использую этот класс
         """
 
-    async def get_research_by_id(self, research_id)->ResearchDTORel:
+    async def get_research_by_id(self, research_id) -> ResearchDTORel:
         """
         Достает иследование по его id со всеми вложенными в него данными
 
@@ -95,6 +93,7 @@ class ResearchRepositoryFullModel(BaseRepository):
                 execute = await session.execute(query)
                 research = execute.unique().scalars().first()
                 if research:
+                    print()
                     return ResearchDTORel.model_validate(research, from_attributes=True)
                 else:
                     raise ObjectDoesNotExist(orm_object=Research.__name__,
@@ -113,6 +112,7 @@ class ResearchRepositoryFullModel(BaseRepository):
                 execute = await session.execute(query)
                 research = execute.unique().scalars().all()
                 if research:
+                    print()
                     return ResearchDTORel.model_validate(research, from_attributes=True)
                 else:
                     raise ObjectDoesNotExist(orm_object=Research.__name__,

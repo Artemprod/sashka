@@ -1,23 +1,12 @@
 import asyncio
 import datetime
 import math
-import random
-from datetime import date
-
-import tzlocal
 from faststream.nats import NatsBroker
-
-from datasourse_for_test.resercch_imirtation import UserResearch
-from src_v0.ai_communicator.gpt_comunicator import GptCommunicator
-from src_v0.database.connections.redis_connect import RedisPing
-
-from src_v0.database.database_t import comon_database as reserch_database
 from src_v0.database.postgres.models.enum_types import UserStatusEnum
-from src_v0.database.postgres.models.message import AssistantMessage
-from src_v0.database.postgres.t_data_objects import example_users
 from src_v0.database.repository.storage import RepoStorage
 from src_v0.resrcher.open_ai_namager import OpenAiresponser
-from src_v0.schemas.user import UserDTO
+
+
 
 
 class UserManager:
@@ -38,7 +27,6 @@ class UserManager:
         # TODO вощможно стоит подумать над тем как управлять циклам до каких пор делать пинг ?
         while True:
             users = await self.get_active_users(research_id)
-
             if not users:  # Если нет активных пользователей, выходим из цикла
                 print("Все пользователи завершили задачи. Остановка пинга.")
                 break
@@ -97,7 +85,6 @@ class UserManager:
             last_message_time = last_user_message.created_at.replace(tzinfo=datetime.timezone.utc)
         else:
             last_message_time = last_user_message.created_at
-
             # Возвращаем время последнего сообщения с добавленной задержкой
         return last_message_time + datetime.timedelta(seconds=time_delay*10)
 

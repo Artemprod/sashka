@@ -22,6 +22,7 @@ class Owner:
 
 @dataclass
 class UserResearch:
+
     owner: Owner
     service: str
     client: str

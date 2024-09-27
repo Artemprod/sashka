@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 
 from sqlalchemy import delete, insert, select, update
 
-from src.schemas.owner import ResearchOwnerRelDTO, ResearchOwnerDTO
+from src.schemas.owner import ResearchOwnerRelDTO, ResearchOwnerDTO, ResearchOwnerFullDTO
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.postgres.models.enum_types import UserStatusEnum
 from src_v0.database.postgres.models.research import Research
@@ -23,25 +23,25 @@ class ResearchOwnerRepository(BaseRepository):
     Когда мне нужны просты CRUD операции я использую этот класс
     """
 
-    async def add_owner(self, values: dict):
+    async def add_owner(self, values: dict)->ResearchOwnerFullDTO:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 stmt = insert(ResearchOwner).values(**values).returning(ResearchOwner)
                 new_user = await session.execute(stmt)
                 await session.commit()
-                return new_user.scalar_one()
+                return ResearchOwnerFullDTO.model_validate(new_user.scalar_one(), from_attributes=True)
 
-    async def get_owner_by_owner_id(self, owner_id):
+    async def get_owner_by_owner_id(self, owner_id)->ResearchOwnerFullDTO:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 execution = await session.execute(
                     select(ResearchOwner).filter(ResearchOwner.owner_id == owner_id)
                 )
                 user = execution.scalars().first()
-                # TODO Конгвертация в DTO
-                return user
+                # DONE  Конгвертация в DTO
+                return ResearchOwnerFullDTO.model_validate(user, from_attributes=True)
 
-    async def get_owner_by_service_id(self, service_id) -> ResearchOwnerDTO | None:
+    async def get_owner_by_service_id(self, service_id) -> ResearchOwnerFullDTO | None:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 execution = await session.execute(
@@ -50,7 +50,7 @@ class ResearchOwnerRepository(BaseRepository):
                 user = execution.scalars().one_or_none()
                 if not user:
                     return None
-                return ResearchOwnerDTO.model_validate(user, from_attributes=True)
+                return ResearchOwnerFullDTO.model_validate(user, from_attributes=True)
 
     async def delete_owner_by_owner_id(self, owner_id):
         async with self.db_session_manager.async_session_factory() as session:
@@ -66,7 +66,7 @@ class ResearchOwnerRepositoryFullModel(BaseRepository):
         Когда мне нужны сложные джонины со всей инофрмацие я использую этот класс
         """
 
-    async def get_owner_by_id(self, owner_id):
+    async def get_owner_by_id(self, owner_id)->ResearchOwnerRelDTO:
         """
         Достает иследование по его id со всеми вложенными в него данными
         :return:
@@ -75,8 +75,8 @@ class ResearchOwnerRepositoryFullModel(BaseRepository):
             async with session.begin():  # использовать транзакцию
                 query = self.main_query().filter(ResearchOwner.owner_id == owner_id)
                 execute = await session.execute(query)
-                research = execute.unique().scalars().first()
-                return research
+                owner = execute.unique().scalars().first()
+                return ResearchOwnerRelDTO.model_validate(owner, from_attributes=True)
 
     def main_query(self):
         """

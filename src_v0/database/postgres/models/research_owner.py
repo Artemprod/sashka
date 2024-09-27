@@ -15,7 +15,7 @@ class ResearchOwner(ModelBase):
     name: Mapped[str]
     second_name: Mapped[Optional[str]]
     phone_number: Mapped[Optional[str]]
-    service_owner_id: Mapped[int] = mapped_column(BigInteger)
+    service_owner_id: Mapped[int] = mapped_column(BigInteger) # id пользователя в сервисе
 
     tg_link: Mapped[Optional[str]]
     last_online_date: Mapped[Optional[datetime]]

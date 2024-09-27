@@ -44,7 +44,7 @@ class OpenAiresponser:
     """
     conversation_context = {}
 
-    options = GPTOptions(api_key="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", model_name='gpt-4o', max_message_count=20, temperature=1,
+    options = GPTOptions(api_key="****", model_name='gpt-4o', max_message_count=20, temperature=1,
                          max_return_tokens=1000)
 
     gpt_client = GPTClient(options=options)

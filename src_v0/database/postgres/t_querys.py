@@ -7,6 +7,10 @@ from sqlalchemy import select, func, cast, Integer, and_, event
 from sqlalchemy.orm import aliased, selectinload, joinedload
 
 from datasourse_for_test.resercch_imirtation import research_im_1
+from src.schemas.owner import ResearchOwnerDTO
+from src.schemas.research import ResearchDTOGet, ResearchDTOPost
+from src.services.parser.user.gather_info import TelegramUserInformationCollector
+from src.services.research.telegram.manager import TelegramResearchManager
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.postgres.models.assistants import Assistant
 from src_v0.database.postgres.models.base import ModelBase
@@ -27,7 +31,7 @@ from src_v0.database.repository.owner import ResearchOwnerRepositoryFullModel
 from src_v0.database.repository.research import ResearchRepositoryFullModel
 from src_v0.database.repository.storage import RepoStorage
 from src_v0.database.repository.user import UserRepositoryFullModel
-from src_v0.resrcher.resercher import TelegramResearcher
+# from src_v0.resrcher.resercher import TelegramResearcher
 from src_v0.resrcher.user_manager import UserManager
 from src_v0.schemas.assistant import AssistantDTO
 import numpy as np
@@ -548,16 +552,43 @@ async def first_run():
     # await drop_tables()
     await create_tables()
     await load_data()
+def researc_ob():
+    return ResearchDTOPost(
+                owner_service_id=12343,
+                research_uuid="123e4567-e89b-12d3-a456-426614174000",
+                name="Test Research",
+                title="Sample Test Title",
+                theme="Science",
+                start_date=datetime.datetime.now(),
+                end_date=datetime.datetime.now() + datetime.timedelta(days=10),  # Конец исследования через 10 дней
+                descriptions="This is a test research description",
+                additional_information="This research is only for testing purposes",
+                examinees_ids=[2200096081],
+                assistant_id=1)
 
 
 
-
+def owner_ob():
+    return ResearchOwnerDTO(
+        name="John Doe",
+        service_owner_id=123,
+        second_name="Smith",
+        phone_number="+1234567890",
+        tg_link="@johndoe",
+        language_code="en",
+        service_id=1
+    )
 
 
 async def t_research_creation():
     storage = RepoStorage(database_session_manager=DatabaseSessionManager(
         database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
-    res = TelegramResearcher(research=research_im_1, repository=storage)
+    # res = TelegramResearcher(research=research_im_1, repository=storage)
+    t_manahger = TelegramResearchManager(research=researc_ob(),
+                                         owner=owner_ob(),
+                                         repository=storage,
+                                         information_collector=TelegramUserInformationCollector())
+    await t_manahger.create_research()
 
     # re = await storage.message_repo.assistant.fetch_assistant_messages_after_user(telegram_id=5000650204)
 
@@ -570,8 +601,8 @@ async def t_research_creation():
     # cash = ResearchDataCashRepository(db_session_manager=DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
     # res = await cash.get_cash_information(research_id=20)
     # print()
-    u_m = UserManager(repo=storage)
-    await u_m.ping_users(research_id=3)
+    # u_m = UserManager(repo=storage)
+    # await u_m.ping_users(research_id=3)
     # msg = get_ping_message(len(re))
     # delay = get_ping_delay(len(re))
     # delta = datetime.timedelta(hours=delay)
@@ -581,5 +612,5 @@ async def t_research_creation():
 
 
 if __name__ == '__main__':
-    asyncio.run(listen_for_notifications())
+    asyncio.run(t_research_creation())
 
