@@ -263,7 +263,6 @@ class Pingator:
     async def send_ping_message(self, user, prompt_number):
         """Отправка пинг-сообщения."""
         #TODO
-
         prompt_object = await self.get_ping_prompt(number_of_message=prompt_number)
 
         message = await self.communicator.one_message(user_prompt=prompt_object.prompt,
