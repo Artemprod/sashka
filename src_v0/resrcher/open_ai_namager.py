@@ -2,6 +2,7 @@ import asyncio
 import asyncio
 import datetime
 
+from environs import Env
 from sqlalchemy import select, func, cast, Integer, and_
 from sqlalchemy.orm import aliased, selectinload, joinedload
 
@@ -36,6 +37,11 @@ from src_v0.services.openai_api_package.chat_gpt_package.client import GPTClient
 from src_v0.services.openai_api_package.chat_gpt_package.model import GPTOptions
 
 
+env = Env()
+env.read_env('.env')
+
+
+
 class OpenAiresponser:
     """
     Класс выполняет функцию общения
@@ -44,7 +50,7 @@ class OpenAiresponser:
     """
     conversation_context = {}
 
-    options = GPTOptions(api_key="****", model_name='gpt-4o', max_message_count=20, temperature=1,
+    options = GPTOptions(api_key=env("OPENAI_API_KEY"), model_name='gpt-4o', max_message_count=20, temperature=1,
                          max_return_tokens=1000)
 
     gpt_client = GPTClient(options=options)

@@ -14,11 +14,13 @@ from src.schemas.research import ResearchDTOFull
 from src.schemas.user import UserDTOFull
 from src.services.publisher.messager import NatsPublisher
 from src.services.publisher.notification import TelegramNotificator
+from src_v0.database.postgres.engine.session import DatabaseSessionManager
 
 from src_v0.database.postgres.models.enum_types import ResearchStatusEnum, UserStatusEnum
 from src_v0.database.postgres.models.message import AssistantMessage
 from src_v0.database.repository.storage import RepoStorage
 from src_v0.resrcher.open_ai_namager import OpenAiresponser
+from src_v0.resrcher.user_cimmunication import Communicator
 
 
 @dataclass
@@ -31,7 +33,7 @@ class PingatorConfig:
 
 
 class ResearchStarter:
-    def __init__(self, repository: RepoStorage, communicator):
+    def __init__(self, repository: RepoStorage, communicator: Communicator):
         self.repository = repository
         self.communicator = communicator
 
@@ -41,7 +43,7 @@ class ResearchStarter:
             research_id=research_id, status=ResearchStatusEnum.IN_PROGRESS
         )
         user_group: List[UserDTOFull] = await self._get_users_in_research(research_id)
-        await self.repository.status_repo.user_status.change_status_group_of_user(
+        await self.repository.status_repo.user_status.update_status_group_of_user(
             user_group=user_group, status=UserStatusEnum.IN_PROGRESS
         )
         await self.communicator.send_first_message(research_id=research_id)
@@ -68,7 +70,7 @@ class ResearchStopper:
             research_id=research_id, status=ResearchStatusEnum.DONE
         )
 
-        await self.repository.status_repo.user_status.change_status_group_of_user(
+        await self.repository.status_repo.user_status.update_status_group_of_user(
             user_group=user_group, status=UserStatusEnum.DONE
         )
 
@@ -91,7 +93,7 @@ class ResearchStopper:
         return [user.tg_user_id for user in users_in_research]
 
     async def _get_users_in_progress(self, research_id):
-        return await self.repository.status_repo.user_status.get_users_by_research_with_status(
+        return await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
             research_id=research_id, status=UserStatusEnum.IN_PROGRESS
         )
 
@@ -146,13 +148,13 @@ class ResearchOverChecker:
 
     async def _get_users_in_progress(self, research_id: int) -> List[UserDTOFull]:
         # Получение пользователей с активным статусом
-        return await self.repository.status_repo.user_status.get_users_by_research_with_status(
+        return await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
             research_id=research_id, status=UserStatusEnum.IN_PROGRESS
         )
 
     async def get_research_current_status(self, research_id: int) -> str:
         research_status = await self.repository.status_repo.research_status.get_research_status(research_id=research_id)
-        return research_status.status_name.value
+        return research_status.status_name
 
 
 class StopWordChecker:
@@ -168,7 +170,8 @@ class StopWordChecker:
         """
         self.stopper = stopper
         self.repo = repo
-        self.stop_phrases = stop_phrases or ["завершено", "исследование завершено", "конец исследования", "окончено", "STOP"]
+        self.stop_phrases = stop_phrases or ["завершено", "исследование завершено", "конец исследования", "окончено",
+                                             "STOP"]
         self.stop_patterns = [re.compile(rf'\b{re.escape(phrase)}\b', re.IGNORECASE) for phrase in self.stop_phrases]
 
     async def check_for_stop_words(self, research_id: int, response_message: str) -> bool:
@@ -383,32 +386,29 @@ class UserPingator:
 class ResearchProcess:
     def __init__(self,
                  repository: RepoStorage,
-                 communicator,
+                 communicator:Communicator,
                  notifier,
-                 publisher):
+                 publisher,
+                 gpt_communicator: OpenAiresponser):
 
-        self.repository = repository
-        self.communicator = communicator
-        self.notifier = notifier
-        self.publisher = publisher
-        self.research_starter = ResearchStarter(repository, communicator)
+        self.research_starter = ResearchStarter(repository=repository, communicator=communicator)
         self.research_stopper = ResearchStopper(repository, notifier)
         self.research_over_checker = ResearchOverChecker(repository, self.research_stopper)
-        self.research_user_pingator = UserPingator(repo=self.repository, communicator=self.communicator, publisher=self.publisher)
+        self.research_user_pingator = UserPingator(repo=repository, communicator=gpt_communicator, publisher=publisher)
 
     async def run(self, research_id: int) -> None:
         """ Основной цикл проведения исследования. """
         await self.research_starter.start_up_research(research_id)
 
         # Запуск асинхронных задач для проверки завершения исследования
-        tasks = [
-            self.research_over_checker.monitor_completion(research_id),
-            self.research_user_pingator.ping_users(research_id)
-        ]
+
+        tasks_1 = asyncio.create_task(self.research_over_checker.monitor_completion(research_id))
+        tasks_2 = asyncio.create_task(self.research_user_pingator.ping_users(research_id))
+
 
         try:
             # Ждём, когда одна из задач завершится, остальные будут отменены
-            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            done, pending = await asyncio.wait([tasks_1,tasks_2], return_when=asyncio.FIRST_COMPLETED)
 
             # Отмена всех оставшихся задач (например, пингатор может продолжать дольше нужного)
             for task in pending:
@@ -424,17 +424,23 @@ class ResearchProcess:
 if __name__ == '__main__':
     async def main():
         # Создание необходимых объектов
-        repository = RepoStorage()  # Пример: заменить на реальный экземпляр RepoStorage
-        communicator = NatsBroker()  # Пример: заменить на реальный экземпляр NatsBroker или другого брокера
+        repository = RepoStorage(database_session_manager=DatabaseSessionManager(
+            database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
+
+        chatgpt_communicator = OpenAiresponser(
+            repo=repository)
+        communicator= Communicator(repo=repository, ai_responser=chatgpt_communicator)
         notifier = TelegramNotificator()  # Пример: заменить на реальный экземпляр NatsBroker или другого брокера
         publisher = NatsPublisher()
-        process = ResearchProcess(repository, communicator, notifier)
+        process = ResearchProcess(repository=repository, communicator=communicator,
+                                  notifier=notifier,
+                                  publisher=publisher,
+                                  gpt_communicator=chatgpt_communicator)
 
         # Укажите реальный идентификатор исследования
-        research_id = 1  # Пример идентификатора исследования
+        research_id = 38 # Пример идентификатора исследования
 
         await process.run(research_id)
 
 
     asyncio.run(main())
-

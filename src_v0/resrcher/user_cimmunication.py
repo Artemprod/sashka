@@ -35,7 +35,8 @@ class Communicator(BaseCommunicator):
 
     """
 
-    def __init__(self, repo: RepoStorage, ai_responser: OpenAiresponser):
+    def __init__(self, repo: RepoStorage,
+                 ai_responser: OpenAiresponser):
         self.settings = {
             "send_policy": 10,
             "delay_between_bunch": timedelta(seconds=5),
@@ -75,7 +76,7 @@ class Communicator(BaseCommunicator):
 
     # TODO Вот тут логика отправки сообщений кусками генерируем сообщение кладем в чередь пачками
 
-    async def send_first_message(self, resarch_id):
+    async def send_first_message(self, research_id):
         """Делает первую рассылку по пользователем из изледования
         тот медот не знает о сущестоввании ИИ он только отправляет завпрос, получет ответ и перенаправлет в клиента
         Идея по реализации: использвоание jetstreem для рассылки через интервыал
@@ -112,7 +113,7 @@ class Communicator(BaseCommunicator):
         people_per_day = self.settings.get("send_policy", 10)
         delay_between_bunch = self.settings.get("delay_between_bunch", timedelta(hours=24))
         telegram_client = await self.repo.client_repo.get_client_by_id(client_id=1)
-        assistant = await self.repo.assistant_repo.get_assistant_by_research(research_id=resarch_id)
+        assistant = await self.repo.assistant_repo.get_assistant_by_research(research_id=research_id)
         right_border = 0
 
         for i, left_border in enumerate(range(0, len(user_ids), people_per_day)):
@@ -127,7 +128,7 @@ class Communicator(BaseCommunicator):
                 print(f'User ID: {user}, Next Time Message: {next_time_message}')
                 # Simulation of sending the message
 
-                content = await self.ai_responser.get_hello_answer_from_gpt(research_id=resarch_id)
+                content = await self.ai_responser.get_hello_answer_from_gpt(research_id=research_id)
 
                 headers = {
                     'Tg-Client-Name': str("cl"),

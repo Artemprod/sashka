@@ -30,8 +30,6 @@ class UserStatusRepository(BaseRepository):
                 user_status = user_status_exec.scalar()
                 return UserStatusDTO.model_validate(user_status, from_attributes=True)
 
-
-
     async def update_status_group_of_user(self, user_group: list[int], status: UserStatusEnum) -> Optional[
         List[UserStatusDTO]]:
         """
