@@ -386,7 +386,7 @@ class UserPingator:
 class ResearchProcess:
     def __init__(self,
                  repository: RepoStorage,
-                 communicator:Communicator,
+                 communicator: Communicator,
                  notifier,
                  publisher,
                  gpt_communicator: OpenAiresponser):
@@ -402,13 +402,13 @@ class ResearchProcess:
 
         # Запуск асинхронных задач для проверки завершения исследования
 
-        tasks_1 = asyncio.create_task(self.research_over_checker.monitor_completion(research_id))
-        tasks_2 = asyncio.create_task(self.research_user_pingator.ping_users(research_id))
-
+        tasks_over_checker = asyncio.create_task(self.research_over_checker.monitor_completion(research_id))
+        tasks_user_ping = asyncio.create_task(self.research_user_pingator.ping_users(research_id))
 
         try:
             # Ждём, когда одна из задач завершится, остальные будут отменены
-            done, pending = await asyncio.wait([tasks_1,tasks_2], return_when=asyncio.FIRST_COMPLETED)
+            done, pending = await asyncio.wait([tasks_over_checker, tasks_user_ping],
+                                               return_when=asyncio.FIRST_COMPLETED)
 
             # Отмена всех оставшихся задач (например, пингатор может продолжать дольше нужного)
             for task in pending:
@@ -429,7 +429,7 @@ if __name__ == '__main__':
 
         chatgpt_communicator = OpenAiresponser(
             repo=repository)
-        communicator= Communicator(repo=repository, ai_responser=chatgpt_communicator)
+        communicator = Communicator(repo=repository, ai_responser=chatgpt_communicator)
         notifier = TelegramNotificator()  # Пример: заменить на реальный экземпляр NatsBroker или другого брокера
         publisher = NatsPublisher()
         process = ResearchProcess(repository=repository, communicator=communicator,
@@ -438,7 +438,7 @@ if __name__ == '__main__':
                                   gpt_communicator=chatgpt_communicator)
 
         # Укажите реальный идентификатор исследования
-        research_id = 38 # Пример идентификатора исследования
+        research_id = 38  # Пример идентификатора исследования
 
         await process.run(research_id)
 

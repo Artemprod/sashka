@@ -15,6 +15,18 @@ class NatsHeaders(BaseModel):
     ...
 
 
+# class Headers(BaseModel):
+#     tg_client_name: str = Field(alias="Tg-Client-Name")
+#     tg_user_userid: str = Field(alias="Tg-User-UserId")
+#     send_time_msg_timestamp: str = Field(alias="SendTime-Msg-Timestamp")
+#     send_time_next_message_timestamp: str = Field(alias="SendTime-Next-Message-Timestamp")
+#
+#
+# class SimpleHeaders(BaseModel):
+#     tg_client_name: str = Field(alias="Tg-Client-Name")
+#     tg_user_userid: str = Field(alias="Tg-User-UserId")
+
+
 # Telegram specific headers inheriting from base headers
 class NatsTelegramHeaders(NatsHeaders):
     telegram_client_name: Optional[str] = None
