@@ -27,6 +27,7 @@ class ResearchDTOPost(BaseModel):
 
 
 class ResearchDTOGet(BaseModel):
+
     research_uuid: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
     name: Optional[str] = None
     title: Optional[str] = None

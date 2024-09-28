@@ -1,5 +1,8 @@
+from typing import List, Optional
+
 from sqlalchemy import insert, select, update, desc, and_
 
+from src.schemas.message import AssistantMessageDTOGet, UserMessageDTOGet
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.postgres.models.assistants import Assistant
 from src_v0.database.postgres.models.message import UserMessage, VoiceMessage, AssistantMessage
@@ -9,57 +12,55 @@ from src_v0.database.repository.base import BaseRepository
 
 
 class AssistantMessageRepository(BaseRepository):
-
-    async def save_new_message(self, values: dict):
+    async def save_new_message(self, values: dict) -> AssistantMessageDTOGet:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 stmt = insert(AssistantMessage).values(**values).returning(AssistantMessage)
                 new_assistant_message = await session.execute(stmt)
                 await session.commit()
-                return new_assistant_message.scalar_one()
+                result = new_assistant_message.scalar().first()
+                return AssistantMessageDTOGet.model_validate(result, from_attributes=True)
 
-    async def get_all_assistent_messages_by_user_telegram_id(self, telegram_id):
-        async with (self.db_session_manager.async_session_factory() as session):
+    async def get_all_assistent_messages_by_user_telegram_id(self, telegram_id) -> Optional[List[AssistantMessageDTOGet]]:
+        async with self.db_session_manager.async_session_factory() as session:
             query = select(AssistantMessage).filter(AssistantMessage.to_user_id == telegram_id)
             execution = await session.execute(query)
             messages = execution.scalars().all()
-            # TODO Возвращать модель
-            return messages
+            return [AssistantMessageDTOGet.model_validate(msg, from_attributes=True) for msg in messages]
 
-    async def get_offset_assistents_messages_by_user_telegram_id(self, telegram_id, limit=1):
-        async with (self.db_session_manager.async_session_factory() as session):
+    async def get_offset_assistents_messages_by_user_telegram_id(self, telegram_id, limit=1) -> Optional[List[AssistantMessageDTOGet]]:
+        async with self.db_session_manager.async_session_factory() as session:
             query = select(AssistantMessage).filter(AssistantMessage.to_user_id == telegram_id).limit(limit)
             execution = await session.execute(query)
             messages = execution.scalars().all()
-            # TODO Возвращать модель
-            return messages
+            return [AssistantMessageDTOGet.model_validate(msg, from_attributes=True) for msg in messages]
 
-    async def get_last_assistents_message_by_user_telegram_id(self, telegram_id):
+    async def get_last_assistents_message_by_user_telegram_id(self, telegram_id) -> Optional[AssistantMessageDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
-            query = select(AssistantMessage).filter(AssistantMessage.to_user_id == telegram_id).order_by(
-                AssistantMessage.created_at.desc()).limit(1)
+            query = select(AssistantMessage).filter(AssistantMessage.to_user_id == telegram_id).order_by(AssistantMessage.created_at.desc()).limit(1)
             result = await session.execute(query)
             message = result.scalars().first()
-            # TODO: Return model
-            return message
+            if message:
+                return AssistantMessageDTOGet.model_validate(message, from_attributes=True)
+            return None
 
-    async def fetch_assistant_messages_after_user(self, telegram_id):
+    async def fetch_assistant_messages_after_user(self, telegram_id) -> Optional[List[AssistantMessageDTOGet]]:
         async with self.db_session_manager.async_session_factory() as session:
-            sub = (select(
-                UserMessage.created_at
-            ).select_from(UserMessage)
-                   .where(UserMessage.from_user == telegram_id)
-                   .order_by(desc(UserMessage.created_at))
-                   .limit(1)
-                   ).scalar_subquery()
+            sub = (select(UserMessage.created_at)
+                    .select_from(UserMessage)
+                    .where(UserMessage.from_user == telegram_id)
+                    .order_by(desc(UserMessage.created_at))
+                    .limit(1)
+                    ).scalar_subquery()
             query = (select(AssistantMessage)
                      .select_from(AssistantMessage)
-                     .filter(AssistantMessage.to_user_id == telegram_id,
-                             AssistantMessage.created_at > sub)
+                     .filter(AssistantMessage.to_user_id == telegram_id, AssistantMessage.created_at > sub)
                      )
             result = await session.execute(query)
-            # TODO преобраховать в DTO
-            return result.scalars().all()
+            messages = result.scalars().all()
+            return [AssistantMessageDTOGet.model_validate(msg, from_attributes=True) for msg in messages]
+
+
 
     # async def get_message_by_date(self, assistant_id):
     #     async with (self.db_session_manager.async_session_factory() as session):
@@ -78,40 +79,37 @@ class AssistantMessageRepository(BaseRepository):
 
 
 class UserMessageRepository(BaseRepository):
-
-    async def save_new_message(self, values: dict):
-        async with (self.db_session_manager.async_session_factory() as session):
-            async with session.begin():  # использовать транзакцию
-
+    async def save_new_message(self, values: dict) -> UserMessageDTOGet:
+        async with self.db_session_manager.async_session_factory() as session:
+            async with session.begin():
+                # используем транзакцию
                 stmt = insert(UserMessage).values(**values).returning(UserMessage)
                 new_user_message = await session.execute(stmt)
                 await session.commit()
-                return new_user_message.scalar_one()
+                result = new_user_message.scalar_one()
+                return UserMessageDTOGet.from_orm(result)
 
-    async def get_user_messages_by_user_telegram_id(self, telegram_id):
-        async with (self.db_session_manager.async_session_factory() as session):
+    async def get_user_messages_by_user_telegram_id(self, telegram_id: int) -> List[UserMessageDTOGet]:
+        async with self.db_session_manager.async_session_factory() as session:
             query = select(UserMessage).filter(UserMessage.from_user == telegram_id)
             execution = await session.execute(query)
             messages = execution.scalars().all()
-            # TODO Возвращать модель
-            return messages
+            return [UserMessageDTOGet.from_orm(msg) for msg in messages]
 
-    async def get_offset_user_messages_by_user_telegram_id(self, telegram_id, limit=1):
-        async with (self.db_session_manager.async_session_factory() as session):
+    async def get_offset_user_messages_by_user_telegram_id(self, telegram_id: int, limit: int = 1) -> List[UserMessageDTOGet]:
+        async with self.db_session_manager.async_session_factory() as session:
             query = select(UserMessage).filter(UserMessage.from_user == telegram_id).limit(limit)
             execution = await session.execute(query)
             messages = execution.scalars().all()
-            # TODO Возвращать модель
-            return messages
+            return [UserMessageDTOGet.from_orm(msg) for msg in messages]
 
-    async def get_last_user_message_by_user_telegram_id(self, telegram_id, limit=1):
+    async def get_last_user_message_by_user_telegram_id(self, telegram_id: int) -> Optional[UserMessageDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
-            query = select(UserMessage).filter(UserMessage.from_user == telegram_id).order_by(
-                UserMessage.created_at.desc()).limit(limit)
+            query = select(UserMessage).filter(UserMessage.from_user == telegram_id).order_by(UserMessage.created_at.desc()).limit(1)
             result = await session.execute(query)
             message = result.scalars().first()
-            # TODO: Return model
-            return message
+            return UserMessageDTOGet.from_orm(message) if message else None
+
 
 
 class MessageRepository:

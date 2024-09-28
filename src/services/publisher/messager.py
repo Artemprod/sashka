@@ -17,7 +17,7 @@ class NatsPublisher:
             "nats_server": "nats://localhost:4222"
         }
 
-    async def publish_message_to_subject(self,subject_message: NatsQueueMessageDTOSubject) -> None:
+    async def publish_message_to_subject(self, subject_message: NatsQueueMessageDTOSubject) -> None:
         try:
             async with NatsBroker(self.settings["nats_server"]) as broker:
                 await broker.publish(message=subject_message.message,
@@ -41,13 +41,7 @@ class NatsPublisher:
         except Exception as e:
             logger.error(f"Ошибка при отправке сообщения на стрим {stream_message.stream}: {e}")
 
-    @staticmethod
-    def form_headers(data: Dict[str, str]) -> NatsTelegramHeaders:
-        headers = NatsTelegramHeaders(
-            telegram_client_name=data.get('telegram_client_name'),
-            tg_user_id=data.get('tg_user_id')
-        )
-        return headers
+
 
 
 async def main():
@@ -65,4 +59,3 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-

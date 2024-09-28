@@ -47,7 +47,7 @@ class VoiceMessage(ModelBase):
     storage: Mapped["S3VoiceStorage"] = relationship(
         back_populates="voice_message")
 
-#TODO изменить модель потому что может быть такое что у сообщения нет асистента
+
 class AssistantMessage(ModelBase):
     __tablename__ = 'assistant_messages'
 
