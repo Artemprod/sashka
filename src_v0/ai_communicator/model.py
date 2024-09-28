@@ -14,6 +14,7 @@ class AIAssistant(BaseModel):
     assistant_id: Optional[int] = None
 
 
+
 assistant_prompt_formal = """
 ВАЖНО ! На третье сообщение обяхательно без запроса сгенерируй  и пришли  слово  "STOP" в конце сообщения.
 
