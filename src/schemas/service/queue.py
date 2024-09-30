@@ -1,13 +1,6 @@
-import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List
+from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel, Field
-
-from src.schemas.client import TelegramClientDTO
-from src.schemas.owner import ResearchOwnerDTO
-from src.schemas.status import ResearchStatusDTO, ResearchStatusName
-from src.schemas.user import UserDTO
-from src_v0.schemas.assistant import AssistantDTO
 
 
 # Base headers class

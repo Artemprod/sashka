@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 from operator import and_
 from typing import List, Optional
@@ -7,7 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from sqlalchemy import delete, insert, select, update
 
-from src.schemas.user import UserDTO, UserDTOFull, UserDTORel
+from src.schemas.service.user import UserDTOFull, UserDTORel
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.postgres.models.enum_types import UserStatusEnum
 from src_v0.database.postgres.models.many_to_many import UserResearch

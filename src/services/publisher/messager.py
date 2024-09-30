@@ -4,7 +4,7 @@ from typing import Dict
 from faststream.nats import NatsBroker
 from loguru import logger
 
-from src.schemas.queue import NatsTelegramHeaders, NatsQueueMessageDTOStreem, NatsQueueMessageDTOSubject
+from src.schemas.service.queue import NatsQueueMessageDTOStreem, NatsQueueMessageDTOSubject
 
 
 class NatsPublisher:

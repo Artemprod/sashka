@@ -3,39 +3,29 @@ import datetime
 import math
 
 import asyncpg
-from sqlalchemy import select, func, cast, Integer, and_, event
+from sqlalchemy import select, func, cast, Integer, and_
 from sqlalchemy.orm import aliased, selectinload, joinedload
 
-from datasourse_for_test.resercch_imirtation import research_im_1
-from src.schemas.owner import ResearchOwnerDTO
-from src.schemas.research import ResearchDTOGet, ResearchDTOPost
+from src.schemas.service.owner import ResearchOwnerDTO
+from src.schemas.service.research import ResearchDTOPost
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.research.telegram.manager import TelegramResearchManager
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.postgres.models.assistants import Assistant
 from src_v0.database.postgres.models.base import ModelBase
-from src_v0.database.postgres.models.client import TelegramClient
 from src_v0.database.postgres.models.enum_types import ResearchStatusEnum, UserStatusEnum
 from src_v0.database.postgres.models.many_to_many import UserResearch
-from src_v0.database.postgres.models.message import AssistantMessage, UserMessage
 from src_v0.database.postgres.models.research import Research
 from src_v0.database.postgres.models.status import ResearchStatus, UserStatus
 
-from src_v0.database.postgres.models.storage import S3VoiceStorage
 from src_v0.database.postgres.models.user import User
 from src_v0.database.postgres.t_data_objects import users_list, clients, user_message, voice_message, assistant_message, \
     user_research, user_statuses, research_statuses, assistant_list, reserches_list, research_owner, service, \
     ping_prompt
-from src_v0.database.repository.data_cash import ResearchDataCashRepository
 from src_v0.database.repository.owner import ResearchOwnerRepositoryFullModel
-from src_v0.database.repository.research import ResearchRepositoryFullModel
 from src_v0.database.repository.storage import RepoStorage
-from src_v0.database.repository.user import UserRepositoryFullModel
 # from src_v0.resrcher.resercher import TelegramResearcher
-from src_v0.resrcher.user_manager import UserManager
 from src_v0.schemas.assistant import AssistantDTO
-import numpy as np
-from src_v0.schemas.user import UserDTO
 
 session = DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
 

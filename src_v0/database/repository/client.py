@@ -1,8 +1,7 @@
-import datetime
 from typing import Optional, List
 from sqlalchemy import select, insert, update, delete
 
-from src.schemas.client import TelegramClientDTO
+from src.schemas.service.client import TelegramClientDTO
 from src_v0.database.exceptions.create import ObjectWasNotCreated
 from src_v0.database.exceptions.read import ObjectDoesNotExist, EmptyTableError
 from src_v0.database.postgres.models.client import TelegramClient as ClientModel

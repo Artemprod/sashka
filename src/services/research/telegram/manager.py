@@ -1,22 +1,17 @@
 import datetime
-import random
-import uuid
 
 from typing import Any, List, Optional
 
 from loguru import logger
 
-from datasourse_for_test.resercch_imirtation import UserResearch
-from src.schemas.client import TelegramClientDTO
-from src.schemas.owner import ResearchOwnerDTO, ResearchOwnerFullDTO
-from src.schemas.research import ResearchDTOPost, ResearchDTOFull, ResearchDTORel, ResearchDTOBeDb
-from src.schemas.status import UserStatusDTO
-from src.schemas.user import UserDTOFull
+from src.schemas.service.client import TelegramClientDTO
+from src.schemas.service.owner import ResearchOwnerDTO, ResearchOwnerFullDTO
+from src.schemas.service.research import ResearchDTOPost, ResearchDTOFull, ResearchDTORel, ResearchDTOBeDb
+from src.schemas.service.user import UserDTOFull
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.research.base import BaseResearchManager
 
 from src_v0.database.postgres.models.enum_types import UserStatusEnum, ResearchStatusEnum
-from src_v0.database.postgres.models.research import Research
 
 from src_v0.database.repository.storage import RepoStorage
 

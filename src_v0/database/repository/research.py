@@ -1,22 +1,16 @@
-import asyncio
-import datetime
-
 from sqlalchemy.orm import selectinload, joinedload
 
-from datasourse_for_test.resercch_imirtation import UserResearch
-from src.schemas.research import ResearchDTOFull, ResearchDTORel
+from src.schemas.service.research import ResearchDTOFull, ResearchDTORel
 from src_v0.database.exceptions.read import ObjectDoesNotExist
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
-from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy import insert, select
 
 from src_v0.database.postgres.models.enum_types import ResearchStatusEnum
 from src_v0.database.postgres.models.research import Research
 from src_v0.database.postgres.models.assistants import Assistant
 from src_v0.database.postgres.models.message import UserMessage, VoiceMessage
-from src_v0.database.postgres.models.client import TelegramClient
 from src_v0.database.postgres.models.research_owner import ResearchOwner
 from src_v0.database.postgres.models.status import ResearchStatus
-from src_v0.database.postgres.models.storage import S3VoiceStorage
 from src_v0.database.postgres.models.user import User
 from src_v0.database.repository.base import BaseRepository
 

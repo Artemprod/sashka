@@ -1,12 +1,12 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from typing import Optional, List
 from pydantic import BaseModel, Field
 
-from src.schemas.client import TelegramClientDTO
-from src.schemas.owner import ResearchOwnerDTO
-from src.schemas.status import ResearchStatusDTO, ResearchStatusName
-from src.schemas.user import UserDTO
+from src.schemas.service.client import TelegramClientDTO
+from src.schemas.service.owner import ResearchOwnerDTO
+from src.schemas.service.status import ResearchStatusName
+from src.schemas.service.user import UserDTO
 from src_v0.schemas.assistant import AssistantDTO
 
 

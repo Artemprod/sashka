@@ -1,12 +1,11 @@
 import datetime
 from typing import Optional, List
 
-from sqlalchemy import select, update, insert, values, and_
+from sqlalchemy import select, update, insert, values
 
-from src.schemas.status import UserStatusDTO, ResearchStatusDTO
+from src.schemas.service.status import UserStatusDTO, ResearchStatusDTO
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.postgres.models.enum_types import UserStatusEnum, ResearchStatusEnum
-from src_v0.database.postgres.models.research import Research
 from src_v0.database.postgres.models.status import UserStatus, ResearchStatus
 from src_v0.database.postgres.models.user import User
 from src_v0.database.repository.base import BaseRepository

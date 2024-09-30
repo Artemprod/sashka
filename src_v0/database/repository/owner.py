@@ -1,20 +1,13 @@
-import asyncio
-
 from sqlalchemy.orm import joinedload
 
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import delete, insert, select
 
-from src.schemas.owner import ResearchOwnerRelDTO, ResearchOwnerDTO, ResearchOwnerFullDTO
+from src.schemas.service.owner import ResearchOwnerRelDTO, ResearchOwnerFullDTO
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
-from src_v0.database.postgres.models.enum_types import UserStatusEnum
 from src_v0.database.postgres.models.research import Research
 
-from src_v0.database.postgres.models.message import UserMessage, VoiceMessage, AssistantMessage
 from src_v0.database.postgres.models.research_owner import ResearchOwner
 
-from src_v0.database.postgres.models.status import UserStatus
-
-from src_v0.database.postgres.models.user import User
 from src_v0.database.repository.base import BaseRepository
 
 

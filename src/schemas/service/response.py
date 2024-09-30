@@ -1,8 +1,8 @@
-from typing import Annotated, Optional, List, Union
+from typing import List, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from src.schemas.user import UserDTOQueue
+from src.schemas.service.user import UserDTOQueue
 
 
 class SuccessResponse(BaseModel):

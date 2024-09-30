@@ -1,7 +1,7 @@
 import openai
 from loguru import logger
 
-from project_configs.configs import WhisperConfigs
+
 
 
 class WhisperClient:

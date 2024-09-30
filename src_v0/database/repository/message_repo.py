@@ -1,13 +1,10 @@
 from typing import List, Optional
 
-from sqlalchemy import insert, select, update, desc, and_
+from sqlalchemy import insert, select, desc
 
-from src.schemas.message import AssistantMessageDTOGet, UserMessageDTOGet
+from src.schemas.service.message import AssistantMessageDTOGet, UserMessageDTOGet
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
-from src_v0.database.postgres.models.assistants import Assistant
-from src_v0.database.postgres.models.message import UserMessage, VoiceMessage, AssistantMessage
-from src_v0.database.postgres.models.research import Research
-from src_v0.database.postgres.models.user import User
+from src_v0.database.postgres.models.message import UserMessage, AssistantMessage
 from src_v0.database.repository.base import BaseRepository
 
 

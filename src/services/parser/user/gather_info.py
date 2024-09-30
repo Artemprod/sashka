@@ -1,15 +1,13 @@
 import asyncio
-import random
 from abc import ABC, abstractmethod
-from typing import List, Any, Optional
+from typing import List, Optional
 
-from faststream.nats import NatsBroker, NatsMessage
+from faststream.nats import NatsBroker
 
-import nats
 from loguru import logger
 
-from src.schemas.response import ResponseModel, SuccessResponse, ErrorResponse
-from src.schemas.user import UserDTOFull, UserDTOQueue, UserDTO
+from src.schemas.service.response import ResponseModel
+from src.schemas.service.user import UserDTOQueue, UserDTO
 
 
 class UserInformationCollector(ABC):

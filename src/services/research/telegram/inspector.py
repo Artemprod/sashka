@@ -5,19 +5,17 @@ from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 
-from faststream.nats import NatsBroker
 from loguru import logger
 
-from src.schemas.message import AssistantMessageDTOPost, AssistantMessageDTOGet, UserMessageDTOGet
-from src.schemas.queue import NatsQueueMessageDTOStreem, NatsTelegramHeaders
-from src.schemas.research import ResearchDTOFull
-from src.schemas.user import UserDTOFull
+from src.schemas.service.message import AssistantMessageDTOPost
+from src.schemas.service.queue import NatsQueueMessageDTOStreem, NatsTelegramHeaders
+from src.schemas.service.research import ResearchDTOFull
+from src.schemas.service.user import UserDTOFull
 from src.services.publisher.messager import NatsPublisher
 from src.services.publisher.notification import TelegramNotificator
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 
 from src_v0.database.postgres.models.enum_types import ResearchStatusEnum, UserStatusEnum
-from src_v0.database.postgres.models.message import AssistantMessage
 from src_v0.database.repository.storage import RepoStorage
 from src_v0.resrcher.open_ai_namager import OpenAiresponser
 from src_v0.resrcher.user_cimmunication import Communicator
