@@ -1,47 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Union
 
-import aiohttp
-from aiohttp import ClientSession
-from loguru import logger
 
-from src.schemas.communicator.request import ContextRequestDTO, SingleRequestDTO
-from src.schemas.communicator.response import ContextResponseDTO, SingleResponseDTO
-from src.schemas.service.queue import NatsQueueMessageDTOSubject, NatsQueueMessageDTOStreem
-from src.services.publisher.messager import NatsPublisher
 from src_v0.database.repository.storage import RepoStorage
 
 
-class Message(ABC):
 
-    def __init__(self, publisher: NatsPublisher):
-        self.publisher = publisher
-
-    async def publish_message(self, queue_object: Union[NatsQueueMessageDTOSubject, NatsQueueMessageDTOStreem]):
-
-        if isinstance(queue_object, NatsQueueMessageDTOSubject):
-            try:
-                await self.publisher.publish_message_to_subject(subject_message=queue_object)
-            except Exception as e:
-                raise e
-
-        elif isinstance(queue_object, NatsQueueMessageDTOStreem):
-            try:
-                await self.publisher.publish_message_to_stream(stream_message=queue_object)
-            except Exception as e:
-                raise e
-
-
-class MessageFirstSend(Message):
-    ...
-
-
-class MessageAnswer(Message):
-    ...
-
-
-class MessageSend(Message):
-    ...
 
 
 
