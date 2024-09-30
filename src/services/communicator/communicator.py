@@ -1,6 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Union
 
+import aiohttp
+from aiohttp import ClientSession
+from loguru import logger
+
+from src.schemas.communicator.request import ContextRequestDTO, SingleRequestDTO
+from src.schemas.communicator.response import ContextResponseDTO, SingleResponseDTO
 from src.schemas.service.queue import NatsQueueMessageDTOSubject, NatsQueueMessageDTOStreem
 from src.services.publisher.messager import NatsPublisher
 from src_v0.database.repository.storage import RepoStorage
@@ -38,12 +44,6 @@ class MessageSend(Message):
     ...
 
 
-class ContextRequest():
-    ...
-
-
-class SingleRequest():
-    ...
 
 
 class Communicator():
