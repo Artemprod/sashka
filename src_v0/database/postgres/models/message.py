@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src_v0.database.postgres.models.base import ModelBase, intpk, str_1024, created_at, str_2048, str_10
+from src_v0.database.postgres.models.storage import S3VoiceStorage
 
 
 class UserMessage(ModelBase):
@@ -42,7 +43,7 @@ class VoiceMessage(ModelBase):
     user_message_id: Mapped[int] = mapped_column(ForeignKey('user_messages.user_message_id'))
 
     user_message: Mapped["UserMessage"] = relationship(
-        back_populates="voice_message")
+        back_populates="voice_message",)
 
     storage: Mapped["S3VoiceStorage"] = relationship(
         back_populates="voice_message")
@@ -58,16 +59,17 @@ class AssistantMessage(ModelBase):
 
     to_user_id: Mapped[int] = mapped_column(BigInteger,ForeignKey('users.tg_user_id'))
     assistant_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('assistants.assistant_id'))
-    telegram_client_id: Mapped[int] = mapped_column(BigInteger,ForeignKey('telegram_clients.telegram_client_id'))
+
+    telegram_client_id: Mapped[int] = mapped_column(BigInteger,ForeignKey('telegram_clients.client_id'))
 
     to_user: Mapped["User"] = relationship(
         back_populates="assistant_messages"
     )
 
-    assistant: Mapped["Assistant"] = relationship(
-        back_populates="messages")
+    assistant:  Mapped["Assistant"] = relationship("Assistant",
+                                                   back_populates="messages")
 
-    telegram_client: Mapped["TelegramClient"] = relationship(
-        back_populates="messages")
+    telegram_client: Mapped["TelegramClient"] = relationship("TelegramClient",
+                                                             back_populates="messages")
 
 

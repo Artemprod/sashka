@@ -13,14 +13,14 @@ class ResearchOwnerDTO(BaseModel):
     service_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 
 class ResearchOwnerFullDTO(ResearchOwnerDTO):
     owner_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 
 class ResearchOwnerRelDTO(ResearchOwnerFullDTO):
@@ -28,4 +28,4 @@ class ResearchOwnerRelDTO(ResearchOwnerFullDTO):
     service: Optional["ServicesDTO"]
 
     class Config:
-        orm_mode = True
+        from_attributes = True 

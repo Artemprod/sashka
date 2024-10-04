@@ -602,5 +602,5 @@ async def t_research_creation():
 
 
 if __name__ == '__main__':
-    asyncio.run(t_research_creation())
+    asyncio.run(load_data())
 

@@ -2,7 +2,7 @@ import datetime
 from operator import and_
 from typing import List, Optional
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from sqlalchemy import delete, insert, select, update
 
@@ -155,6 +155,7 @@ class UserRepositoryFullModel(BaseRepository):
                 query = self.main_query().filter(User.tg_user_id == telegram_id)
                 result = await session.execute(query)
                 user = result.unique().scalars().first()
+                print()
                 return UserDTORel.model_validate(user, from_attributes=True) if user else None
 
     async def get_users_with_status(self, status: UserStatusEnum) -> Optional[List[UserDTORel]]:
@@ -175,12 +176,20 @@ class UserRepositoryFullModel(BaseRepository):
         """
         return (
             select(User)
-            .options(joinedload(User.status))
-            .options(joinedload(User.messages).joinedload(UserMessage.voice_message).joinedload(VoiceMessage.storage))
-            .options(joinedload(User.assistant_messages).joinedload(AssistantMessage.assistant).joinedload(
-                AssistantMessage.telegram_client))
-            .options(joinedload(User.researches).joinedload(Research.assistant).joinedload(Research.status).joinedload(
-                Research.telegram_client))
+            .options(
+                selectinload(User.status).load_only(UserStatus.status_name),
+
+                # Assuming to use selectinload & join only if necessary.
+                joinedload(User.messages).selectinload(UserMessage.voice_message),
+
+                # Select-inload each item separately
+                selectinload(User.assistant_messages).selectinload(AssistantMessage.telegram_client),
+                selectinload(User.assistant_messages).selectinload(AssistantMessage.assistant),
+
+                selectinload(User.researches).selectinload(Research.assistant),
+                selectinload(User.researches).selectinload(Research.status),
+                selectinload(User.researches).selectinload(Research.telegram_client),
+            )
         )
 
 

@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src_v0.database.postgres.models.base import ModelBase, intpk, str_1024, created_at, str_2048, str_10
+from src_v0.database.postgres.models.services import Services
 
 
 class ResearchOwner(ModelBase):

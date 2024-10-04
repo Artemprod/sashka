@@ -2,6 +2,10 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from pydantic import BaseModel, Field
 
+from src.schemas.service.research import ResearchDTOGet
+from src_v0.schemas.message import UserMessageDTO, AssistantMessageDTO
+from src_v0.schemas.status import UserStatusDTO, UserStatusNameDTO, UserStatusNameDTOGet
+
 
 class UserDTOQueue(BaseModel):
 
@@ -49,17 +53,18 @@ class UserDTOFull(UserDTO):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 
 # DTO с отношениями
 class UserDTORel(UserDTOFull):
-    status: "UserStatusDTO"
+
+    status: "UserStatusNameDTOGet"
     messages: List["UserMessageDTO"] = Field(default_factory=list)
     assistant_messages: List["AssistantMessageDTO"] = Field(default_factory=list)
-    researches: List["ResearchDTO"] = Field(default_factory=list)
+    researches: List["ResearchDTOGet"] = Field(default_factory=list)
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 

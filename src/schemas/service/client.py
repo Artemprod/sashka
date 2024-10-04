@@ -23,7 +23,7 @@ class TelegramClientDTOPost(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 
 class TelegramClientDTOGet(BaseModel):
@@ -31,7 +31,7 @@ class TelegramClientDTOGet(BaseModel):
     client_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 
 class TelegramClientRelDTO(TelegramClientDTOGet):
@@ -40,4 +40,4 @@ class TelegramClientRelDTO(TelegramClientDTOGet):
     researches: List["ResearchDTO"] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True 

@@ -10,6 +10,7 @@ class TelegramClient(ModelBase):
     __tablename__ = "telegram_clients"
 
     client_id: Mapped[intpk]
+
     telegram_client_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     name: Mapped[str] = mapped_column(nullable=False)
     api_id: Mapped[str] = mapped_column(nullable=False)

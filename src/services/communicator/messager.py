@@ -28,14 +28,78 @@ from src.schemas.service.queue import NatsQueueMessageDTOSubject, NatsQueueMessa
 from src.services.publisher.messager import NatsPublisher
 
 
+class MessageGeneratorTimeDelay:
+
+    def __init__(self, settings: dict = None):
+        self.settings = settings if settings else self._load_settings()
+
+    def _load_settings(self):
+        return {
+            "send_policy": 10,
+            "delay_between_bunch": timedelta(hours=24),
+            "delay_between_messages": timedelta(minutes=5),
+        }
+
+    def generate(self, user_ids: List[int]):
+        current_time = datetime.now(tz=timezone.utc)  # Текущее время
+
+        people_per_day = self.settings.get("send_policy", 10)
+        delay_between_messages = self.settings.get("delay_between_messages", timedelta(minutes=4))
+        delay_between_bunch = self.settings.get("delay_between_bunch", timedelta(hours=24))
+
+        right_border = 0
+
+        for i, left_border in enumerate(range(0, len(user_ids), people_per_day)):
+            if right_border + people_per_day > len(user_ids):
+                right_border = len(user_ids)
+            else:
+                right_border = left_border + people_per_day
+            logger.info(f"_______USER___GROUP__{i}________")
+            for j, user in enumerate(user_ids[left_border:right_border]):
+                next_time_message = current_time + (j * delay_between_messages) + (i * delay_between_bunch)
+                logger.info(f'User ID: {user}, Next Time Message: {next_time_message}')
+                yield next_time_message, user
+
+
+class MessageFromContext:
+    def __init__(self, repository):
+        self.repository = repository
+
+    async def form_context(self, telegram_id: int) -> List[Dict[str, str]]:
+        try:
+            user_messages_future = self.repository.message_repo.user.get_user_messages_by_user_telegram_id(
+                telegram_id=telegram_id)
+            assistant_messages_future = self.repository.message_repo.assistant.get_all_assistent_messages_by_user_telegram_id(
+                telegram_id=telegram_id)
+            user_messages, assistant_messages = await asyncio.gather(user_messages_future, assistant_messages_future)
+
+            if not user_messages and not assistant_messages:
+                raise ValueError(f"No messages found for user ID: {telegram_id}")
+
+            messages = self._combine_and_format_messages(user_messages, assistant_messages)
+            sorted_messages = sorted(messages, key=lambda x: x[1])
+            return [msg[0] for msg in sorted_messages]
+        except Exception as e:
+            logger.error(f"Error forming context for user {telegram_id}: {str(e)}")
+            raise
+
+    def _combine_and_format_messages(self, user_messages: List[Any], assistant_messages: List[Any]) -> List[
+        Tuple[Dict[str, str], datetime]]:
+        formatted_messages = []
+        formatted_messages.extend(self._format_messages(user_messages, "user"))
+        formatted_messages.extend(self._format_messages(assistant_messages, "assistant"))
+        return formatted_messages
+
+    @staticmethod
+    def _format_messages(messages: List[Any], role: str) -> List[Tuple[Dict[str, str], datetime]]:
+        return [({"role": role, "content": msg.text}, msg.created_at) for msg in messages]
+
 
 class BaseMessageHandler(ABC):
     def __init__(self, publisher: 'NatsPublisher', repository: 'RepoStorage', prompt_generator: 'PromptGenerator'):
         self.repository = repository
         self.publisher = publisher
         self.prompt_generator = prompt_generator
-
-
 
     async def publish_message(self, queue_object: Union[NatsQueueMessageDTOSubject, NatsQueueMessageDTOStreem]):
         try:
@@ -152,40 +216,6 @@ class MessageFirstSend(BaseMessageHandler):
             return True if user else False
         except Exception as e:
             raise
-
-
-class MessageFromContext:
-    def __init__(self, repository):
-        self.repository = repository
-
-    async def form_context(self, telegram_id: int) -> List[Dict[str, str]]:
-        try:
-            user_messages_future = self.repository.message_repo.user.get_user_messages_by_user_telegram_id(
-                telegram_id=telegram_id)
-            assistant_messages_future = self.repository.message_repo.assistant.get_all_assistent_messages_by_user_telegram_id(
-                telegram_id=telegram_id)
-            user_messages, assistant_messages = await asyncio.gather(user_messages_future, assistant_messages_future)
-
-            if not user_messages and not assistant_messages:
-                raise ValueError(f"No messages found for user ID: {telegram_id}")
-
-            messages = self._combine_and_format_messages(user_messages, assistant_messages)
-            sorted_messages = sorted(messages, key=lambda x: x[1])
-            return [msg[0] for msg in sorted_messages]
-        except Exception as e:
-            logger.error(f"Error forming context for user {telegram_id}: {str(e)}")
-            raise
-
-    def _combine_and_format_messages(self, user_messages: List[Any], assistant_messages: List[Any]) -> List[
-        Tuple[Dict[str, str], datetime]]:
-        formatted_messages = []
-        formatted_messages.extend(self._format_messages(user_messages, "user"))
-        formatted_messages.extend(self._format_messages(assistant_messages, "assistant"))
-        return formatted_messages
-
-    @staticmethod
-    def _format_messages(messages: List[Any], role: str) -> List[Tuple[Dict[str, str], datetime]]:
-        return [({"role": role, "content": msg.text}, msg.created_at) for msg in messages]
 
 
 class MessageAnswer(BaseMessageHandler):

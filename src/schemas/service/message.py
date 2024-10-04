@@ -14,7 +14,7 @@ class UserMessageDTOPost(BaseModel):
     text: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 
 class UserMessageDTOGet(BaseModel):
@@ -30,7 +30,7 @@ class UserMessageDTOGet(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 
 class AssistantMessageDTOPost(BaseModel):
@@ -42,7 +42,7 @@ class AssistantMessageDTOPost(BaseModel):
     telegram_client_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 
 class AssistantMessageDTOGet(BaseModel):
@@ -56,7 +56,7 @@ class AssistantMessageDTOGet(BaseModel):
     telegram_client_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 
 class VoiceMessageDTOPost(BaseModel):
@@ -67,7 +67,7 @@ class VoiceMessageDTOPost(BaseModel):
     file_size: Optional[float] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 
 class VoiceMessageDTOGet(BaseModel):
@@ -80,4 +80,4 @@ class VoiceMessageDTOGet(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True 

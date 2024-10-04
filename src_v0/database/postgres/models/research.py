@@ -25,7 +25,7 @@ class Research(ModelBase):
 
 
     assistant_id: Mapped[int] = mapped_column(ForeignKey('assistants.assistant_id'))
-    telegram_client_id: Mapped[int] = mapped_column(ForeignKey('telegram_clients.telegram_client_id'))
+    telegram_client_id: Mapped[int] = mapped_column(ForeignKey('telegram_clients.client_id'))
 
     owner:Mapped["ResearchOwner"] = relationship(
         back_populates="researches"

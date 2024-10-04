@@ -11,9 +11,14 @@ class UserStatusDTO(BaseModel):
     created_at: datetime = datetime.now(timezone.utc)
     updated_at: datetime = datetime.now(timezone.utc)
 
+    class Config:
+        from_attributes = True
+
 
 class UserStatusDTOFull(UserStatusDTO):
     users: List["UserDTOFull"] = Field(default_factory=list)
+
+
 
 
 class ResearchStatusDTO(BaseModel):
@@ -22,10 +27,19 @@ class ResearchStatusDTO(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    class Config:
+        from_attributes = True
+
 
 class ResearchStatusDTOFull(ResearchStatusDTO):
     researches: List["ResearchDTOFull"] = Field(default_factory=list)
+    class Config:
+        from_attributes = True
+
 
 
 class ResearchStatusName(BaseModel):
     status_name: ResearchStatusEnum
+    class Config:
+        from_attributes = True
+

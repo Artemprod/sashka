@@ -16,8 +16,10 @@ from src.schemas.service.assistant import AssistantDTOGet
 from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.message import AssistantMessageDTOPost, UserMessageDTOPost
 from src.schemas.service.user import UserDTOFull
+from src.services.communicator.checker import Checker
 from src.services.communicator.prompt_generator import PromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
+from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.postgres.models.enum_types import UserStatusEnum
 from src_v0.database.repository.storage import RepoStorage
 
@@ -29,26 +31,38 @@ from src.schemas.service.queue import NatsQueueMessageDTOSubject, NatsQueueMessa
 from src.services.publisher.messager import NatsPublisher
 
 
-
-
-
-
-
-class Communicator(BaseCommunicator):
+class TelegramCommunicator:
     """
     Класс выполняет функцию общения
     отправляет запрос в ИИ получает и отправлет ответ клиенту
 
     """
 
-    def __init__(self, repo: RepoStorage, ):
+    def __init__(self, repository: RepoStorage,
+                 checker: "Checker"):
+        self._repository = repository
+        self.checker = checker
+
+    async def make_first_message_distribution(self):
         ...
+
+    async def reply_message(self, message_object):
+        """
+        Функция обабатывает входящее сообщение и решает в зависимости от того есть
+        пользователь в базе или нет и типа входящего сообщения выбрать стратегию ответа
+        :return:
+        """
+
+        # Провыерить пользователя
+        # проверить тип сообщения
+        # Ответить
+
 
 
 async def main():
     storage = RepoStorage(database_session_manager=DatabaseSessionManager(
         database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
-    c = Communicator(repo=storage, ai_responser=OpenAiresponser(repo=storage))
+    c = Communicator(_repository=storage, )
 
     await c.send_first_message(resarch_id=41)
 
