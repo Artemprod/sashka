@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from aiocache import cached, Cache
 from sqlalchemy import insert, select, update
 
 from src.schemas.service.assistant import AssistantDTOGet
@@ -19,6 +20,7 @@ class AssistantRepository(BaseRepository):
                 result = new_assistant.scalar_one()
                 return AssistantDTOGet.model_validate(result, from_attributes=True)
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_assistant(self, assistant_id: int) -> Optional[AssistantDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(Assistant).filter(Assistant.assistant_id == assistant_id)
@@ -26,6 +28,7 @@ class AssistantRepository(BaseRepository):
             assistant = execution.scalar_one()
             return AssistantDTOGet.model_validate(assistant, from_attributes=True)
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_assistant_by_research(self, research_id: int) -> Optional[AssistantDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(Assistant).filter(Assistant.research.has(Research.research_id == research_id))
@@ -33,6 +36,7 @@ class AssistantRepository(BaseRepository):
             assistant = execution.scalar_one()
             return AssistantDTOGet.model_validate(assistant, from_attributes=True)
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_assistant_by_user_tgelegram_id(self, telegram_id: int) -> Optional[AssistantDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             research_subquery = select(Research.assistant_id).where(
@@ -44,6 +48,7 @@ class AssistantRepository(BaseRepository):
                 return AssistantDTOGet.model_validate(assistant, from_attributes=True)
             return None
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_all_assistants(self) -> Optional[List[AssistantDTOGet]]:
         async with self.db_session_manager.async_session_factory() as session:
             stmt = select(Assistant)

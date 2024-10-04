@@ -27,7 +27,7 @@ from src.schemas.service.queue import NatsQueueMessageDTOSubject, NatsQueueMessa
     TelegramSimpleHeadersDTO
 from src.services.publisher.messager import NatsPublisher
 
-
+#TODO сделать рефактор и вынести все что можно вынести в модуль
 class MessageGeneratorTimeDelay:
 
     def __init__(self, settings: dict = None):
@@ -155,10 +155,12 @@ class BaseMessageHandler(ABC):
 
 
 class MessageFirstSend(BaseMessageHandler):
-    def __init__(self, publisher: 'NatsPublisher', repository: 'RepoStorage', single_request: 'SingleRequest',
-                 message_generator: 'MessageGeneratorTimeDelay', prompt_generator: 'PromptGenerator'):
+    def __init__(self, publisher: 'NatsPublisher',
+                 repository: 'RepoStorage',
+                 single_request: 'SingleRequest',
+                 prompt_generator: 'PromptGenerator'):
         super().__init__(publisher, repository, prompt_generator)
-        self.message_delay_generator = message_generator
+        self.message_delay_generator = MessageGeneratorTimeDelay()
         self.single_request = single_request
 
     async def handle(self, research_id: int, destination_configs: 'NatsDestinationDTO'):
@@ -219,10 +221,13 @@ class MessageFirstSend(BaseMessageHandler):
 
 
 class MessageAnswer(BaseMessageHandler):
-    def __init__(self, context_former: MessageFromContext, publisher, repository, prompt_generator,
+    def __init__(self,
+                 publisher,
+                 repository,
+                 prompt_generator,
                  context_request: "ContextRequest"):
         super().__init__(publisher, repository, prompt_generator)
-        self.context_former = context_former
+        self.context_former = MessageFromContext(repository=repository)
         self.context_request = context_request
 
     async def _publish_and_save_message(self, content: "ContextResponseDTO", user_id: int,
@@ -247,8 +252,10 @@ class MessageAnswer(BaseMessageHandler):
 
 
 class ResearchMessageAnswer(MessageAnswer):
-    async def handle(self, message: IncomeUserMessageDTOQueue, destination_configs: NatsDestinationDTO,
+    async def handle(self, message: IncomeUserMessageDTOQueue,
+                     destination_configs: NatsDestinationDTO,
                      research_id: int):
+
         await self.save_user_message(content=message.text, user_id=message.from_user, chat_id=message.chat,
                                      is_voice=message.voice, is_media=message.media)
         assistant = await self.get_assistant(research_id=research_id)
@@ -262,7 +269,8 @@ class ResearchMessageAnswer(MessageAnswer):
 
 
 class CommonMessageAnswer(MessageAnswer):
-    async def handle(self, message: IncomeUserMessageDTOQueue, destination_configs: NatsDestinationDTO):
+    #TODO кварги костыль нужно убрать
+    async def handle(self, message: IncomeUserMessageDTOQueue, destination_configs: NatsDestinationDTO, **kwargs):
         await self.save_user_message(content=message.text, user_id=message.from_user, chat_id=message.chat,
                                      is_voice=message.voice, is_media=message.media)
         assistant: AssistantDTOGet = await self.get_assistant_for_free_talk()

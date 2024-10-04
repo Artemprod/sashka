@@ -2,6 +2,7 @@ import datetime
 from operator import and_
 from typing import List, Optional
 
+from aiocache import cached, Cache
 from sqlalchemy.orm import joinedload, selectinload
 
 from sqlalchemy import delete, insert, select, update
@@ -57,6 +58,7 @@ class UserRepository(BaseRepository):
                 await session.commit()
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in new_users]
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_user_by_telegram_id(self, telegram_id: int) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
@@ -65,6 +67,7 @@ class UserRepository(BaseRepository):
                 user = result.scalars().first()
                 return UserDTOFull.model_validate(user, from_attributes=True) if user else None
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_users_by_research_id(self, research_id: int) -> Optional[List[UserDTOFull]]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
@@ -73,6 +76,7 @@ class UserRepository(BaseRepository):
                 users = result.scalars().all()
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def check_user(self, telegram_id: int) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
             stmt = select(User).filter(User.tg_user_id == telegram_id)
@@ -80,6 +84,7 @@ class UserRepository(BaseRepository):
             user = result.scalars().one_or_none()
             return UserDTOFull.model_validate(user, from_attributes=True) if user else None
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_users_with_status(self, status: UserStatusEnum) -> Optional[List[UserDTOFull]]:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
@@ -90,6 +95,7 @@ class UserRepository(BaseRepository):
                 # DONE Конгвертация в DTO
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_users_by_research_with_status(self, research_id: int, status: UserStatusEnum) -> Optional[
         List[UserDTOFull]]:
         async with (self.db_session_manager.async_session_factory() as session):
@@ -102,6 +108,7 @@ class UserRepository(BaseRepository):
                 # DONE Конгвертация в DTO
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def update_user_status(self, telegram_id, status: UserStatusEnum) -> UserDTOFull:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
@@ -133,6 +140,7 @@ class UserRepository(BaseRepository):
                 await session.execute(stmt)
                 await session.commit()
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_user_id_by_telegram_id(self, telegram_id: int) -> int:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
@@ -146,6 +154,7 @@ class UserRepositoryFullModel(BaseRepository):
     Репозиторий для сложных операций с пользователями с использованием join.
     """
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_user_by_id(self, telegram_id: int) -> Optional[UserDTORel]:
         """
         Возвращает пользователя по его Telegram ID с полной информацией о нем.
@@ -155,9 +164,9 @@ class UserRepositoryFullModel(BaseRepository):
                 query = self.main_query().filter(User.tg_user_id == telegram_id)
                 result = await session.execute(query)
                 user = result.unique().scalars().first()
-                print()
                 return UserDTORel.model_validate(user, from_attributes=True) if user else None
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_users_with_status(self, status: UserStatusEnum) -> Optional[List[UserDTORel]]:
         """
         Возвращает список пользователей с определенным статусом.

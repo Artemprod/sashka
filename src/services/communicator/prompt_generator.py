@@ -74,13 +74,11 @@ class CommonMessagePromptGenerator(BasePromptGenerator):
 
 class PromptGenerator:
 
-    def __init__(self,
-                 first_message_generator: FirstMessagePromptGenerator,
-                 research_prompt_generator=ResearchMessagePromptGenerator,
-                 common_prompt_generator=CommonMessagePromptGenerator):
-        self.first_message_generator = first_message_generator
-        self.research_prompt_generator = research_prompt_generator
-        self.common_prompt_generator = common_prompt_generator
+    def __init__(self, repository:RepoStorage):
+
+        self.first_message_generator = FirstMessagePromptGenerator(repository=repository)
+        self.research_prompt_generator = ResearchMessagePromptGenerator(repository=repository)
+        self.common_prompt_generator = CommonMessagePromptGenerator(repository=repository)
 
     @cache
     async def generate_first_message_prompt(self, research_id):

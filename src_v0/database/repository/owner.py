@@ -1,3 +1,4 @@
+from aiocache import cached, Cache
 from sqlalchemy.orm import joinedload
 
 from sqlalchemy import delete, insert, select
@@ -24,6 +25,7 @@ class ResearchOwnerRepository(BaseRepository):
                 await session.commit()
                 return ResearchOwnerFullDTO.model_validate(new_user.scalar_one(), from_attributes=True)
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_owner_by_owner_id(self, owner_id)->ResearchOwnerFullDTO:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
@@ -34,6 +36,7 @@ class ResearchOwnerRepository(BaseRepository):
                 # DONE  Конгвертация в DTO
                 return ResearchOwnerFullDTO.model_validate(user, from_attributes=True)
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_owner_by_service_id(self, service_id) -> ResearchOwnerFullDTO | None:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
@@ -45,6 +48,7 @@ class ResearchOwnerRepository(BaseRepository):
                     return None
                 return ResearchOwnerFullDTO.model_validate(user, from_attributes=True)
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def delete_owner_by_owner_id(self, owner_id):
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию

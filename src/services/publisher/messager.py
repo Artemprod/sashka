@@ -11,6 +11,7 @@ class NatsPublisher:
     def __init__(self):
         self.settings = self._load_settings()
 
+    #TODO заменить на актулдьнае настройки
     @staticmethod
     def _load_settings() -> Dict[str, str]:
         return {

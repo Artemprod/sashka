@@ -1,3 +1,4 @@
+from aiocache import cached, Cache
 from sqlalchemy.orm import selectinload, joinedload
 
 from src.schemas.service.research import ResearchDTOFull, ResearchDTORel
@@ -29,6 +30,7 @@ class ResearchRepository(BaseRepository):
                 result = new_research.scalar_one()
                 return ResearchDTOFull.model_validate(result, from_attributes=True)
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_research_by_id(self, research_id) -> ResearchDTOFull:
         """
         Достает иследование по его id со всеми вложенными в него данными
@@ -48,6 +50,7 @@ class ResearchRepository(BaseRepository):
                     raise ObjectDoesNotExist(orm_object=Research.__name__,
                                              msg=f" research with id {research_id} not found")
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_research_by_owner(self, owner_id) -> ResearchDTOFull:
         """
 
@@ -63,6 +66,38 @@ class ResearchRepository(BaseRepository):
                     raise ObjectDoesNotExist(orm_object=Research.__name__,
                                              msg=f" research with owner id {owner_id} not found")
 
+    @cached(ttl=300, cache=Cache.MEMORY)
+    async def get_research_by_participant_telegram_id(self, telegram_id: int) -> ResearchDTOFull:
+        """
+        Fetches a research object by a participant's Telegram ID and validates it into a DTO.
+
+        Args:
+            telegram_id (int): The Telegram ID of the participant.
+
+        Returns:
+            ResearchDTOFull: The DTO of the research object.
+
+        Raises:
+            ObjectDoesNotExist: If no research is found for the provided Telegram ID.
+        """
+        async with self.db_session_manager.async_session_factory() as session:  # Proper context management
+            async with session.begin():
+                query = (
+                    select(Research)
+                    .where(Research.users.any(User.tg_user_id == telegram_id))
+                # Correct use of filters with relationships
+                )
+                result = await session.execute(query)
+                research = result.scalars().first()
+
+                if research:
+                    return ResearchDTOFull.model_validate(research, from_attributes=True)
+                else:
+                    raise ObjectDoesNotExist(
+                        orm_object=Research.__name__,
+                        msg=f"Research with participant ID {telegram_id} not found"
+                    )
+
     async def update_research(self):
         ...
 
@@ -75,6 +110,7 @@ class ResearchRepositoryFullModel(BaseRepository):
         Когда мне нужны сложные джонины со всей инофрмацие я использую этот класс
         """
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_research_by_id(self, research_id) -> ResearchDTORel:
         """
         Достает иследование по его id со всеми вложенными в него данными
@@ -93,6 +129,7 @@ class ResearchRepositoryFullModel(BaseRepository):
                     raise ObjectDoesNotExist(orm_object=Research.__name__,
                                              msg=f" research with id: {research_id} not found")
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_research_by_status(self, status_name: ResearchStatusEnum):
         """
         Достает иследование по его id со всеми вложенными в него данными

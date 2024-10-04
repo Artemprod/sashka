@@ -1,4 +1,6 @@
 from typing import Optional, List
+
+from aiocache import cached, Cache
 from sqlalchemy import select, insert, update, delete
 
 from src.schemas.service.client import TelegramClientDTOGet
@@ -25,6 +27,7 @@ class ClientRepository(BaseRepository):
                 raise ObjectWasNotCreated(orm_object=ClientModel.__name__,
                                           msg=f"object with this values {values} was not created")
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_client_by_id(self, client_id: int) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(ClientModel).where(ClientModel.telegram_client_id == client_id)
@@ -36,6 +39,7 @@ class ClientRepository(BaseRepository):
             else:
                 raise ObjectDoesNotExist(orm_object=ClientModel.__name__, msg=f"client with id {client_id} not found")
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_client_by_research_id(self, research_id: str) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(ClientModel).where(ClientModel.researches.any(Research.research_id == research_id))
@@ -47,6 +51,7 @@ class ClientRepository(BaseRepository):
                 raise ObjectDoesNotExist(orm_object=ClientModel.__name__,
                                          msg=f"client with research_id {research_id} not found")
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_client_by_name(self, name: str) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(ClientModel).where(ClientModel.name == name)
@@ -57,6 +62,7 @@ class ClientRepository(BaseRepository):
             else:
                 raise ObjectDoesNotExist(orm_object=ClientModel.__name__, msg=f"client with name {name} not found")
 
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_client_by_telegram_id(self, telegram_id: int) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(ClientModel).where(ClientModel.telegram_client_id == telegram_id)
