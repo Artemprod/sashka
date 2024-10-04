@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class UserDTOQueue(BaseModel):
+
     tg_user_id: int
     is_contact: bool
     is_mutual_contact: bool

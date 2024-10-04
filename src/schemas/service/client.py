@@ -3,9 +3,9 @@ from typing import Optional, List
 from pydantic import BaseModel
 
 
-class TelegramClientDTO(BaseModel):
-
-    telegram_client_id: int
+class TelegramClientDTOPost(BaseModel):
+    
+    telegram_client_id:int
     name: str
     api_id: str
     api_hash: str
@@ -26,8 +26,15 @@ class TelegramClientDTO(BaseModel):
         orm_mode = True
 
 
-class TelegramClientRelDTO(TelegramClientDTO):
+class TelegramClientDTOGet(BaseModel):
+    
+    client_id: int
 
+    class Config:
+        orm_mode = True
+
+
+class TelegramClientRelDTO(TelegramClientDTOGet):
     # связи
     messages: List["AssistantMessageDTO"] = []
     researches: List["ResearchDTO"] = []

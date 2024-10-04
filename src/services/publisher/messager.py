@@ -41,7 +41,21 @@ class NatsPublisher:
         except Exception as e:
             logger.error(f"Ошибка при отправке сообщения на стрим {stream_message.stream}: {e}")
 
+    @staticmethod
+    def form_stream_message(message: str,
+                            subject: str,
+                            stream: str,
+                            headers: Dict[str, str] = None) -> NatsQueueMessageDTOStreem:
+        return NatsQueueMessageDTOStreem(
+            message=message,
+            subject=subject,
+            stream=stream,
+            headers=headers,
+        )
 
+    @staticmethod
+    def form_subject_message() -> NatsQueueMessageDTOSubject:
+        return NatsQueueMessageDTOSubject()
 
 
 async def main():

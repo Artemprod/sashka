@@ -4,7 +4,7 @@ from typing import Any, List, Optional
 
 from loguru import logger
 
-from src.schemas.service.client import TelegramClientDTO
+from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.owner import ResearchOwnerDTO, ResearchOwnerFullDTO
 from src.schemas.service.research import ResearchDTOPost, ResearchDTOFull, ResearchDTORel, ResearchDTOBeDb
 from src.schemas.service.user import UserDTOFull
@@ -44,7 +44,7 @@ class TelegramResearchManager(BaseResearchManager):
         try:
             # TODO Испарвить овнера понять че хотел сервис айди 
             owner = await self._get_or_create_owner(self._owner.service_owner_id)
-            telegram_client: TelegramClientDTO = await self._get_telegram_client()
+            telegram_client: TelegramClientDTOGet = await self._get_telegram_client()
 
             # Создать и сохранить исследование
             research_dto: ResearchDTOBeDb = self._create_research_dto(owner, telegram_client)
@@ -120,7 +120,7 @@ class TelegramResearchManager(BaseResearchManager):
             owner = await self._database_repository.owner_repo().short.add_owner(values=self._owner.dict())
         return owner
 
-    async def _get_telegram_client(self) -> TelegramClientDTO:
+    async def _get_telegram_client(self) -> TelegramClientDTOGet:
         clients = [client for client in await self._database_repository.client_repo.get_all() if client.session_string]
         return clients[-1]
 
