@@ -27,6 +27,7 @@ class UserDTOQueue(BaseModel):
     phone_number: Optional[str] = None
 
     class Config:
+        from_attributes = True
         # Преобразование даты в строку при сериализации
         json_encoders = {
             datetime: lambda dt: dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -46,7 +47,10 @@ class UserDTO(BaseModel):
     is_premium: Optional[bool] = None
     last_online_date: Optional[datetime] = None
     language_code: Optional[str] = None
-    created_at: Optional[datetime] = None
+    created_at: Optional[datetime] = datetime.now()
+
+    class Config:
+        from_attributes = True
 
 
 class UserDTOFull(UserDTO):

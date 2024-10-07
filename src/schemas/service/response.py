@@ -2,7 +2,7 @@ from typing import List, Union
 
 from pydantic import BaseModel
 
-
+from src.schemas.service.user import UserDTOQueue
 
 
 class SuccessResponse(BaseModel):
@@ -12,6 +12,7 @@ class SuccessResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class ErrorResponse(BaseModel):
     status: str = "error"
     error_message: str
@@ -19,9 +20,12 @@ class ErrorResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class ResponseModel(BaseModel):
     response: Union[SuccessResponse, ErrorResponse]
 
     class Config:
         from_attributes = True
 
+
+ResponseModel.model_rebuild()

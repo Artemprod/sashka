@@ -35,14 +35,23 @@ class SuccessResponse(BaseModel):
     status: str = "success"
     data: List["UserInfo"]
 
+    class Config:
+        from_attributes = True
+
 
 class ErrorResponse(BaseModel):
     status: str = "error"
     error_message: str
 
+    class Config:
+        from_attributes = True
+
 
 class ResponseModel(BaseModel):
     response: Union["SuccessResponse", "ErrorResponse"]
+
+    class Config:
+        from_attributes = True
 
 
 class Datas(BaseModel):
@@ -53,6 +62,7 @@ class Datas(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+        from_attributes = True
 
 
 class UserInfo(BaseModel):
@@ -74,6 +84,7 @@ class UserInfo(BaseModel):
     phone_number: Optional[str] = None
 
     class Config:
+        from_attributes = True
         # Преобразование даты в строку при сериализации
         json_encoders = {
             datetime: lambda dt: dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -85,6 +96,7 @@ async def derive_data(msg: NatsMessage, context=Context()) -> Datas:
     client_name = msg.headers.get("Tg-Client-Name")
     container: 'ClientsManager' = context.get("container")
     client: 'Client' = container.get_client_by_name(name=client_name)
+    print(msg)
 
     return Datas(
         users=users,
@@ -92,6 +104,7 @@ async def derive_data(msg: NatsMessage, context=Context()) -> Datas:
         client=client,
         container=container
     )
+
 
 
 async def form_user_information(user: 'User') -> UserInfo:
@@ -120,23 +133,23 @@ async def gather_information(user_data: List['User']):
 
 
 @parser_router.subscriber(subject="parser.gather.information.many_users")
-async def send_message(msg: 'NatsMessage', context='Context', data: Datas = Depends(derive_data)):
+async def send_message(msg: 'NatsMessage', data: Datas = Depends(derive_data)):
     logger.info("Подключаюсь к брокеру...")
 
     await broker.connect()
     logger.info("Подключение установлено")
     try:
-        user_data = await data.client.get_users(user_ids=data.users)
+        user_data = await data.client.get_users(user_ids=["test_ai"])
+        print()
         user_info = await gather_information(user_data)
         response_data: ResponseModel = ResponseModel(response=SuccessResponse(data=user_info))
 
     except Exception as e:
         logger.error("An error occurred:", e)
         response_data: ResponseModel = ResponseModel(response=ErrorResponse(error_message=str(e)))
-        await broker.close()
 
     if msg.reply_to:
-        logger.info("Вот такая дата", response_data.model_dump_json())
+        logger.info(f"Вот такая дата {response_data.model_dump_json()}", )
         queue_data = response_data.model_dump_json(indent=3, serialize_as_any=True)
         await broker.publish(message=queue_data, subject=msg.reply_to, reply_to=msg.reply_to)
         await broker.close()

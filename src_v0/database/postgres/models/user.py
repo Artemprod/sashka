@@ -10,6 +10,7 @@ from src_v0.database.postgres.models.base import ModelBase, intpk, str_1024, cre
 
 class User(ModelBase):
     __tablename__ = 'users'
+
     user_id: Mapped[intpk]
     name: Mapped[str]
     second_name: Mapped[Optional[str]]

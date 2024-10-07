@@ -26,7 +26,7 @@ class TelegramClientDTOPost(BaseModel):
         from_attributes = True 
 
 
-class TelegramClientDTOGet(BaseModel):
+class TelegramClientDTOGet(TelegramClientDTOPost):
     
     client_id: int
 

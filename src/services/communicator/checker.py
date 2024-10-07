@@ -6,6 +6,7 @@ from aiocache import cached, Cache
 from src.schemas.communicator.checker import CheckerDTO
 from src.schemas.service.research import ResearchDTOFull
 from src.schemas.service.user import UserDTORel
+from src_v0.database.exceptions.read import ObjectDoesNotExist
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.repository.storage import RepoStorage
 
@@ -16,11 +17,22 @@ class Checker:
 
     @cached(ttl=300, cache=Cache.MEMORY)
     async def check_user(self, user_telegram_id: int) -> CheckerDTO:
+        """
+        1. Пвроерить в базе даннх пользователь ?
+        2. Проверить он в иследовании?
+        3. Вернуть класс дто
+        все это в паралельных корутинах ?
+
+        :param user_telegram_id:
+        :return:
+        """
         try:
             user_in_db = await self._is_user_in_database(user_telegram_id)
             print(user_in_db)
             if not user_in_db:
                 return CheckerDTO(user_telegram_id=user_telegram_id, user_in_db=False)
+
+            # TODO вот тут логика нарушена еслитоесть если пользовател не в исоедование  то и не надо research id
 
             user_research: Optional[int] = await self._get_user_research_id(user_telegram_id)
 
@@ -41,11 +53,14 @@ class Checker:
 
     @cached(ttl=300, cache=Cache.MEMORY)
     async def _get_user_research_id(self, user_telegram_id: int) -> Optional[int]:
-        research: Optional[
-            ResearchDTOFull] = await self._repository.research_repo.get_research_by_participant_telegram_id(
-            telegram_id=user_telegram_id
-        )
-        return research.research_id if research else None
+        try:
+            research: Optional[
+                ResearchDTOFull] = await self._repository.research_repo.short.get_research_by_participant_telegram_id(
+                telegram_id=user_telegram_id
+            )
+            return research.research_id
+        except ObjectDoesNotExist:
+            return None
 
 
 if __name__ == '__main__':

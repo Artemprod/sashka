@@ -117,8 +117,12 @@ class BaseMessageHandler(ABC):
         return [int(user.tg_user_id) for user in users] if users else None
 
     @cached(ttl=300, cache=Cache.MEMORY)
-    async def get_client_name(self, research_id) -> Optional[TelegramClientDTOGet]:
-        return await self.repository.client_repo.get_client_by_research_id(research_id)
+    async def get_client_name(self, research_id=None, client_telegram_id=None) -> Optional[TelegramClientDTOGet]:
+        if research_id is not None and client_telegram_id is None:
+            return await self.repository.client_repo.get_client_by_research_id(research_id)
+        elif client_telegram_id is not None and research_id is None:
+            return await self.repository.client_repo.get_client_by_telegram_id(client_telegram_id)
+        return None
 
     @cached(ttl=300, cache=Cache.MEMORY)
     async def get_assistant_by_user_telegram_id(self, telegram_id: int) -> Optional[AssistantDTOGet]:
@@ -148,10 +152,12 @@ class BaseMessageHandler(ABC):
         chat_id = chat_id if chat_id else user_id
         await self.repository.message_repo.user.save_new_message(
             values=UserMessageDTOPost(
-                from_user=user_id, chat=chat_id,
-                media=is_media, voice=is_voice,
+                from_user=user_id,
+                chat=chat_id,
+                media=is_media,
+                voice=is_voice,
                 text=content
-            ))
+            ).dict())
 
 
 class MessageFirstSend(BaseMessageHandler):
@@ -252,7 +258,8 @@ class MessageAnswer(BaseMessageHandler):
 
 
 class ResearchMessageAnswer(MessageAnswer):
-    async def handle(self, message: IncomeUserMessageDTOQueue,
+    async def handle(self,
+                     message: IncomeUserMessageDTOQueue,
                      destination_configs: NatsDestinationDTO,
                      research_id: int):
 
@@ -269,22 +276,29 @@ class ResearchMessageAnswer(MessageAnswer):
 
 
 class CommonMessageAnswer(MessageAnswer):
-    #TODO кварги костыль нужно убрать
-    async def handle(self, message: IncomeUserMessageDTOQueue, destination_configs: NatsDestinationDTO, **kwargs):
+
+    #TODO кварги костыль нужно убрать метод должен работать для вскех вынести в инком мессадж или дополнительнчый класс
+    async def handle(self,
+                     message: IncomeUserMessageDTOQueue,
+                     destination_configs: NatsDestinationDTO,
+                     **kwargs):
         await self.save_user_message(content=message.text, user_id=message.from_user, chat_id=message.chat,
                                      is_voice=message.voice, is_media=message.media)
         assistant: AssistantDTOGet = await self.get_assistant_for_free_talk()
-        client: TelegramClientDTOGet = await self.get_client_name(research_id=message.client_telegram_id)
+        print()
+        client: TelegramClientDTOGet = await self.get_client_name(client_telegram_id=message.client_telegram_id)
         context = await self.context_former.form_context(telegram_id=message.from_user)
-        prompt = await self.prompt_generator.research_prompt_generator.generate_common_prompt(
+
+        prompt = await self.prompt_generator.generate_common_prompt(
             assistant_id=assistant.assistant_id)
         response: ContextResponseDTO = await self.context_request.get_response(
             context_obj=ContextRequestDTO(prompt=prompt, context=context))
         await self._publish_and_save_message(content=response, client=client, user_id=message.from_user,
                                              assistant_id=assistant.assistant_id,
                                              destination_configs=destination_configs)
-
+    #TODO вынести выдачу ассситентов в отлдельный класс заебал
     @cached(ttl=300, cache=Cache.MEMORY)
     async def get_assistant_for_free_talk(self) -> Optional[AssistantDTOGet]:
         assistants = await self.repository.assistant_repo.get_all_assistants()
+        print()
         return next((asis for asis in assistants if asis.for_conversation), None)

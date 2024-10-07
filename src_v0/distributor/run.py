@@ -47,7 +47,7 @@ async def lifespan(context: ContextRepo):
 
 async def main():
     """Запускает faststream и создает корутину для клиента"""
-    broker = NatsBroker()
+    broker = NatsBroker("nats://localhost:4222")
     broker.include_router(client_router)
     broker.include_router(database_router)
     broker.include_router(handle_message_router)

@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from functools import lru_cache, cache
+
 
 from typing import Union, List, Optional
+
+from aiocache import cached, Cache
 
 from src.schemas.communicator.prompt import PromptDTO
 
@@ -21,14 +23,14 @@ class BasePromptGenerator(ABC):
     async def generate_prompt(self, research_id, *args, **kwargs) -> PromptDTO:
         pass
 
-    @cache
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def _get_assistant(self, research_id) -> Optional[AssistantDTOGet]:
         return await self.repository.assistant_repo.get_assistant_by_research(research_id=research_id)
 
 
 # TODO вообще можно сократить количесвто кода и просто отправлять ассистента это я че то тут заморочился
 class FirstMessagePromptGenerator(BasePromptGenerator):
-    @cache
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_prompt(self, research_id, *args, **kwargs) -> PromptDTO:
         assistant = await self._get_assistant(research_id=research_id)
         if not assistant:
@@ -43,7 +45,7 @@ class FirstMessagePromptGenerator(BasePromptGenerator):
 
 class ResearchMessagePromptGenerator(BasePromptGenerator):
 
-    @cache
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_prompt(self, research_id, *args, **kwargs) -> PromptDTO:
         assistant = await self._get_assistant(research_id=research_id)
         if not assistant:
@@ -58,7 +60,7 @@ class ResearchMessagePromptGenerator(BasePromptGenerator):
 
 class CommonMessagePromptGenerator(BasePromptGenerator):
 
-    @cache
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_prompt(self, assistant_id, *args, **kwargs) -> PromptDTO:
         # TODO Вынесе ты блять уже этих ассистентов в отделный модуль заебал !
         assistant: AssistantDTOGet = await self.repository.assistant_repo.get_assistant(assistant_id=assistant_id)
@@ -80,14 +82,14 @@ class PromptGenerator:
         self.research_prompt_generator = ResearchMessagePromptGenerator(repository=repository)
         self.common_prompt_generator = CommonMessagePromptGenerator(repository=repository)
 
-    @cache
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_first_message_prompt(self, research_id):
         return await self.first_message_generator.generate_prompt(research_id=research_id)
 
-    @cache
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_research_prompt(self, research_id) -> PromptDTO:
         return await self.research_prompt_generator.generate_prompt(research_id)
 
-    @cache
+    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_common_prompt(self,assistant_id:int) -> PromptDTO:
         return await self.common_prompt_generator.generate_prompt(assistant_id=assistant_id)

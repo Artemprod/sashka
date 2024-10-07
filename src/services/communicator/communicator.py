@@ -73,7 +73,7 @@ class TelegramCommunicator:
 
     @staticmethod
     def _load_destination_configs() -> "NatsDestinationDTO":
-        subject, stream = ...  # Заполните эти параметры реальными значениями
+        subject, stream = ...  # TODO Заполнит эти параметры реальными значениями
         return NatsDestinationDTO(subject=subject, stream=stream)
 
     async def make_first_message_distribution(self):
@@ -82,15 +82,16 @@ class TelegramCommunicator:
 
     async def reply_message(self, message_object: "IncomeUserMessageDTOQueue"):
         """Обрабатывает и отвечает на входящее сообщение."""
+
         check = await self._checker.check_user(user_telegram_id=message_object.from_user)
 
         if not check.user_in_db:
             new_user = await self._add_new_user(message_object)
-            if new_user:
-                check.user_in_db = True
-            else:
+            if not new_user:
                 logger.error(f"Failed to create new user for telegram_id: {message_object.from_user}")
                 return  # Можно отправить пользователю сообщение об ошибке
+            else:
+                check.user_in_db = True
 
         if check.user_in_db:
             await self._handle_message(message_object, check.user_research_id)
@@ -98,7 +99,8 @@ class TelegramCommunicator:
             logger.warning(f"User not in database: {message_object.from_user}")
             # Можно отправить сообщение пользователю о необходимости регистрации
 
-    async def _handle_message(self, message_object: "IncomeUserMessageDTOQueue", user_research_id: Optional[str]):
+    async def _handle_message(self, message_object: "IncomeUserMessageDTOQueue",
+                              user_research_id: Optional[str]):
 
         handler = self._message_research_answer if user_research_id else self._message_common_answer
         try:
@@ -111,16 +113,21 @@ class TelegramCommunicator:
             # Здесь можно добавить дополнительную обработку ошибок (например, логирование)
             raise
 
-    async def _add_new_user(self, message_object: "IncomeUserMessageDTOQueue") -> Optional["UserDTOFull"]:
+    async def _add_new_user(self, message_object: "IncomeUserMessageDTOQueue") -> Optional[List["UserDTOFull"]]:
         async with self._info_collector as collector:
-            telegram_client = await self._repository.client_repo.get_client_by_telegram_id(
+            telegram_client:TelegramClientDTOGet = await self._repository.client_repo.get_client_by_telegram_id(
                 telegram_id=message_object.client_telegram_id
             )
-            user_info = await collector.collect_users_information(
+            user_info:List[UserDTO] = await collector.collect_users_information(
                 user_telegram_ids=[message_object.from_user],
-                client_name=telegram_client
+                client_name=telegram_client.name
             )
-            return await self._repository.user_in_research_repo.short.add_user(values=user_info.dict())
+            new_users:list = []
+            for user in user_info:
+
+                new_users.append(await self._repository.user_in_research_repo.short.add_user(values=user.dict()))
+                logger.info("Add new user in database")
+            return new_users
 
 
 async def main():
@@ -132,7 +139,7 @@ async def main():
     single_request = SingleRequest()
     context_request = ContextRequest()
     prompt_generator = PromptGenerator(repository=repository)
-    destination_configs = NatsDestinationDTO()
+    destination_configs = NatsDestinationDTO(subject="test.message.conversation.send", stream="CONVERSATION")
     comunicator = TelegramCommunicator(repository=repository,
                                        info_collector=info_collector,
                                        publisher=publisher,
@@ -141,9 +148,14 @@ async def main():
                                        context_request=context_request,
                                        destination_configs=destination_configs
                                        )
-    message_object = IncomeUserMessageDTOQueue()
+    message_object = IncomeUserMessageDTOQueue(from_user=2200682155,
+                                               chat=2200682155,
+                                               media=False,
+                                               voice=False,
+                                               text="Тестовое сообщение ответь как нибудь",
+                                               client_telegram_id=2200700359, )
 
-    await comunicator.reply_message()
+    await comunicator.reply_message(message_object=message_object)
 
 
 if __name__ == '__main__':

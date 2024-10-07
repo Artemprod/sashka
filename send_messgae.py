@@ -7,11 +7,11 @@ from src_v0.services.openai_api_package.chat_gpt_package.client import GPTClient
 from src_v0.services.openai_api_package.chat_gpt_package.model import GPTOptions
 
 
-options = GPTOptions(api_key=OPENAI_API_KEY, model_name='gpt-4o', max_message_count=3, temperature=1,
-                     max_return_tokens=1000)
-
-gpt_client = GPTClient(options=options)
-comunicator = GptCommunicator(gpt_client=gpt_client)
+# options = GPTOptions(api_key=OPENAI_API_KEY, model_name='gpt-4o', max_message_count=3, temperature=1,
+#                      max_return_tokens=1000)
+#
+# gpt_client = GPTClient(options=options)
+# comunicator = GptCommunicator(gpt_client=gpt_client)
 
 
 async def pub():
@@ -20,11 +20,11 @@ async def pub():
         await broker.publish(message, subject="send_message")
 
 
-async def pub_ai():
-    async with NatsBroker() as broker:
-        response = await comunicator.send_one_message(text="Сгенерируй приветвсенное соообщение")
-        message = {'client_id': 'test_a2408592-4eb7-474f-b930-a35071e6fcfe', "text": response}
-        await broker.publish(message, subject="send_message")
+# async def pub_ai():
+#     async with NatsBroker() as broker:
+#         response = await comunicator.send_one_message(text="Сгенерируй приветвсенное соообщение")
+#         message = {'client_id': 'test_a2408592-4eb7-474f-b930-a35071e6fcfe', "text": response}
+#         await broker.publish(message, subject="send_message")
 
 
 asyncio.run(pub())

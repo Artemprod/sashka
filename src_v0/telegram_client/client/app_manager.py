@@ -17,7 +17,7 @@ from src_v0.telegram_client.exceptions.connection import ClientConnectionError, 
 # # DONE  вынести все параметры которые отвечают за настроку ожидания в параметры класса
 # # DONE  Заменить все Exceptions на кастомные ошибки
 
-
+# TODO ЕСЛИ сделаю асинхронный доступ до методов чтобы иметь возмодность поличть домсутп кним не збыть убрать если что
 class Manager:
     auth_attempts = 4
 
@@ -38,6 +38,9 @@ class Manager:
     @communicator.setter
     def communicator(self, new_communicator: BaseCommunicator) -> None:
         self._communicator = new_communicator
+
+    async def get_app(self):
+        return self.app
 
     def include_router(self, router: Router):
         for handler, group in router.get_handlers():
@@ -143,6 +146,7 @@ class Manager:
             raise ClientAuthorizationConnectionError(message=e) from e
 
     async def initialize(self):
+
         if not self.app.is_connected:
             raise ConnectionError("Can't initialize a disconnected client")
         if self.app.is_initialized:
@@ -162,6 +166,7 @@ class Manager:
 
             await self.initialize()
             self.app.me = await self.app.get_me()
+
             if self.app.me:
                 self.is_authorize_status = True
                 self.is_banned = False
