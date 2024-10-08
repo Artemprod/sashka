@@ -16,7 +16,7 @@ from src.schemas.communicator.response import SingleResponseDTO, ContextResponse
 from src.schemas.service.assistant import AssistantDTOGet
 from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.message import AssistantMessageDTOPost, UserMessageDTOPost
-from src.schemas.service.user import UserDTOFull, UserDTO
+from src.schemas.service.user import UserDTOFull, UserDTO, UserDTOBase
 from src.services.communicator.checker import Checker
 from src.services.communicator.messager import MessageFirstSend, ResearchMessageAnswer, CommonMessageAnswer, \
     MessageGeneratorTimeDelay
@@ -72,13 +72,19 @@ class TelegramCommunicator:
         )
 
     @staticmethod
-    def _load_destination_configs() -> "NatsDestinationDTO":
-        subject, stream = ...  # TODO Заполнит эти параметры реальными значениями
-        return NatsDestinationDTO(subject=subject, stream=stream)
+    def _load_destination_configs() -> dict:
+        return {
+            "reply": NatsDestinationDTO(subject="test.message.conversation.send", stream="CONVERSATION"),
+            "firs_message": NatsDestinationDTO(subject="test_4.messages.send.first", stream="WORK_QUEUE_4"),
+        }
 
-    async def make_first_message_distribution(self):
-        # Реализация метода
-        pass
+    async def make_first_message_distribution(self, research_id: int, users: List[UserDTOBase]):
+        try:
+            await self._first_message_distributes.handle(users=users,
+                                                         destination_configs=self._destination_configs['reply'],
+                                                         research_id=research_id)
+        except Exception as e:
+            raise e
 
     async def reply_message(self, message_object: "IncomeUserMessageDTOQueue"):
         """Обрабатывает и отвечает на входящее сообщение."""
@@ -106,28 +112,26 @@ class TelegramCommunicator:
         try:
             await handler.handle(
                 message=message_object,
-                destination_configs=self._destination_configs,
+                destination_configs=self._destination_configs['reply'],
                 research_id=user_research_id
             )
         except Exception as e:
-            # Здесь можно добавить дополнительную обработку ошибок (например, логирование)
-            raise
+
+            raise e
 
     async def _add_new_user(self, message_object: "IncomeUserMessageDTOQueue") -> Optional[List["UserDTOFull"]]:
-        async with self._info_collector as collector:
-            telegram_client:TelegramClientDTOGet = await self._repository.client_repo.get_client_by_telegram_id(
-                telegram_id=message_object.client_telegram_id
-            )
-            user_info:List[UserDTO] = await collector.collect_users_information(
-                user_telegram_ids=[message_object.from_user],
-                client_name=telegram_client.name
-            )
-            new_users:list = []
-            for user in user_info:
-
-                new_users.append(await self._repository.user_in_research_repo.short.add_user(values=user.dict()))
-                logger.info("Add new user in database")
-            return new_users
+        telegram_client: TelegramClientDTOGet = await self._repository.client_repo.get_client_by_telegram_id(
+            telegram_id=message_object.client_telegram_id
+        )
+        user_info: List[UserDTO] = await self._info_collector.collect_users_information(
+            users=[UserDTOBase(name=message_object.user_name,
+                               tg_user_id=message_object.from_user)],
+            client=telegram_client)
+        new_users: list = []
+        for user in user_info:
+            new_users.append(await self._repository.user_in_research_repo.short.add_user(values=user.dict()))
+            logger.info("Add new user in database")
+        return new_users
 
 
 async def main():
@@ -153,7 +157,7 @@ async def main():
                                                media=False,
                                                voice=False,
                                                text="Тестовое сообщение ответь как нибудь",
-                                               client_telegram_id=2200700359, )
+                                               client_telegram_id=2200145162, )
 
     await comunicator.reply_message(message_object=message_object)
 

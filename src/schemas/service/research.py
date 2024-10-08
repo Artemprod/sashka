@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 
 class ResearchDTOPost(BaseModel):
+
     research_uuid: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
     name: Optional[str] = None
     title: Optional[str] = None
@@ -16,7 +17,9 @@ class ResearchDTOPost(BaseModel):
     descriptions: Optional[str] = None
     additional_information: Optional[str] = None
     assistant_id: Optional[int]
-    examinees_ids: list[int]
+    examinees_ids: Optional[list[int]]
+    examinees_user_names: list[str]
+
 
     class Config:
         arbitrary_types_allowed = True

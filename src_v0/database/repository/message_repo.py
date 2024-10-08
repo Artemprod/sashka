@@ -15,7 +15,7 @@ class AssistantMessageRepository(BaseRepository):
                 stmt = insert(AssistantMessage).values(**values).returning(AssistantMessage)
                 new_assistant_message = await session.execute(stmt)
                 await session.commit()
-                result = new_assistant_message.scalar().first()
+                result = new_assistant_message.scalar_one()
                 return AssistantMessageDTOGet.model_validate(result, from_attributes=True)
 
     async def get_all_assistent_messages_by_user_telegram_id(self, telegram_id) -> Optional[List[AssistantMessageDTOGet]]:

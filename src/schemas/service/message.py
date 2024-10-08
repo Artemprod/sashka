@@ -41,6 +41,7 @@ class AssistantMessageDTOPost(BaseModel):
     assistant_id: int
     telegram_client_id: int
 
+
     class Config:
         from_attributes = True 
 

@@ -10,7 +10,8 @@ from loguru import logger
 from src.schemas.service.message import AssistantMessageDTOPost
 from src.schemas.service.queue import NatsQueueMessageDTOStreem, NatsTelegramHeaders
 from src.schemas.service.research import ResearchDTOFull
-from src.schemas.service.user import UserDTOFull
+from src.schemas.service.user import UserDTOFull, UserDTOBase
+from src.services.communicator.communicator import TelegramCommunicator
 from src.services.publisher.messager import NatsPublisher
 from src.services.publisher.notification import TelegramNotificator
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
@@ -31,7 +32,7 @@ class PingatorConfig:
 
 
 class ResearchStarter:
-    def __init__(self, repository: RepoStorage, communicator: Communicator):
+    def __init__(self, repository: RepoStorage, communicator:TelegramCommunicator):
         self.repository = repository
         self.communicator = communicator
 
@@ -41,17 +42,21 @@ class ResearchStarter:
             research_id=research_id, status=ResearchStatusEnum.IN_PROGRESS
         )
         user_group: List[UserDTOFull] = await self._get_users_in_research(research_id)
+
+        user_ids = [user.tg_user_id for user in user_group]
+
         await self.repository.status_repo.user_status.update_status_group_of_user(
-            user_group=user_group, status=UserStatusEnum.IN_PROGRESS
+            user_group=user_ids, status=UserStatusEnum.IN_PROGRESS
         )
-        await self.communicator.send_first_message(research_id=research_id)
+        users_dto = [UserDTOBase(name=user.name, tg_user_id=user.tg_user_id) for user in user_group]
+        await self.communicator.make_first_message_distribution(users=users_dto,research_id=research_id)
         logger.info("Все приветственные сообщения отправлены")
 
     async def _get_users_in_research(self, research_id) -> List[UserDTOFull]:
-        users_in_research = await self.repository.user_in_research_repo.short.get_users_by_research_id(
+        users_in_research:List[UserDTOFull] = await self.repository.user_in_research_repo.short.get_users_by_research_id(
             research_id=research_id
         )
-        return [user.tg_user_id for user in users_in_research]
+        return
 
 
 class ResearchStopper:

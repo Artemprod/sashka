@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class IncomeUserMessageDTOQueue(BaseModel):
 
     from_user: int
+    user_name: str
     chat: int
     media: bool
     voice: bool

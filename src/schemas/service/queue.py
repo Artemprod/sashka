@@ -5,22 +5,26 @@ from pydantic import BaseModel, Field, validator, field_validator
 
 # Base headers class
 class NatsHeaders(BaseModel):
-
     class Config:
         allow_population_by_field_name = True
         from_attributes = True
 
 
 class TelegramTimeDelaHeadersDTO(NatsHeaders):
-    tg_client_name: str = Field(alias="Tg-Client-Name")
-    tg_user_userid: str = Field(alias="Tg-User-UserId")
-    send_time_msg_timestamp: str = Field(alias="SendTime-Msg-Timestamp")
-    send_time_next_message_timestamp: str = Field(alias="SendTime-Next-Message-Timestamp")
+    tg_client_name: str
+    user: str
+    send_time_msg_timestamp: str
+    send_time_next_message_timestamp: str
 
 
 class TelegramSimpleHeadersDTO(NatsHeaders):
-    tg_client_name: str = Field(alias="Tg-Client-Name")
-    tg_user_userid: str = Field(alias="Tg-User-UserId")
+    tg_client_name: str
+    tg_user_user_id: str
+
+
+class TelegramObjectHeadersDTO(NatsHeaders):
+    tg_client: str
+    tg_user_user: str
 
 
 class NatsQueueMessageDTO(BaseModel):
@@ -34,6 +38,12 @@ class NatsQueueMessageDTOStreem(NatsQueueMessageDTO):
     message: str
     subject: str
     stream: str
+    headers: Optional[dict] = None
+
+
+class NatsReplyRequestQueueMessageDTOStreem(NatsQueueMessageDTO):
+    subject: str
+    stream: Optional[str]
     headers: Optional[dict] = None
 
 

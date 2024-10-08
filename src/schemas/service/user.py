@@ -8,7 +8,6 @@ from src_v0.schemas.status import UserStatusDTO, UserStatusNameDTO, UserStatusNa
 
 
 class UserDTOQueue(BaseModel):
-
     tg_user_id: int
     is_contact: bool
     is_mutual_contact: bool
@@ -34,12 +33,14 @@ class UserDTOQueue(BaseModel):
         }
 
 
-class UserDTO(BaseModel):
+class UserDTOBase(BaseModel):
+    name: Optional[str]
+    tg_user_id: Optional[int]
 
-    name: str
+
+class UserDTO(UserDTOBase):
     second_name: Optional[str] = None
     phone_number: Optional[str] = None
-    tg_user_id: int
     tg_link: Optional[str] = None
     is_verified: Optional[bool] = None
     is_scam: Optional[bool] = None
@@ -57,18 +58,16 @@ class UserDTOFull(UserDTO):
     user_id: int
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+    # DTO с отношениями
 
 
-# DTO с отношениями
 class UserDTORel(UserDTOFull):
-
     status: "UserStatusNameDTOGet"
     messages: List["UserMessageDTO"] = Field(default_factory=list)
     assistant_messages: List["AssistantMessageDTO"] = Field(default_factory=list)
     researches: List["ResearchDTOGet"] = Field(default_factory=list)
 
     class Config:
-        from_attributes = True 
-
-
+        from_attributes = True

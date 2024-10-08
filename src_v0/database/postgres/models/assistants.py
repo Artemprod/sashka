@@ -20,6 +20,8 @@ class Assistant(ModelBase):
     middle_part_prompt: Mapped[Optional[str]] = mapped_column(String, nullable=True, default=None)
     last_message_prompt: Mapped[Optional[str]] = mapped_column(String, nullable=True, default=None)
 
+    for_conversation: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False)
+
     created_at: Mapped[created_at]
 
     research: Mapped["Research"] = relationship(

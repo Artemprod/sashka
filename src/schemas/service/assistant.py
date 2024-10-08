@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class AssistantDTOPost(BaseModel):
+
     name: str
     system_prompt: str
     user_prompt: str

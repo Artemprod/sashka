@@ -1,13 +1,17 @@
 import asyncio
+import json
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, AsyncGenerator
 
 from faststream.nats import NatsBroker
 
 from loguru import logger
 
+from src.schemas.service.client import TelegramClientDTOGet
+from src.schemas.service.queue import NatsReplyRequestQueueMessageDTOStreem, TelegramObjectHeadersDTO
 from src.schemas.service.response import ResponseModel
-from src.schemas.service.user import UserDTOQueue, UserDTO
+from src.schemas.service.user import UserDTOQueue, UserDTO, UserDTOBase
+from src.services.publisher.messager import NatsPublisher
 
 
 class UserInformationCollector(ABC):
@@ -18,69 +22,51 @@ class UserInformationCollector(ABC):
 
 
 class TelegramUserInformationCollector(UserInformationCollector):
-    RPC_TIMEOUT = 10.0
-    MAX_RETRIES = 10
+    PARSE_SUBJECT = "parser.gather.information.many_users"
 
-    def __init__(self, broker_url: str = "nats://localhost:4222"):
-        self.broker = NatsBroker(broker_url)
+    def __init__(self, publisher: NatsPublisher):
+        self.publisher = publisher
 
-    async def __aenter__(self):
-        await self.broker.connect()
-        logger.info("Подключение к брокеру установлено")
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.broker.close()
-        logger.info("Соединение с брокером закрыто")
-
-    async def collect_users_information(self, user_telegram_ids: List[int], client_name: str) -> Optional[
+    async def collect_users_information(self, users: List[UserDTOBase], client: TelegramClientDTOGet) -> Optional[
         List[UserDTO]]:
-        for attempt in range(TelegramUserInformationCollector.MAX_RETRIES):
-            try:
-                users = await self._attempt_collect_info(user_telegram_ids, client_name, attempt)
-                if users:
-                    return users
-                else:
-                    continue
+        message = self._create_nats_message(users, client)
+        try:
+            response = await self.publisher.request_reply(nats_message=message)
+            if response:
+                logger.info(f"Ответ от сервера получен")
+                return await self._parse_users_info(response)
+        except Exception as e:
+            logger.error(f"Ошибка при сборе информации о пользователях: {e}")
+            raise
 
-            except asyncio.TimeoutError:
-                logger.error(f"Время ожидания ответа истекло: Попытка {attempt + 1}")
-            except Exception as e:
-                logger.error(f"Произошла ошибка: {e}. Попытка {attempt + 1}")
-
-        logger.error(f"Не удалось получить ответ после {TelegramUserInformationCollector.MAX_RETRIES} попыток.")
         return None
 
-    async def _attempt_collect_info(self, user_telegram_ids: List[int], client_name: str, attempt: int) -> Optional[
-        List[UserDTO]]:
-        logger.info(f"Отправляю запрос: Попытка {attempt + 1}")
-        response = await self.broker.publish(
-            headers={
-                "Tg-Users-UsersId": str(user_telegram_ids),
-                "Tg-Client-Name": str(client_name)
-            },
-            subject="parser.gather.information.many_users",
-            message='Hi',
-            rpc=True,
-            rpc_timeout=TelegramUserInformationCollector.RPC_TIMEOUT
-        )
-        if response:
-            logger.info(f"Ответ от сервера: {response}")
-            return await self.parse_users_info(response)
-        logger.warning(f"Не удалось получить ответ: Попытка {attempt + 1}")
-        return
+    def _create_nats_message(self, users: List[UserDTOBase],
+                             client: TelegramClientDTOGet) -> NatsReplyRequestQueueMessageDTOStreem:
+        user_dicts = [user.dict() for user in users]
 
-    async def user_generator(self, response):
+        headers = TelegramObjectHeadersDTO(
+            tg_client=json.dumps(client.dict()),
+            tg_user_users=json.dumps(user_dicts)
+        )
+
+        return NatsReplyRequestQueueMessageDTOStreem(
+            subject=self.PARSE_SUBJECT,
+            headers=headers,
+        )
+
+    async def _parse_users_info(self, response: str) -> Optional[List[UserDTO]]:
+        users = []
+        async for user in self._user_generator(response):
+            user_dto = await self.convert_to_user_dto(user)
+            users.append(user_dto)
+        return users if users else None
+
+    @staticmethod
+    async def _user_generator(response: str) -> AsyncGenerator[UserDTOQueue, None]:
         response_model = ResponseModel.model_validate_json(response)
         for user_data in response_model.response.data:
             yield user_data
-
-    async def parse_users_info(self, response: str) -> List[UserDTO]:
-        users = []
-        users_generator = self.user_generator(response=response)
-        async for user in users_generator:
-            users.append(await self.convert_to_user_dto(user))
-        return list(users) if users else None
 
     @staticmethod
     async def convert_to_user_dto(user_data: UserDTOQueue) -> UserDTO:

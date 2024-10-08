@@ -1,21 +1,24 @@
 import asyncio
-from typing import Dict
+from typing import Dict, Union, Optional
 
 from faststream.nats import NatsBroker
 from loguru import logger
 
-from src.schemas.service.queue import NatsQueueMessageDTOStreem, NatsQueueMessageDTOSubject
+from src.schemas.service.queue import NatsQueueMessageDTOStreem, NatsQueueMessageDTOSubject, \
+    NatsReplyRequestQueueMessageDTOStreem
 
 
 class NatsPublisher:
     def __init__(self):
         self.settings = self._load_settings()
 
-    #TODO заменить на актулдьнае настройки
+    # TODO заменить на актулдьнае настройки
     @staticmethod
-    def _load_settings() -> Dict[str, str]:
+    def _load_settings() -> Dict[str, Union[str, int, float]]:
         return {
-            "nats_server": "nats://localhost:4222"
+            "nats_server": "nats://localhost:4222",
+            "MAX_RETRIES": 10,
+            "RPC_TIMEOUT": 10.0,
         }
 
     async def publish_message_to_subject(self, subject_message: NatsQueueMessageDTOSubject) -> None:
@@ -41,6 +44,35 @@ class NatsPublisher:
                 logger.info(f"Сообщение успешно отправлено на стрим {stream_message.stream}")
         except Exception as e:
             logger.error(f"Ошибка при отправке сообщения на стрим {stream_message.stream}: {e}")
+
+    async def request_reply(self, nats_message: NatsReplyRequestQueueMessageDTOStreem) -> Optional[str]:
+        async with NatsBroker(self.settings["nats_server"]) as broker:
+            for attempt in range(1, self.settings["MAX_RETRIES"] + 1):
+                try:
+                    logger.info(f"Отправка запроса: Попытка {attempt}")
+                    response = await self._send_request(broker, nats_message)
+                    if response:
+                        logger.info(f"Ответ от сервера: {response}")
+                        return response
+                    else:
+                        logger.warning(f"Не удалось получить ответ: Попытка {attempt}")
+                except asyncio.TimeoutError:
+                    logger.error(f"Время ожидания ответа истекло: Попытка {attempt}")
+                except Exception as e:
+                    logger.error(f"Произошла ошибка: {e}. Попытка {attempt}")
+
+            logger.error(f"Не удалось получить ответ после {self.settings["MAX_RETRIES"]} попыток.")
+            return None
+
+    async def _send_request(self, broker: NatsBroker,
+                            nats_message: NatsReplyRequestQueueMessageDTOStreem) -> Optional[str]:
+        return await broker.publish(
+            headers=nats_message.headers,
+            subject=nats_message.subject,
+            message=b'',
+            rpc=True,
+            rpc_timeout=self.settings["RPC_TIMEOUT"],
+        )
 
     @staticmethod
     def form_stream_message(message: str,

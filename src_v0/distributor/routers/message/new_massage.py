@@ -1,10 +1,13 @@
 from faststream import Context
-from faststream.nats import NatsRouter, NatsBroker, NatsMessage
+from faststream.nats import NatsRouter, NatsBroker, NatsMessage, JStream
+from pydantic import BaseModel
 from pyrogram import Client
 
 from src_v0.database.repository.storage import RepoStorage
 from src_v0.resrcher.user_cimmunication import Communicator
 from src_v0.telegram_client.client.container import ClientsManager
+from nats.js.api import DeliverPolicy, RetentionPolicy, AckPolicy
+
 
 handle_message_router = NatsRouter()
 
@@ -44,6 +47,7 @@ async def new_message_message(body: str, msg: NatsMessage, context=Context()):
     #
     # # TODO модель примеки данных валиджация
     # await communicator.answer_message(user_id=user_id, message=body)
+
 
 @handle_message_router.subscriber(subject="send_message")
 async def new_message_message(msg: NatsMessage, context=Context()):

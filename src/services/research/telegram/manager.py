@@ -7,7 +7,7 @@ from loguru import logger
 from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.owner import ResearchOwnerDTO, ResearchOwnerFullDTO
 from src.schemas.service.research import ResearchDTOPost, ResearchDTOFull, ResearchDTORel, ResearchDTOBeDb
-from src.schemas.service.user import UserDTOFull
+from src.schemas.service.user import UserDTOFull, UserDTOBase
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.research.base import BaseResearchManager
 
@@ -53,9 +53,10 @@ class TelegramResearchManager(BaseResearchManager):
             # Ставим статус для исследования
             await self._set_research_status(db_research)
 
-            # Собрать информацию о пользователях и добавить их в исследованиAе
-            users_dto = await self._collect_user_information(telegram_client_name=telegram_client.name,
-                                                             user_ids=self._research.examinees_ids)
+            users = [UserDTOBase(name=names) for names in self._research.examinees_user_names]
+            # Собрать информацию о пользователях и добавить их в исследованиAе при первом контакте использовать только имя
+            users_dto = await self._collect_user_information(telegram_client=telegram_client,
+                                                             users=users)
 
             await self._add_users_to_research(users_dto)
 
@@ -124,16 +125,18 @@ class TelegramResearchManager(BaseResearchManager):
         clients = [client for client in await self._database_repository.client_repo.get_all() if client.session_string]
         return clients[-1]
 
-    async def _collect_user_information(self, telegram_client_name, user_ids) -> Optional[List[UserDTO]]:
-        async with self._information_collector as collector:
-            try:
-                users = await collector.collect_users_information(
-                    user_telegram_ids=user_ids,
-                    client_name=telegram_client_name
-                )
-                return users
-            except Exception as e:
-                raise e
+    async def _collect_user_information(self, telegram_client: TelegramClientDTOGet,
+                                        users: List[UserDTOBase]) -> Optional[
+        List[UserDTO]]:
+
+        try:
+            users_info = await self._information_collector.collect_users_information(
+                users=users,
+                client=telegram_client
+            )
+            return users_info
+        except Exception as e:
+            raise e
 
     def _create_research_dto(self, owner: Any, telegram_client: Any) -> ResearchDTOBeDb:
         return ResearchDTOBeDb(
@@ -145,7 +148,7 @@ class TelegramResearchManager(BaseResearchManager):
 
     async def _save_new_research(self, research_dto: ResearchDTOBeDb) -> ResearchDTOFull:
         return await self._database_repository.research_repo.short.save_new_research(
-            values=research_dto.dict(exclude={'examinees_ids'})
+            values=research_dto.dict(exclude={'examinees_ids', 'examinees_user_names'})
         )
 
     async def _get_saved_research(self, research_id: int) -> ResearchDTORel:
@@ -168,4 +171,3 @@ class TelegramResearchManager(BaseResearchManager):
                 user_id=db_user.user_id,
                 research_id=research_id
             )
-
