@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 from loguru import logger
 
 from src.schemas.service.message import AssistantMessageDTOPost
-from src.schemas.service.queue import NatsQueueMessageDTOStreem, NatsTelegramHeaders
+from src.schemas.service.queue import NatsQueueMessageDTOStreem
 from src.schemas.service.research import ResearchDTOFull
 from src.schemas.service.user import UserDTOFull, UserDTOBase
 from src.services.communicator.communicator import TelegramCommunicator
@@ -18,8 +18,6 @@ from src_v0.database.postgres.engine.session import DatabaseSessionManager
 
 from src_v0.database.postgres.models.enum_types import ResearchStatusEnum, UserStatusEnum
 from src_v0.database.repository.storage import RepoStorage
-from src_v0.resrcher.open_ai_namager import OpenAiresponser
-from src_v0.resrcher.user_cimmunication import Communicator
 
 
 @dataclass

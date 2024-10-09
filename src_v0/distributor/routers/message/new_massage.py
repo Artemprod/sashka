@@ -1,12 +1,11 @@
 from faststream import Context
 from faststream.nats import NatsRouter, NatsBroker, NatsMessage, JStream
-from pydantic import BaseModel
+
 from pyrogram import Client
 
-from src_v0.database.repository.storage import RepoStorage
-from src_v0.resrcher.user_cimmunication import Communicator
+
 from src_v0.telegram_client.client.container import ClientsManager
-from nats.js.api import DeliverPolicy, RetentionPolicy, AckPolicy
+
 
 
 handle_message_router = NatsRouter()
@@ -28,25 +27,7 @@ handle_message_router = NatsRouter()
 #         message = {'client_id': message['client'], "text": "это вот из клиента через очередь которая по кругу которая управляет распределением сообщений"}
 #         await broker.publish(message, subject="send_message")
 
-@handle_message_router.subscriber(subject="message.income.new")
-async def new_message_message(body: str, msg: NatsMessage, context=Context()):
-    users = []
-    # communicator: Communicator = context.get("communicator")
-    # repo: RepoStorage = context.get("repository")
-    # print(body)
-    # print(msg)
-    # user_id = int(msg.headers["User-Id"])
-    #
-    # if not user_id in users:
-    #     user = await repo.user_in_research_repo.short.check_user(telegram_id=user_id)
-    #     if not user:
-    #         await repo.user_in_research_repo.short.add_user(values={"name": "TEST", "tg_user_id": user_id})
-    #         users.append(user_id)
-    #     else:
-    #         users.append(user_id)
-    #
-    # # TODO модель примеки данных валиджация
-    # await communicator.answer_message(user_id=user_id, message=body)
+
 
 
 @handle_message_router.subscriber(subject="send_message")

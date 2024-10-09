@@ -12,7 +12,7 @@ from pyrogram import Client
 from pyrogram.types import User
 
 from src_v0.database.repository.storage import RepoStorage
-from src_v0.resrcher.user_cimmunication import Communicator
+
 from src_v0.telegram_client.client.container import ClientsManager
 
 parser_router = NatsRouter()

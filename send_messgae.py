@@ -17,7 +17,7 @@ from src_v0.services.openai_api_package.chat_gpt_package.model import GPTOptions
 async def pub():
     async with NatsBroker() as broker:
         message = {'client_id': 'test_b7c995b5-519c-44d4-8b7f-c2fe387eb6a0', "text": "это вот из клиента"}
-        await broker.publish(message, subject="send_message")
+        await broker.publish(message, subject="test.message.conversation.send", stream="CONVERSATION")
 
 
 # async def pub_ai():

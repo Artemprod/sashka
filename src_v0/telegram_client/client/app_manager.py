@@ -18,6 +18,8 @@ from src_v0.telegram_client.exceptions.connection import ClientConnectionError, 
 # # DONE  Заменить все Exceptions на кастомные ошибки
 
 # TODO ЕСЛИ сделаю асинхронный доступ до методов чтобы иметь возмодность поличть домсутп кним не збыть убрать если что
+
+# TODO Передовать дополнительные прараметры котрые будут доступны при передаче сообщения для инъекции
 class Manager:
     auth_attempts = 4
 
@@ -107,7 +109,6 @@ class Manager:
                         print('The cloud password is needed.')
                         await self.app.check_password(self.app.password)
                         return
-
 
 
                     except errors.FloodWait as e:

@@ -45,11 +45,11 @@ class TelegramCommunicator:
                  single_request: "SingleRequest",
                  context_request: "ContextRequest",
                  prompt_generator: "PromptGenerator",
-                 destination_configs: Optional["NatsDestinationDTO"] = None):
+                 destination_configs: Optional[Dict] = None):
+
         self._repository = repository
         self._info_collector = info_collector
         self._destination_configs = destination_configs or self._load_destination_configs()
-
         self._checker = Checker(repository=repository)
         # Инициализация компонентов для обработки сообщений
         self._first_message_distributes = MessageFirstSend(
@@ -70,7 +70,7 @@ class TelegramCommunicator:
             prompt_generator=prompt_generator,
             context_request=context_request
         )
-
+    # TODO Вынести конфиги и закгрузку конфигов в отдельный модуль
     @staticmethod
     def _load_destination_configs() -> dict:
         return {
@@ -85,7 +85,8 @@ class TelegramCommunicator:
                                                          research_id=research_id)
         except Exception as e:
             raise e
-
+    #TODO Вынести ответчик в отдельные классы например ответ на текстовое сообщение ответ на аудио ответ на картинку
+    #TODO Возмодно вынести проверку пользвателя в базе данных их класса принциа единой отвесвтенности
     async def reply_message(self, message_object: "IncomeUserMessageDTOQueue"):
         """Обрабатывает и отвечает на входящее сообщение."""
 
@@ -116,7 +117,6 @@ class TelegramCommunicator:
                 research_id=user_research_id
             )
         except Exception as e:
-
             raise e
 
     async def _add_new_user(self, message_object: "IncomeUserMessageDTOQueue") -> Optional[List["UserDTOFull"]]:
@@ -138,22 +138,22 @@ async def main():
     repository = RepoStorage(database_session_manager=DatabaseSessionManager(
         database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
 
-    info_collector = TelegramUserInformationCollector()
+
     publisher = NatsPublisher()
+    info_collector = TelegramUserInformationCollector(publisher=publisher)
     single_request = SingleRequest()
     context_request = ContextRequest()
     prompt_generator = PromptGenerator(repository=repository)
-    destination_configs = NatsDestinationDTO(subject="test.message.conversation.send", stream="CONVERSATION")
     comunicator = TelegramCommunicator(repository=repository,
                                        info_collector=info_collector,
                                        publisher=publisher,
                                        prompt_generator=prompt_generator,
                                        single_request=single_request,
                                        context_request=context_request,
-                                       destination_configs=destination_configs
                                        )
     message_object = IncomeUserMessageDTOQueue(from_user=2200682155,
                                                chat=2200682155,
+                                               user_name='test_ai',
                                                media=False,
                                                voice=False,
                                                text="Тестовое сообщение ответь как нибудь",

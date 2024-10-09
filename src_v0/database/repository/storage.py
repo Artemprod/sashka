@@ -1,7 +1,6 @@
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.repository.assistant import AssistantRepository
 from src_v0.database.repository.client import ClientRepository
-from src_v0.database.repository.data_cash import ResearchDataCashRepository
 from src_v0.database.repository.message_repo import MessageRepository
 from src_v0.database.repository.owner import OwnerRepo
 from src_v0.database.repository.ping import PingPromptRepository
@@ -25,7 +24,6 @@ class RepoStorage(BaseRepoStorage):
         self._research_repo = ResearchRepo(self._db_manager)
         self._status_repo = StatusRepo(self._db_manager)
         self._user_in_research_repo = UserInResearchRepo(self._db_manager)
-        self._research_cash_repo = ResearchDataCashRepository(self._db_manager)
         self._message_repo = MessageRepository(self._db_manager)
         self._ping_prompt_repo = PingPromptRepository(self._db_manager)
 
@@ -51,10 +49,6 @@ class RepoStorage(BaseRepoStorage):
     @property
     def user_in_research_repo(self):
         return self._user_in_research_repo
-
-    @property
-    def research_cash_repo(self):
-        return self._research_cash_repo
 
     @property
     def message_repo(self):

@@ -24,7 +24,7 @@ class TelegramSimpleHeadersDTO(NatsHeaders):
 
 class TelegramObjectHeadersDTO(NatsHeaders):
     tg_client: str
-    tg_user_user: str
+    user: str
 
 
 class NatsQueueMessageDTO(BaseModel):

@@ -26,7 +26,7 @@ from abc import ABC
 from typing import Union
 
 from src.schemas.service.queue import NatsQueueMessageDTOSubject, NatsQueueMessageDTOStreem, TelegramTimeDelaHeadersDTO, \
-    TelegramSimpleHeadersDTO
+    TelegramSimpleHeadersDTO, TelegramObjectHeadersDTO
 from src.services.publisher.messager import NatsPublisher
 
 
@@ -252,7 +252,7 @@ class MessageFirstSend(BaseMessageHandler):
                                                                                         status=UserStatusEnum.IN_PROGRESS)
             return True if user else False
         except Exception as e:
-            raise
+            raise e
 
 
 class MessageAnswer(BaseMessageHandler):
@@ -265,23 +265,27 @@ class MessageAnswer(BaseMessageHandler):
         self.context_former = MessageFromContext(repository=repository)
         self.context_request = context_request
 
-    async def _publish_and_save_message(self, content: "ContextResponseDTO", user_id: int,
-                                        client: 'TelegramClientDTOGet', assistant_id: int,
-                                        destination_configs: 'NatsDestinationDTO'):
-        publish_message = await self._create_publish_message(content, user_id, client, destination_configs)
-        await self.publisher.publish_message_to_stream(stream_message=publish_message)
-        await self.save_assistant_message(content.response, user_id, assistant_id, client)
 
-    #TODO возможно тут тоже стоит присылать пользователя
+    async def _publish_and_save_message(self,
+                                        content: "ContextResponseDTO",
+                                        user: UserDTOBase,
+                                        client: 'TelegramClientDTOGet',
+                                        assistant_id: int,
+                                        destination_configs: 'NatsDestinationDTO'):
+
+        publish_message = await self._create_publish_message(content, user, client, destination_configs)
+        await self.publisher.publish_message_to_stream(stream_message=publish_message)
+        await self.save_assistant_message(content.response, user.tg_user_id, assistant_id, client)
+
+
     async def _create_publish_message(self, content: "ContextResponseDTO",
-                                      user_id: int,
+                                      user: UserDTOBase,
                                       client: 'TelegramClientDTOGet',
                                       destination_configs: 'NatsDestinationDTO') -> 'NatsQueueMessageDTOStreem':
-        headers = TelegramSimpleHeadersDTO(
-            tg_client_name=str(client.name),
-            tg_user_user_id=str(user_id)
+        headers = TelegramObjectHeadersDTO(
+            tg_client=str(client.name),
+            user=json.dumps(user.dict())
         )
-        print("_______________ HEADERS ", headers)
         return self.publisher.form_stream_message(
             message=content.response,
             subject=destination_configs.subject,
@@ -295,16 +299,24 @@ class ResearchMessageAnswer(MessageAnswer):
                      message: IncomeUserMessageDTOQueue,
                      destination_configs: NatsDestinationDTO,
                      research_id: int):
-        await self.save_user_message(content=message.text, user_id=message.from_user, chat_id=message.chat,
-                                     is_voice=message.voice, is_media=message.media)
+
+        await self.save_user_message(content=message.text,
+                                     user_id=message.from_user,
+                                     chat_id=message.chat,
+                                     is_voice=message.voice,
+                                     is_media=message.media)
+
         assistant = await self.get_assistant(research_id=research_id)
         client: TelegramClientDTOGet = await self.get_client_name(research_id)
         context = await self.context_former.form_context(telegram_id=message.from_user)
         prompt = await self.prompt_generator.research_prompt_generator.generate_prompt(research_id=research_id)
         response: ContextResponseDTO = await self.context_request.get_response(
             context_obj=ContextRequestDTO(prompt=prompt, context=context))
-        await self._publish_and_save_message(content=response, client=client, user_id=message.from_user,
-                                             assistant_id=assistant, destination_configs=destination_configs)
+        await self._publish_and_save_message(content=response,
+                                             client=client,
+                                             user=UserDTOBase(name=message.user_name,tg_user_id=message.from_user),
+                                             assistant_id=assistant,
+                                             destination_configs=destination_configs)
 
 
 class CommonMessageAnswer(MessageAnswer):
@@ -314,8 +326,13 @@ class CommonMessageAnswer(MessageAnswer):
                      message: IncomeUserMessageDTOQueue,
                      destination_configs: NatsDestinationDTO,
                      **kwargs):
-        await self.save_user_message(content=message.text, user_id=message.from_user, chat_id=message.chat,
-                                     is_voice=message.voice, is_media=message.media)
+
+        await self.save_user_message(content=message.text,
+                                     user_id=message.from_user,
+                                     chat_id=message.chat,
+                                     is_voice=message.voice,
+                                     is_media=message.media)
+
         assistant: AssistantDTOGet = await self.get_assistant_for_free_talk()
         client: TelegramClientDTOGet = await self.get_client_name(client_telegram_id=message.client_telegram_id)
         context = await self.context_former.form_context(telegram_id=message.from_user)
@@ -324,7 +341,11 @@ class CommonMessageAnswer(MessageAnswer):
             assistant_id=assistant.assistant_id)
         response: ContextResponseDTO = await self.context_request.get_response(
             context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, context=context))
-        await self._publish_and_save_message(content=response, client=client, user_id=message.from_user,
+
+        await self._publish_and_save_message(content=response,
+                                             client=client,
+                                             user=UserDTOBase(name=message.user_name,
+                                                              tg_user_id=message.from_user),
                                              assistant_id=assistant.assistant_id,
                                              destination_configs=destination_configs)
 

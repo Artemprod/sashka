@@ -49,8 +49,9 @@ class SingletonMeta(type):
 class ClientsManager(metaclass=SingletonMeta):
     """Class for managing clients using the Singleton pattern."""
 
-    MAX_ATTEMPTS = 15
+    MAX_ATTEMPTS = 20
     DELAY_BETWEEN_ATTEMPTS = 3
+    MAX_TIMEOUT = 120
 
     def __init__(self, repository: RepoStorage, redis_connection_manager: RedisClient, routers: List[Any] = None):
         self._repository = repository
@@ -89,31 +90,48 @@ class ClientsManager(metaclass=SingletonMeta):
         """Create a client connection and save its data."""
         client = Client(**client_configs.dict())
         manager = Manager(client=client, communicator=communicator)
+    
         if self._routers:
             self.include_routers(manager, self._routers)
         else:
             logger.warning("No routers for client")
-
+    
         self.managers[client_configs.name] = manager
-        asyncio.create_task(manager.run())
-
+        task = asyncio.create_task(manager.run())
+    
         try:
-            client_data = await self._wait_data(manager)
+            client_data = await asyncio.wait_for(self._wait_data(task, manager), timeout=ClientsManager.MAX_TIMEOUT)
             if client_data:
                 await self._save_new_client(client_configs, manager, client_data)
+    
         except TimeoutError as te:
             logger.error(f"Timeout waiting for client data: {te}")
+    
+        except Exception as exc:
+            logger.error(f"An error occurred during client connection: {exc}")
+            task.cancel()
 
     @staticmethod
-    async def _wait_data(manager: Manager) -> Optional['User']:
+    async def _wait_data(task, manager: Manager) -> Optional['User']:
         """Wait for client data."""
         for attempt in range(1, ClientsManager.MAX_ATTEMPTS + 1):
-            app = await manager.get_app()
-            if app.me:
-                logger.info(f"User data received: {app.me}")
-                return app.me
-            logger.info(f"Attempt {attempt}/{ClientsManager.MAX_ATTEMPTS}: Waiting for user data...")
-            await asyncio.sleep(ClientsManager.DELAY_BETWEEN_ATTEMPTS)
+            try:
+                if task.done():
+                    result = await task
+                    if isinstance(result, Exception):
+                        logger.info(f"Break due to exception {result}")
+                        break
+
+                app = await manager.get_app()
+                if app.me:
+                    logger.info(f"User data received: {app.me}")
+                    return app.me
+
+                logger.info(f"Attempt {attempt}/{ClientsManager.MAX_ATTEMPTS}: Waiting for user data...")
+                await asyncio.sleep(ClientsManager.DELAY_BETWEEN_ATTEMPTS)
+            except asyncio.CancelledError:
+                logger.info("Task was cancelled.")
+
         raise TimeoutError("Failed to receive user data after maximum attempts")
 
     async def _save_new_client(self, configs: ClientConfigDTO, manager: Manager, client_data: 'User') -> Optional[

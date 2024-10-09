@@ -12,7 +12,7 @@ from src_v0.dispatcher.communicators.reggestry import ConsoleCommunicator
 from src_v0.telegram_client.client.model import ClientConfigDTO
 
 from src_v0.telegram_client.client.container import ClientsManager
-from src_v0.telegram_client.client.roters.new_income_message.answer_mesg_router import answ_router
+from src_v0.telegram_client.client.roters.message.router import answ_router
 
 
 
