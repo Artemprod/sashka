@@ -3,6 +3,7 @@ from operator import and_
 from typing import List, Optional
 
 from aiocache import cached, Cache
+from loguru import logger
 from sqlalchemy.orm import joinedload, selectinload
 
 from sqlalchemy import delete, insert, select, update
@@ -108,8 +109,7 @@ class UserRepository(BaseRepository):
                 # DONE Конгвертация в DTO
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
 
-    @cached(ttl=300, cache=Cache.MEMORY)
-    async def update_user_status(self, telegram_id, status: UserStatusEnum) -> UserDTOFull:
+    async def update_user_status(self, telegram_id, status: UserStatusEnum):
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 sub_user = select(User.user_id).where(User.tg_user_id == telegram_id).scalar_subquery()
@@ -122,7 +122,8 @@ class UserRepository(BaseRepository):
 
                 updated = await session.execute(stmt)
                 await session.commit()
-                return UserDTOFull.model_validate(updated.scalar_one(), from_attributes=True)
+                logger.info(f"User status updated {updated}")
+                return updated
 
     async def delete_user(self, telegram_id: int) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
@@ -148,6 +149,7 @@ class UserRepository(BaseRepository):
                 result = await session.execute(stmt)
                 user_id = result.first()
                 return user_id[0]
+
 
 class UserRepositoryFullModel(BaseRepository):
     """

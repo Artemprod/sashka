@@ -5,6 +5,7 @@ from environs import Env
 from faststream import FastStream, ContextRepo
 from faststream.nats import NatsBroker
 from src.subscriber.communicator.routers.message import router as message_router
+from src.subscriber.communicator.routers.commands import router as command_router
 
 from src.subscriber.communicator.loader.on_startup import initialize_communicator
 
@@ -24,5 +25,6 @@ def create_app():
     """Запускает faststream и создает корутину для клиента"""
     broker = NatsBroker(env("NATS_SERVER"))
     broker.include_router(message_router)
+    broker.include_router(command_router)
     app = FastStream(broker=broker, lifespan=lifespan, title="COMMUNICATOR")
     return app

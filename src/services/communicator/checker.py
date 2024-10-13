@@ -32,7 +32,7 @@ class Checker:
             if not user_in_db:
                 return CheckerDTO(user_telegram_id=user_telegram_id, user_in_db=False)
 
-            # TODO вот тут логика нарушена еслитоесть если пользовател не в исоедование  то и не надо research id
+
 
             user_research: Optional[int] = await self._get_user_research_id(user_telegram_id)
 

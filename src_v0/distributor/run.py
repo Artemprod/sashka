@@ -13,6 +13,8 @@ from environs import Env
 from faststream import FastStream, ContextRepo
 from faststream.nats import NatsBroker
 
+from src.telegram_client.client.container import ClientsManager
+from src.telegram_client.client.roters.message.router import answ_router
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.repository.storage import RepoStorage
 from src_v0.distributor.routers.databse.database import database_router
@@ -21,20 +23,22 @@ from src_v0.distributor.routers.message.send_message import router
 from src_v0.distributor.routers.parse.gather_info import parser_router
 from src_v0.distributor.routers.reserch.reserch import reserch_router
 
-from src_v0.telegram_client.client.container import ClientsManager
 from src_v0.distributor.routers.client.handler_clietn import client_router
 from src_v0.database.connections.redis_connect import RedisClient
-from src_v0.telegram_client.client.roters.message.router import answ_router
+
 
 env = Env()
 env.read_env('.env')
+dev_mode = env("DEV_MODE") == "true"
 sys.path.append(str(Path(__file__).parent.parent))
+
 
 @asynccontextmanager
 async def lifespan(context: ContextRepo):
     repository: RepoStorage = RepoStorage(DatabaseSessionManager(database_url=env("DATABASE_URL")))
     redis_connection_manager: RedisClient = RedisClient()
-    container = ClientsManager(repository=repository, redis_connection_manager=redis_connection_manager, routers=[answ_router])
+    container = ClientsManager(repository=repository, redis_connection_manager=redis_connection_manager,
+                               routers=[answ_router], dev_mode=dev_mode)
     await container.start()
     context.set_global("container", container)
     context.set_global("repository", repository)

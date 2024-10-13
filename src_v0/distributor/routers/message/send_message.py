@@ -8,7 +8,7 @@ from faststream.nats import NatsRouter, NatsMessage, JStream
 from pydantic import BaseModel
 from pyrogram import Client
 from pyrogram.errors import PeerIdInvalid
-from src_v0.telegram_client.client.container import ClientsManager
+from src.telegram_client.client.container import ClientsManager
 from nats.js.api import DeliverPolicy, RetentionPolicy
 
 # Создаем маршрутизатор NATS и две очереди JStream
@@ -61,11 +61,11 @@ async def _extract_user_from_headers(headers) -> UserDTOBase:
     logger.error("Invalid user header format.")
     raise ValueError("Invalid user header format.")
 
-
+#TODO Убрать в папку депенденси и разнести по разным функцим
 async def _get_data_from_headers(msg: NatsMessage, context=Context()) -> Datas:
     print(msg.headers)
     user = await _extract_user_from_headers(msg.headers)
-    client_name = msg.headers.get("tg_client")
+    client_name = msg.headers.get("tg_client") if msg.headers.get("tg_client") else msg.headers.get("tg_client_name")
     if not client_name:
         logger.error("Missing client name in headers.")
         raise ValueError("Missing client name in headers.")

@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 
-
 from typing import Union, List, Optional
 
 from aiocache import cached, Cache
@@ -8,6 +7,7 @@ from aiocache import cached, Cache
 from src.schemas.communicator.prompt import PromptDTO
 
 from src.schemas.service.assistant import AssistantDTOGet
+from src.schemas.service.prompt import PingPromptDTO
 
 from src_v0.database.repository.storage import RepoStorage
 
@@ -74,10 +74,21 @@ class CommonMessagePromptGenerator(BasePromptGenerator):
         )
 
 
+class PingPromptGenerator(BasePromptGenerator):
+
+    @cached(ttl=300, cache=Cache.MEMORY)
+    async def generate_prompt(self, message_number: int) -> PromptDTO:
+        try:
+            prompt: PingPromptDTO = await self.repository.ping_prompt_repo.get_ping_prompt_by_order_number(
+                ping_order_number=message_number)
+            return PromptDTO(user_prompt=prompt.prompt, system_prompt=prompt.system_prompt)
+        except Exception as e:
+            raise e
+
+
 class PromptGenerator:
 
-    def __init__(self, repository:RepoStorage):
-
+    def __init__(self, repository: RepoStorage):
         self.first_message_generator = FirstMessagePromptGenerator(repository=repository)
         self.research_prompt_generator = ResearchMessagePromptGenerator(repository=repository)
         self.common_prompt_generator = CommonMessagePromptGenerator(repository=repository)
@@ -91,5 +102,16 @@ class PromptGenerator:
         return await self.research_prompt_generator.generate_prompt(research_id)
 
     @cached(ttl=300, cache=Cache.MEMORY)
-    async def generate_common_prompt(self,assistant_id:int) -> PromptDTO:
+    async def generate_common_prompt(self, assistant_id: int) -> PromptDTO:
         return await self.common_prompt_generator.generate_prompt(assistant_id=assistant_id)
+
+
+class ExtendedPingPromptGenerator(PromptGenerator):
+
+    def __init__(self, repository: RepoStorage):
+        PromptGenerator.__init__(self, repository=repository)
+        self.ping_prompt_generator = PingPromptGenerator(repository=repository)
+
+    @cached(ttl=300, cache=Cache.MEMORY)
+    async def generate_ping_prompt(self, message_number: int) -> PromptDTO:
+        return await self.ping_prompt_generator.generate_prompt(message_number=message_number)

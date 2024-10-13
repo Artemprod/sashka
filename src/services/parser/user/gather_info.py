@@ -11,7 +11,7 @@ from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.queue import NatsReplyRequestQueueMessageDTOStreem, TelegramObjectHeadersDTO
 from src.schemas.service.response import ResponseModel
 from src.schemas.service.user import UserDTOQueue, UserDTO, UserDTOBase
-from src.services.publisher.messager import NatsPublisher
+from src.services.publisher.publisher import NatsPublisher
 
 
 class UserInformationCollector(ABC):

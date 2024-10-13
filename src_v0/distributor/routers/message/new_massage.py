@@ -4,7 +4,7 @@ from faststream.nats import NatsRouter, NatsBroker, NatsMessage, JStream
 from pyrogram import Client
 
 
-from src_v0.telegram_client.client.container import ClientsManager
+from src.telegram_client.client.container import ClientsManager
 
 
 

@@ -1,14 +1,11 @@
 import asyncio
-
+from loguru import logger
 from pyrogram import Client, errors, idle, raw
-
-from src_v0.database.repository.storage import RepoStorage
 from src_v0.dispatcher.communicators.reggestry import BaseCommunicator, ConsoleCommunicator
-from src_v0.telegram_client.client.roters.router import Router
-
-from src_v0.telegram_client.exceptions.autrization import ClientAuthorizationConnectionError, MaxAttemptsExceededError, \
+from src.telegram_client.client.roters.router import Router
+from src.telegram_client.exceptions.autrization import ClientAuthorizationConnectionError, MaxAttemptsExceededError, \
     AutorizationFaildError
-from src_v0.telegram_client.exceptions.connection import ClientConnectionError, NoClientError
+from src.telegram_client.exceptions.connection import ClientConnectionError, NoClientError
 
 
 # # DONE Установка кастомных настроект девайса для клиента и языка ( настройки будут передоваться вметсе с конфигами ДТО)
@@ -25,13 +22,18 @@ class Manager:
 
     def __init__(self,
                  client: Client = None,
-                 communicator: BaseCommunicator = ConsoleCommunicator()):
-        
+                 dev_mode: bool = False,
+                 communicator: BaseCommunicator = ConsoleCommunicator()
+                 ):
+
         self.app: Client = client
         self._communicator = communicator
         self.session_string = None
         self.is_authorize_status = False
         self.is_banned = False
+        self.dev_mode = dev_mode
+        logger.warning("CLIENT MANAGER DEV MODE IS ON") if self.dev_mode else logger.warning(
+            "CLIENT MANAGER PRODUCTION MODE")
 
     @property
     def communicator(self) -> BaseCommunicator:
@@ -43,6 +45,11 @@ class Manager:
 
     async def get_app(self):
         return self.app
+
+    async def dev_mode_get_code(self) -> str:
+        if self.app.phone_number:
+            return str(self.app.phone_number[5] * 5)
+        raise ValueError("No phone number for testing")
 
     def include_router(self, router: Router):
         for handler, group in router.get_handlers():
@@ -83,10 +90,19 @@ class Manager:
 
             while send_code_attempt < Manager.auth_attempts:
                 send_code = await self.app.send_code(self.app.phone_number)
+
                 code_enter_attempts = 0
+                logger.debug(f"CODE WAS SENT ON {self.app.phone_number}")
+                logger.debug(f"send_data_________________ {send_code}")
 
                 while code_enter_attempts < Manager.auth_attempts:
-                    code = await self._communicator.get_code()
+
+                    if not self.dev_mode:
+                        code = await self._communicator.get_code()
+                        logger.debug(f"CODE____________{code}")
+                    else:
+                        code = await self.dev_mode_get_code()
+                        logger.debug(f"CODE____________{ code }")
 
                     try:
                         await self.app.sign_in(phone_number=self.app.phone_number,

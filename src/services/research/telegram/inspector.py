@@ -1,4 +1,5 @@
 import asyncio
+import json
 import math
 import re
 from dataclasses import dataclass
@@ -8,11 +9,11 @@ from typing import List, Dict, Any, Optional
 from loguru import logger
 
 from src.schemas.service.message import AssistantMessageDTOPost
-from src.schemas.service.queue import NatsQueueMessageDTOStreem
+from src.schemas.service.queue import NatsQueueMessageDTOStreem, NatsQueueMessageDTOSubject
 from src.schemas.service.research import ResearchDTOFull
 from src.schemas.service.user import UserDTOFull, UserDTOBase
 from src.services.communicator.communicator import TelegramCommunicator
-from src.services.publisher.messager import NatsPublisher
+from src.services.publisher.publisher import NatsPublisher
 from src.services.publisher.notification import TelegramNotificator
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 
@@ -20,22 +21,23 @@ from src_v0.database.postgres.models.enum_types import ResearchStatusEnum, UserS
 from src_v0.database.repository.storage import RepoStorage
 
 
-@dataclass
-class PingatorConfig:
-    max_pings: int = 4
-    ping_attempts: int = 20
-    ping_interval: int = 10  # в секундах
-    nats_subject = "test.message.conversation.send",
-    nast_stream = "CONVERSATION",
-
-
 class ResearchStarter:
-    def __init__(self, repository: RepoStorage, communicator:TelegramCommunicator):
+    def __init__(self,
+                 repository: RepoStorage,
+                 publisher: NatsPublisher):
+
         self.repository = repository
-        self.communicator = communicator
+        self.publisher = publisher
+        self.settings = self._load_seatings()
+
+    def _load_seatings(self):
+        return {
+            "command_subject": "command.dialog.start"
+        }
 
     async def start_up_research(self, research_id: int) -> None:
         """ Начинает исследование, разослав сообщения пользователям. """
+
         await self.repository.status_repo.research_status.change_research_status(
             research_id=research_id, status=ResearchStatusEnum.IN_PROGRESS
         )
@@ -46,19 +48,36 @@ class ResearchStarter:
         await self.repository.status_repo.user_status.update_status_group_of_user(
             user_group=user_ids, status=UserStatusEnum.IN_PROGRESS
         )
-        users_dto = [UserDTOBase(name=user.name, tg_user_id=user.tg_user_id) for user in user_group]
-        await self.communicator.make_first_message_distribution(users=users_dto,research_id=research_id)
-        logger.info("Все приветственные сообщения отправлены")
+        users_dto = [UserDTOBase(name=user.name, tg_user_id=user.tg_user_id).dict() for user in user_group]
+        await self._publish_star_dialog_command(users=users_dto, research_id=research_id)
+
+        # await self.communicator.make_first_message_distribution(users_dto, research_id=research_id)
+        logger.info("Команда отправлена ")
+
+    async def _publish_star_dialog_command(self, users: List[dict], research_id: int):
+        subject_message: NatsQueueMessageDTOSubject = NatsQueueMessageDTOSubject(
+            message="",
+            subject=self.settings['command_subject'],
+            headers={"users": json.dumps(users),
+                     "research_id": str(research_id)},
+        )
+        try:
+            await self.publisher.publish_message_to_subject(subject_message=subject_message)
+        except Exception as e:
+            raise e
 
     async def _get_users_in_research(self, research_id) -> List[UserDTOFull]:
-        users_in_research:List[UserDTOFull] = await self.repository.user_in_research_repo.short.get_users_by_research_id(
+        users_in_research: List[
+            UserDTOFull] = await self.repository.user_in_research_repo.short.get_users_by_research_id(
             research_id=research_id
         )
-        return
+        return users_in_research
 
 
 class ResearchStopper:
-    def __init__(self, repository: RepoStorage, notifier):
+    def __init__(self,
+                 repository: RepoStorage,
+                 notifier):
         self.repository = repository
         self.notifier = notifier
 
@@ -81,6 +100,7 @@ class ResearchStopper:
         if research_status.status_name != ResearchStatusEnum.IN_PROGRESS and not user_in_progress:
             logger.info("Исследование завершено")
             await self.notifier.notify_completion()
+
         else:
             logger.info("Исследование не завершено")
             logger.info(
@@ -161,7 +181,8 @@ class ResearchOverChecker:
 class StopWordChecker:
     """Класс для поиска как точного, так и частичного стоп-слов в сообщениях, завершение исследования при их нахождении."""
 
-    def __init__(self, stopper: 'ResearchStopper',
+    def __init__(self,
+                 stopper: 'ResearchStopper',
                  repo: 'RepoStorage',
                  stop_phrases: Optional[List[str]] = None):
         """
@@ -252,12 +273,21 @@ class PingDelayCalculator:
 
 
 class UserPingator:
-    def __init__(self, repo: RepoStorage, communicator: OpenAiresponser, publisher: NatsPublisher,
-                 config: PingatorConfig = PingatorConfig()):
+    @dataclass
+    class PingatorConfig:
+        max_pings: int = 4
+        ping_attempts: int = 20
+        ping_interval: int = 10  # в секундах
+        command_ping_subject: str = "command.user.ping"
+
+    def __init__(self, repo: RepoStorage,
+                 publisher: NatsPublisher,
+                 ):
+
+        self.settings = None
         self.repo = repo
-        self.communicator = communicator
         self.publisher = publisher
-        self.config = config
+        self.config = UserPingator.PingatorConfig()
 
     async def ping_users(self, research_id: int):
         """Пинг пользователей до тех пор, пока есть активные пользователи."""
@@ -306,27 +336,30 @@ class UserPingator:
 
             current_time_utc = datetime.now(timezone.utc)
             if send_time <= current_time_utc:
-                await self.send_ping_message(user=user, prompt_number=unresponded_messages, research_info=research_info)
+                await self.send_command_message_ping_user(user=user, message_number=unresponded_messages,
+                                                          research_id=research_info.research_id)
         except Exception as e:
             logger.error(f"Ошибка в обработке пинга для пользователя {user.tg_user_id}: {str(e)}")
 
-    async def send_ping_message(self, user: UserDTOFull, prompt_number: int, research_info: ResearchDTOFull):
+    # TODO
+    async def send_command_message_ping_user(self, user: UserDTOFull, message_number: int, research_id: int):
         """Отправка пинг-сообщения."""
+
+        subject_message: NatsQueueMessageDTOSubject = NatsQueueMessageDTOSubject(
+
+            message="",
+            subject=self.config.command_ping_subject,
+            headers=json.dumps({"user": user.dict(),
+                                "message_number": message_number,
+                                "research_id": research_id}),
+        )
+
         try:
-            prompt_object = await self.repo.ping_prompt_repo.get_ping_prompt_by_order_number(
-                ping_order_number=prompt_number)
-            message = await self.communicator.one_message(prompt_object.prompt, prompt_object.system_prompt)
-
-            assistant_message = self.generate_assistant_message_object(message, user, research_info)
-            await self.repo.message_repo.assistant.save_new_message(values=assistant_message.dict())
-
-            nats_message = self.generate_nats_message_object(message, user, research_info)
-            await self.publisher.publish_message_to_stream(nats_message)
-            logger.info(f"Пинг-сообщение отправлено пользователю {user.tg_user_id}")
-
+            await self.publisher.publish_message_to_subject(subject_message=subject_message)
         except Exception as e:
             logger.error(f"Ошибка при отправке пинг-сообщения: {str(e)}")
-            # TODO: Возможно добавить повторные попытки отправки или логику алертинга
+
+    # TODO: Возможно добавить повторные попытки отправки или логику алертинга
 
     async def get_research_current_status(self, research_id: int) -> str:
         research_status = await self.repo.status_repo.research_status.get_research_status(research_id=research_id)
@@ -351,51 +384,18 @@ class UserPingator:
         return await self.repo.status_repo.user_status.get_users_by_research_with_status(research_id=research_id,
                                                                                          status=UserStatusEnum.IN_PROGRESS)
 
-    @staticmethod
-    def generate_assistant_message_object(message: str, user: UserDTOFull,
-                                          research_info: ResearchDTOFull) -> AssistantMessageDTOPost:
-        """Генерация объекта сообщения ассистента."""
-        return AssistantMessageDTOPost(
-            text=message,
-            chat_id=user.tg_user_id,
-            to_user_id=user.tg_user_id,
-            assistant_id=research_info.assistant_id,
-            telegram_client_id=research_info.telegram_client_id
-        )
-
-    def generate_nats_message_object(self, message: str, user: UserDTOFull,
-                                     research_info: ResearchDTOFull) -> NatsQueueMessageDTOStreem:
-        """Генерация сообщения для публикации в очередь NATS."""
-        headers = self.form_headers(
-            {"telegram_client_name": research_info.telegram_client_id, "tg_user_id": user.tg_user_id})
-        return NatsQueueMessageDTOStreem(
-            message=message,
-            subject=self.config.nats_subject,
-            stream=self.config.nast_stream,
-            headers=headers,
-        )
-
-    @staticmethod
-    def form_headers(data: Dict[str, Any]) -> NatsTelegramHeaders:
-        """Формирование заголовков для сообщения в NATS."""
-        return NatsTelegramHeaders(
-            telegram_client_name=str(data.get('telegram_client_name')),
-            tg_user_id=str(data.get('tg_user_id'))
-        )
-
 
 class ResearchProcess:
     def __init__(self,
                  repository: RepoStorage,
-                 communicator: Communicator,
                  notifier,
-                 publisher,
-                 gpt_communicator: OpenAiresponser):
+                 publisher: NatsPublisher,
+                 ):
 
-        self.research_starter = ResearchStarter(repository=repository, communicator=communicator)
+        self.research_starter = ResearchStarter(repository=repository, publisher=publisher)
         self.research_stopper = ResearchStopper(repository, notifier)
         self.research_over_checker = ResearchOverChecker(repository, self.research_stopper)
-        self.research_user_pingator = UserPingator(repo=repository, communicator=gpt_communicator, publisher=publisher)
+        self.research_user_pingator = UserPingator(repo=repository, publisher=publisher)
 
     async def run(self, research_id: int) -> None:
         """ Основной цикл проведения исследования. """
@@ -427,20 +427,13 @@ if __name__ == '__main__':
         # Создание необходимых объектов
         repository = RepoStorage(database_session_manager=DatabaseSessionManager(
             database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
-
-        chatgpt_communicator = OpenAiresponser(
-            repo=repository)
-        communicator = Communicator(repo=repository, ai_responser=chatgpt_communicator)
         notifier = TelegramNotificator()  # Пример: заменить на реальный экземпляр NatsBroker или другого брокера
         publisher = NatsPublisher()
-        process = ResearchProcess(repository=repository, communicator=communicator,
+        process = ResearchProcess(repository=repository,
                                   notifier=notifier,
                                   publisher=publisher,
-                                  gpt_communicator=chatgpt_communicator)
-
-        # Укажите реальный идентификатор исследования
-        research_id = 38  # Пример идентификатора исследования
-
+                                  )
+        research_id = 2
         await process.run(research_id)
 
 

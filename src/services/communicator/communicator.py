@@ -19,8 +19,8 @@ from src.schemas.service.message import AssistantMessageDTOPost, UserMessageDTOP
 from src.schemas.service.user import UserDTOFull, UserDTO, UserDTOBase
 from src.services.communicator.checker import Checker
 from src.services.communicator.messager import MessageFirstSend, ResearchMessageAnswer, CommonMessageAnswer, \
-    MessageGeneratorTimeDelay
-from src.services.communicator.prompt_generator import PromptGenerator
+    MessageGeneratorTimeDelay, PingMessage
+from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
@@ -32,7 +32,7 @@ from typing import Union
 
 from src.schemas.service.queue import NatsQueueMessageDTOSubject, NatsQueueMessageDTOStreem, TelegramTimeDelaHeadersDTO, \
     TelegramSimpleHeadersDTO
-from src.services.publisher.messager import NatsPublisher
+from src.services.publisher.publisher import NatsPublisher
 
 
 class TelegramCommunicator:
@@ -44,7 +44,7 @@ class TelegramCommunicator:
                  publisher: "NatsPublisher",
                  single_request: "SingleRequest",
                  context_request: "ContextRequest",
-                 prompt_generator: "PromptGenerator",
+                 prompt_generator: "ExtendedPingPromptGenerator",
                  destination_configs: Optional[Dict] = None):
 
         self._repository = repository
@@ -70,6 +70,14 @@ class TelegramCommunicator:
             prompt_generator=prompt_generator,
             context_request=context_request
         )
+
+        self.ping_message = PingMessage(
+            publisher=publisher,
+            repository=repository,
+            prompt_generator=prompt_generator,
+            context_request=context_request
+        )
+
     # TODO Вынести конфиги и закгрузку конфигов в отдельный модуль
     @staticmethod
     def _load_destination_configs() -> dict:
@@ -85,8 +93,10 @@ class TelegramCommunicator:
                                                          research_id=research_id)
         except Exception as e:
             raise e
+
     #TODO Вынести ответчик в отдельные классы например ответ на текстовое сообщение ответ на аудио ответ на картинку
     #TODO Возмодно вынести проверку пользвателя в базе данных их класса принциа единой отвесвтенности
+    #TODO тогда уберуться ненужные методы в реплаер тут будет апи только для взаимодействия с ИИ и ответ
     async def reply_message(self, message_object: "IncomeUserMessageDTOQueue"):
         """Обрабатывает и отвечает на входящее сообщение."""
 
@@ -105,6 +115,15 @@ class TelegramCommunicator:
         else:
             logger.warning(f"User not in database: {message_object.from_user}")
             # Можно отправить сообщение пользователю о необходимости регистрации
+
+    async def ping_user(self, user: UserDTOBase, message_number,research_id):
+        try:
+            await self.ping_message.handle(user=user,
+                                           message_number=message_number,
+                                           research_id=research_id,
+                                           destination_configs=self._destination_configs['reply'])
+        except Exception as e:
+            raise e
 
     async def _handle_message(self, message_object: "IncomeUserMessageDTOQueue",
                               user_research_id: Optional[str]):

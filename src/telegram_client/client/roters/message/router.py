@@ -5,8 +5,8 @@ from pydantic import ValidationError
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
-from src_v0.telegram_client.client.roters.message.models import HeaderUserMessageDTOQueue
-from src_v0.telegram_client.client.roters.router import Router
+from src.telegram_client.client.roters.message.models import HeaderUserMessageDTOQueue
+from src.telegram_client.client.roters.router import Router
 
 answ_router = Router(name="my_router")
 

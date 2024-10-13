@@ -7,12 +7,13 @@ from faststream.nats import NatsRouter, NatsBroker, NatsMessage, JStream
 from pydantic import BaseModel
 from pyrogram import Client
 
+from src.telegram_client.client.container import ClientsManager
+from src.telegram_client.client.model import ClientConfigDTO
+from src.telegram_client.client.roters.message.router import answ_router
 from src_v0.dispatcher.communicators.reggestry import ConsoleCommunicator
 
-from src_v0.telegram_client.client.model import ClientConfigDTO
 
-from src_v0.telegram_client.client.container import ClientsManager
-from src_v0.telegram_client.client.roters.message.router import answ_router
+
 
 
 
@@ -22,7 +23,7 @@ client_router = NatsRouter()
 
 
 
-# TODO Если я делегирую сохранения в базе данных нового клеинта на менеджера ?
+
 @client_router.subscriber("create_clietn", )
 async def create_client(message, context=Context()):
     """Инициализирует клиента и запускает его"""

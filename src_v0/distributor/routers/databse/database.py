@@ -6,10 +6,10 @@ from faststream import Context
 from faststream.nats import NatsRouter
 from loguru import logger
 
+from src.telegram_client.client.model import ClientConfigDTO
 from src_v0.database.connections.redis_connect import RedisClient
 from src_v0.database.repository.storage import RepoStorage
-from src_v0.telegram_client.client.model import ClientConfigDTO
-from src_v0.telegram_client.exceptions.autrization import AutorizationFaildError
+
 
 database_router = NatsRouter()
 

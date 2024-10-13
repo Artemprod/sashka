@@ -17,7 +17,7 @@ from src.schemas.service.assistant import AssistantDTOGet
 from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.message import AssistantMessageDTOPost, UserMessageDTOPost
 from src.schemas.service.user import UserDTOFull, UserDTOBase
-from src.services.communicator.prompt_generator import PromptGenerator
+from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
 from src_v0.database.postgres.models.enum_types import UserStatusEnum
 from src_v0.database.repository.storage import RepoStorage
@@ -27,7 +27,7 @@ from typing import Union
 
 from src.schemas.service.queue import NatsQueueMessageDTOSubject, NatsQueueMessageDTOStreem, TelegramTimeDelaHeadersDTO, \
     TelegramSimpleHeadersDTO, TelegramObjectHeadersDTO
-from src.services.publisher.messager import NatsPublisher
+from src.services.publisher.publisher import NatsPublisher
 
 
 # TODO сделать рефактор и вынести все что можно вынести в модуль
@@ -99,7 +99,7 @@ class MessageFromContext:
 
 
 class BaseMessageHandler(ABC):
-    def __init__(self, publisher: 'NatsPublisher', repository: 'RepoStorage', prompt_generator: 'PromptGenerator'):
+    def __init__(self, publisher: 'NatsPublisher', repository: 'RepoStorage', prompt_generator: "ExtendedPingPromptGenerator"):
         self.repository = repository
         self.publisher = publisher
         self.prompt_generator = prompt_generator
@@ -209,12 +209,15 @@ class MessageFirstSend(BaseMessageHandler):
                             assistant_id: int,
                             destination_configs: 'NatsDestinationDTO'):
         try:
+
             single_request_object = await self.form_single_request(research_id)
             content: SingleResponseDTO = await self.single_request.get_response(single_obj=single_request_object)
             await self._publish_and_save_message(content, user, send_time, client, assistant_id, destination_configs)
             await self._change_user_status_in_progress(telegram_id=user.tg_user_id)
+
         except Exception as e:
             logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
+            raise e
 
     async def _publish_and_save_message(self,
                                         content: "SingleResponseDTO",
@@ -227,7 +230,8 @@ class MessageFirstSend(BaseMessageHandler):
         await self.publisher.publish_message_to_stream(stream_message=publish_message)
         await self.save_assistant_message(content.response, user.tg_user_id, assistant_id, client)
 
-    async def _create_publish_message(self, content: 'SingleResponseDTO',
+    async def _create_publish_message(self,
+                                      content: 'SingleResponseDTO',
                                       user: UserDTOBase,
                                       send_time: datetime,
                                       client: 'TelegramClientDTOGet',
@@ -239,7 +243,7 @@ class MessageFirstSend(BaseMessageHandler):
             send_time_msg_timestamp=str(datetime.now(tz=timezone.utc).timestamp()),
             send_time_next_message_timestamp=str(send_time.timestamp())
         )
-        return await self.publisher.form_stream_message(
+        return self.publisher.form_stream_message(
             message=content.response,
             subject=destination_configs.subject,
             stream=destination_configs.stream,
@@ -254,13 +258,32 @@ class MessageFirstSend(BaseMessageHandler):
         except Exception as e:
             raise e
 
+# class SingelMessage(BaseMessageHandler):
+
+    # async def handle(self):
+    #
+    #     client: TelegramClientDTOGet = await self.get_client_name(research_id)
+    #     context = await self.context_former.form_context(telegram_id=message.from_user)
+    #     prompt = await self.prompt_generator.research_prompt_generator.generate_prompt(research_id=research_id)
+    #
+    #     response: ContextResponseDTO = await self.context_request.get_response(
+    #         context_obj=ContextRequestDTO(prompt=prompt, context=context))
+    #
+    #     #TODO убрать этот метод в коммуникатор я думаю это ответсвенность коммуникатора за публикацию
+    #     await self._publish_and_save_message(content=response,
+    #                                          client=client,
+    #                                          user=UserDTOBase(name=message.user_name, tg_user_id=message.from_user),
+    #                                          assistant_id=assistant,
+    #                                          destination_configs=destination_configs)
+
 
 class MessageAnswer(BaseMessageHandler):
     def __init__(self,
                  publisher,
                  repository,
-                 prompt_generator,
+                 prompt_generator:"ExtendedPingPromptGenerator",
                  context_request: "ContextRequest"):
+
         super().__init__(publisher, repository, prompt_generator)
         self.context_former = MessageFromContext(repository=repository)
         self.context_request = context_request
@@ -354,3 +377,27 @@ class CommonMessageAnswer(MessageAnswer):
     async def get_assistant_for_free_talk(self) -> Optional[AssistantDTOGet]:
         assistants = await self.repository.assistant_repo.get_all_assistants()
         return next((asis for asis in assistants if asis.for_conversation), None)
+
+
+#TODO разные классы заддач разщнести по разным классам и вынести метод паблишишера эти классыы только фомрирует ответ от ИИ
+#Ответы от ИИ какие бывают ...
+class PingMessage(MessageAnswer):
+    """ сообщения для пинга пользователоей в иследовании """
+
+    async def handle(self,user: UserDTOBase,message_number,research_id: int, destination_configs: NatsDestinationDTO ):
+
+        assistant_id:int = await self.get_assistant(research_id=research_id)
+        client: TelegramClientDTOGet = await self.get_client_name(research_id)
+        context = await self.context_former.form_context(telegram_id=user.from_user)
+        prompt = await self.prompt_generator.ping_prompt_generator.generate_prompt(message_number=message_number)
+
+        response: ContextResponseDTO = await self.context_request.get_response(
+            context_obj=ContextRequestDTO(prompt=prompt, context=context))
+
+        # TODO убрать этот метод в коммуникатор я думаю это ответсвенность коммуникатора за публикацию
+        await self._publish_and_save_message(content=response,
+                                             client=client,
+                                             user=user,
+                                             assistant_id=assistant_id,
+                                             destination_configs=destination_configs
+                                             )

@@ -4,7 +4,7 @@ import pytest
 from pyrogram import Client
 
 from src_v0.dispatcher.communicators.reggestry import BaseCommunicator
-from src_v0.telegram_client.client import Manager
+from src.telegram_client.client import Manager
 
 from testdata import TEST_CASES, TestDataCases
 
@@ -50,10 +50,8 @@ class TestManager:
                                  session_folder
                                  ):
         session_path = os.path.normpath(str(os.path.join(session_folder, test_case.name)))
-        app = Client(name=session_path, api_id=test_case.api_id, api_hash=test_case.api_hash,
-                     phone_number=test_case.test_phone,
-                     password=test_case.test_password,
-                     test_mode=True)
+        app = Client(name=session_path, api_id=test_case.api_id, api_hash=test_case.api_hash, test_mode=True,
+                     phone_number=test_case.test_phone, password=test_case.test_password, autorization_callback=None)
         manager: Manager = Manager(app)
         manager.auth_attempts = 1
         with test_case.expectation:

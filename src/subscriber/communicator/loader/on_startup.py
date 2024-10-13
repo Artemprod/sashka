@@ -1,8 +1,8 @@
 from src.services.communicator.communicator import TelegramCommunicator
-from src.services.communicator.prompt_generator import PromptGenerator
+from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
-from src.services.publisher.messager import NatsPublisher
+from src.services.publisher.publisher import NatsPublisher
 from src_v0.database.postgres.engine.session import DatabaseSessionManager
 from src_v0.database.repository.storage import RepoStorage
 
@@ -16,7 +16,7 @@ def initialize_communicator() -> TelegramCommunicator:
     info_collector = TelegramUserInformationCollector(publisher=publisher)
     single_request = SingleRequest()
     context_request = ContextRequest()
-    prompt_generator = PromptGenerator(repository=repository)
+    prompt_generator = ExtendedPingPromptGenerator(repository=repository)
     communicator = TelegramCommunicator(repository=repository,
                                         info_collector=info_collector,
                                         publisher=publisher,

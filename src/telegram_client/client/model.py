@@ -15,8 +15,8 @@ SYSTEM_VERSION = f"{platform.system()} {platform.release()}"
 
 class ClientConfigDTO(BaseModel):
     name: str
-    api_id: Union[int, str] = None
-    api_hash: Optional[str] = None
+    api_id: str
+    api_hash: str
     app_version: str = Field(default_factory=lambda: APP_VERSION)
     device_model: str = Field(default_factory=lambda: DEVICE_MODEL)
     system_version: str = Field(default_factory=lambda: SYSTEM_VERSION)

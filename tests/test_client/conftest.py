@@ -18,10 +18,8 @@ async def init_client():
     env = Env()
     env.read_env('.env')
     session_path = r"D:\projects\AIPO_V2\CUSTDEVER\tests\test_client\session_files\test.session"
-    app = Client(name=session_path, api_id=api_id, api_hash=api_has,
-                 phone_number=test_phone,
-                 password=test_password,
-                 test_mode=True)
+    app = Client(name=session_path, api_id=api_id, api_hash=api_has, test_mode=True, phone_number=test_phone,
+                 password=test_password, autorization_callback=None)
     yield app
 
 
