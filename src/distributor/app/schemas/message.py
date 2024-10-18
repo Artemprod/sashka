@@ -1,10 +1,9 @@
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
-
 
 from pydantic import BaseModel
 from pyrogram import Client
-
+from telethon import TelegramClient
 
 from src.distributor.telegram_client.pyro.client.container import ClientsManager
 
@@ -34,7 +33,7 @@ class TelegramTimeDelaHeadersDTO(NatsHeaders):
 class Datas(BaseModel):
     user: UserDTOBase
     client_name: str
-    client: Client
+    client: Union[Client, TelegramClient]
     container: ClientsManager
     current_time: datetime
     send_time: datetime

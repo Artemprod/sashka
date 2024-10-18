@@ -9,7 +9,7 @@ from loguru import logger
 from src.distributor.app.routers.parse.gather_info import Datas
 from src.distributor.app.schemas.message import UserDTOBase
 from src.distributor.telegram_client.pyro.client.container import ClientsManager
-from src.distributor.telegram_client.telethoncl.manager.сcontainer import TelethonClientsContainer
+from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
 
 
 def get_container(context: Context, container_type: str = "telethon_container") -> Optional[

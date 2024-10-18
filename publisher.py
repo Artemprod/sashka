@@ -5,7 +5,7 @@ from random import randint
 from faststream.nats import NatsBroker
 from pyrogram.enums import ParseMode
 
-from src.distributor.telegram_client.device_configs import iPhoneX
+from src.distributor.telegram_client.device_configs import iPhoneX, GooglePixel5
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 from src.distributor.telegram_client.pyro.te_cli_ import MyClient
 
@@ -42,14 +42,14 @@ async def pub():
     async with NatsBroker() as broker:
         client_configs = ClientConfigDTO(
             name=f"test",
-            app_version=iPhoneX.app_version,
-            device_model=iPhoneX.device_model,
-            system_version=iPhoneX.system_version,
+            app_version=GooglePixel5.app_version,
+            device_model=GooglePixel5.device_model,
+            system_version="4.16.30-vxCUSTOM",
             api_id=API_ID,
             api_hash=API_HASH,
             test_mode=False,
-            phone_number="994557812682",
-            password='',
+            phone_number="573175306617",
+            password='7532',
             parse_mode=ParseMode.MARKDOWN.value,
         )
         await broker.publish(client_configs.to_dict(), subject="client.telethon.create")

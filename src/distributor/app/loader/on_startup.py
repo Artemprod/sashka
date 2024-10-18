@@ -5,7 +5,7 @@ from loguru import logger
 from src.distributor.telegram_client.pyro.client.container import ClientsManager
 from src.distributor.telegram_client.pyro.client.roters.message.router import answ_router
 from src.distributor.telegram_client.telethoncl.handlers.loader import find_handlers_in_directories
-from src.distributor.telegram_client.telethoncl.manager.сcontainer import TelethonClientsContainer
+from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
 from src.database.repository.storage import RepoStorage
 
 

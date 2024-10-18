@@ -2,9 +2,12 @@ import asyncio
 from asyncio import CancelledError
 from typing import Dict, Optional, List
 
+from environs import Env
 from loguru import logger
 
 from src.database.exceptions.read import EmptyTableError
+from src.database.postgres.engine.session import DatabaseSessionManager
+from src.database.repository.storage import RepoStorage
 from src.dispatcher.communicators.reggestry import ConsoleCommunicator
 from src.distributor.telegram_client.interface.container import InterfaceClientsContainer
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
@@ -14,7 +17,7 @@ from src.distributor.telegram_client.telethoncl.manager.manager import TelethonM
 class TelethonClientsContainer(InterfaceClientsContainer):
     def __init__(self,
                  repository,
-                 dev_mode,
+                 dev_mode=False,
                  settings=None,
                  handlers: List = None):
 
@@ -26,6 +29,13 @@ class TelethonClientsContainer(InterfaceClientsContainer):
         self.loop = asyncio.get_event_loop()
 
         logger.warning("DEV MODE IS ON") if self.dev_mode else logger.warning("PRODUCTION MODE")
+
+    def __getitem__(self, item: str):
+        return self.managers[item]
+
+    def __setitem__(self, key: str, value):
+        self.managers[key] = value
+        logger.info(f"Added {value}")
 
     def _load_settings(self):
         return {"shelve_file_name": "managers"}
@@ -106,6 +116,7 @@ class TelethonClientsContainer(InterfaceClientsContainer):
 
     async def start_all_clients(self):
         await self._load_managers_from_db()
+        print()
         tasks = [self.start_client(name) for name in self.managers]
         try:
             await asyncio.gather(*tasks)
@@ -113,3 +124,14 @@ class TelethonClientsContainer(InterfaceClientsContainer):
             logger.error(f"Error in starting all clients: {str(e)}")
         except CancelledError:
             logger.info("Client start operation cancelled.")
+
+
+if __name__ == '__main__':
+    env = Env()
+    env.read_env('.env')
+    repository = RepoStorage(database_session_manager=DatabaseSessionManager(
+        database_url=env("DATABASE_URL")))
+
+    a = TelethonClientsContainer(repository=repository)
+    a['manager'] = TelethonManager
+    print(a['manager'])

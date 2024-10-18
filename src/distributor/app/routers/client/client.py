@@ -11,7 +11,7 @@ from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 
 from src.dispatcher.communicators.reggestry import ConsoleCommunicator
 from src.distributor.telegram_client.pyro.client.roters.message.router import answ_router
-from src.distributor.telegram_client.telethoncl.manager.сcontainer import TelethonClientsContainer
+from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
 
 router = NatsRouter()
 

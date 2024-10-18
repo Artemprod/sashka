@@ -31,6 +31,7 @@ async def lifespan(context: ContextRepo):
     telethon_container = initialize_telethon_container(repository=repository)
     pyrogram_container = initialize_pyrogram_container(repository=repository,
                                                        redis_connection_manager=redis_connection_manager)
+    await telethon_container.start_all_clients()
     context.set_global("telethon_container", telethon_container)
     context.set_global("pyrogram_container", pyrogram_container)
     logger.info("app has been startup")
