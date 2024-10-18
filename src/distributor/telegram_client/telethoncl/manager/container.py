@@ -101,10 +101,12 @@ class TelethonClientsContainer(InterfaceClientsContainer):
         logger.info("Loading managers from database...")
         try:
             db_managers = await self.repository.client_repo.get_all()
+            print()
             for client_model in db_managers:
                 if client_model.name not in self.managers:
                     dto = ClientConfigDTO.model_validate(client_model, from_attributes=True)
                     manager = TelethonManager(self.repository, dto)
+                    manager.saved_client = client_model
                     manager.add_handlers(self.handlers)
                     self.managers[client_model.name] = manager
                     logger.info(f"Manager for client {client_model.name} initialized and added to managers collection.")

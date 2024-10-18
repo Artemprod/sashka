@@ -81,6 +81,7 @@ class CreateSessionStrategy(ClientStrategy):
             await client.start(phone=client_configs.phone_number,
                                password=communicator.enter_password,
                                code_callback=communicator.get_code)
+
             return string_session.save()
         except (PhoneCodeInvalidError, SessionPasswordNeededError, PhoneNumberBannedError) as e:
             logger.error(f"Error in session creation: {str(e)}")
@@ -90,7 +91,8 @@ class CreateSessionStrategy(ClientStrategy):
 
 
 class RunClientStrategy(ClientStrategy):
-    def __init__(self, client_dto: TelegramClientDTOGet, handlers: Optional[List] = None):
+    def __init__(self, client_dto: TelegramClientDTOGet,
+                 handlers: Optional[List] = None):
         self.client_dto = client_dto
         self.handlers = handlers or []
         self.client = None
@@ -102,10 +104,14 @@ class RunClientStrategy(ClientStrategy):
 
     async def execute(self):
         self.client = TelegramClient(
-            StringSession(self.client_dto.session_string), int(self.client_dto.api_id),
-            self.client_dto.api_hash, device_model=self.client_dto.device_model,
-            system_version=self.client_dto.system_version, app_version=self.client_dto.app_version,
-            lang_code=self.client_dto.lang_code, system_lang_code="en-US"
+            StringSession(self.client_dto.session_string),
+            int(self.client_dto.api_id),
+            self.client_dto.api_hash,
+            device_model=self.client_dto.device_model,
+            system_version=self.client_dto.system_version,
+            app_version=self.client_dto.app_version,
+            lang_code=self.client_dto.lang_code,
+            system_lang_code="en-US"
         )
         try:
             await self.try_to_start_and_run()
@@ -115,7 +121,9 @@ class RunClientStrategy(ClientStrategy):
 
     async def try_to_start_and_run(self):
         try:
-            await self.client.start()
+            #TODO Вот ут проблема со входом если разлогинился
+            await self.client.start(phone=self.client_dto.phone_number,
+                                    password=self.client_dto.password)
             logger.info(f"Client started: {self.client_dto.name}")
             await self.add_handlers()
             await self.client.run_until_disconnected()
@@ -129,7 +137,8 @@ class RunClientStrategy(ClientStrategy):
 
 
 class TelethonManager:
-    def __init__(self, repository, client_configs: ClientConfigDTO):
+    def __init__(self, repository,
+                 client_configs: ClientConfigDTO):
         self.repository = repository
         self.client_configs = client_configs
         self.save_strategy = SaveClientStrategy(repository)
@@ -150,6 +159,7 @@ class TelethonManager:
             raise
 
     async def run(self):
+        print()
         if self.saved_client is None:
             raise ValueError("No client to run. Call new_client() first.")
 
