@@ -3,10 +3,13 @@ import uuid
 from random import randint
 
 from faststream.nats import NatsBroker
-from pyrogram import Client
 from pyrogram.enums import ParseMode
 
-from src.telegram_client.client.model import ClientConfigDTO
+from src.distributor.telegram_client.device_configs import iPhoneX
+from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
+from src.distributor.telegram_client.pyro.te_cli_ import MyClient
+
+
 
 API_ID = "23823287"
 API_HASH = "fe561473a06737cb358db923e05e7868"
@@ -38,27 +41,32 @@ async def pub_test_server():
 async def pub():
     async with NatsBroker() as broker:
         client_configs = ClientConfigDTO(
-            name=f"Original_servere_accaunt_1",
+            name=f"test",
+            app_version=iPhoneX.app_version,
+            device_model=iPhoneX.device_model,
+            system_version=iPhoneX.system_version,
             api_id=API_ID,
             api_hash=API_HASH,
-            phone_number=f"48532576772",
-            password='89671106966',
             test_mode=False,
-            parse_mode='markdown'
+            phone_number="994557812682",
+            password='',
+            parse_mode=ParseMode.MARKDOWN.value,
         )
-        await broker.publish(client_configs.to_dict(), subject="create_clietn")
+        await broker.publish(client_configs.to_dict(), subject="client.telethon.create")
+
 
 if __name__ == '__main__':
     async def main():
-        client = Client(name=f"Original_servere_accaunt_1",
-                        api_id=API_ID,
-                        api_hash=API_HASH,
-                        test_mode=False,
-                        phone_number=f"+573175306617",
-                        password='7532',
-                        parse_mode=ParseMode.MARKDOWN.value,
-                        )
+        client = MyClient(name=f"Original_servere_accaunt_1",
+                          api_id=API_ID,
+                          api_hash=API_HASH,
+                          test_mode=False,
+                          phone_number=f"+79185184994",
+                          password='',
+                          parse_mode=ParseMode.MARKDOWN.value,
+                          plugins=None
+                          )
         await client.start()
 
-    asyncio.run(pub())
 
+    asyncio.run(pub())

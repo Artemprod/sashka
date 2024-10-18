@@ -4,21 +4,19 @@ import math
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 
 from loguru import logger
 
-from src.schemas.service.message import AssistantMessageDTOPost
-from src.schemas.service.queue import NatsQueueMessageDTOStreem, NatsQueueMessageDTOSubject
+from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.schemas.service.research import ResearchDTOFull
 from src.schemas.service.user import UserDTOFull, UserDTOBase
-from src.services.communicator.communicator import TelegramCommunicator
 from src.services.publisher.publisher import NatsPublisher
 from src.services.publisher.notification import TelegramNotificator
-from src_v0.database.postgres.engine.session import DatabaseSessionManager
+from src.database.postgres.engine.session import DatabaseSessionManager
 
-from src_v0.database.postgres.models.enum_types import ResearchStatusEnum, UserStatusEnum
-from src_v0.database.repository.storage import RepoStorage
+from src.database.postgres.models.enum_types import ResearchStatusEnum, UserStatusEnum
+from src.database.repository.storage import RepoStorage
 
 
 class ResearchStarter:

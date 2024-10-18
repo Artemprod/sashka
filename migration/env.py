@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-from src_v0.database.postgres.models.init import ModelBase
+from src.database.postgres.models.init import ModelBase
 
 env = Env()
 env.read_env('.env')

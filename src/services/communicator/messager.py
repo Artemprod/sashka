@@ -19,8 +19,8 @@ from src.schemas.service.message import AssistantMessageDTOPost, UserMessageDTOP
 from src.schemas.service.user import UserDTOFull, UserDTOBase
 from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
-from src_v0.database.postgres.models.enum_types import UserStatusEnum
-from src_v0.database.repository.storage import RepoStorage
+from src.database.postgres.models.enum_types import UserStatusEnum
+from src.database.repository.storage import RepoStorage
 
 from abc import ABC
 from typing import Union
@@ -376,6 +376,9 @@ class CommonMessageAnswer(MessageAnswer):
     @cached(ttl=300, cache=Cache.MEMORY)
     async def get_assistant_for_free_talk(self) -> Optional[AssistantDTOGet]:
         assistants = await self.repository.assistant_repo.get_all_assistants()
+        if not assistants:
+            logger.error("No assistants in database")
+            raise ValueError("No assistants")
         return next((asis for asis in assistants if asis.for_conversation), None)
 
 
@@ -384,7 +387,7 @@ class CommonMessageAnswer(MessageAnswer):
 class PingMessage(MessageAnswer):
     """ сообщения для пинга пользователоей в иследовании """
 
-    async def handle(self,user: UserDTOBase,message_number,research_id: int, destination_configs: NatsDestinationDTO ):
+    async def handle(self,user: UserDTOBase,message_number,research_id: int, destination_configs: NatsDestinationDTO):
 
         assistant_id:int = await self.get_assistant(research_id=research_id)
         client: TelegramClientDTOGet = await self.get_client_name(research_id)

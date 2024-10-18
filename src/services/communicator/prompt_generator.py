@@ -9,7 +9,7 @@ from src.schemas.communicator.prompt import PromptDTO
 from src.schemas.service.assistant import AssistantDTOGet
 from src.schemas.service.prompt import PingPromptDTO
 
-from src_v0.database.repository.storage import RepoStorage
+from src.database.repository.storage import RepoStorage
 
 from abc import ABC
 

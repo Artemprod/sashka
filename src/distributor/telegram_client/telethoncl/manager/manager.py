@@ -1,0 +1,218 @@
+import asyncio
+import datetime
+from abc import ABC, abstractmethod
+from typing import Optional, List
+
+from loguru import logger
+from telethon import TelegramClient
+from telethon.errors import RPCError, SessionPasswordNeededError, AuthKeyUnregisteredError, FloodWaitError, \
+    PhoneNumberBannedError, PhoneCodeInvalidError
+from telethon.sessions import StringSession
+from telethon.tl.types import User
+
+from src.dispatcher.communicators.reggestry import BaseCommunicator, ConsoleCommunicator
+from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
+from src.schemas.service.client import TelegramClientDTOPost, TelegramClientDTOGet
+
+
+class ClientStrategy(ABC):
+    @abstractmethod
+    async def execute(self, *args, **kwargs):
+        pass
+
+
+class SaveClientStrategy(ClientStrategy):
+    def __init__(self, repository):
+        self.repository = repository
+
+    async def execute(self, client_info: User, session_string: str, configs: ClientConfigDTO):
+        client_dto = TelegramClientDTOPost(
+            telegram_client_id=client_info.id,
+            name=configs.name,
+            api_id=str(configs.api_id),
+            api_hash=str(configs.api_hash),
+            app_version=configs.app_version,
+            device_model=configs.device_model,
+            system_version=configs.system_version,
+            lang_code=configs.lang_code,
+            test_mode=configs.test_mode,
+            session_string=session_string,
+            phone_number=configs.phone_number,
+            password=configs.password,
+            parse_mode=configs.parse_mode,
+            workdir=configs.workdir,
+            created_at=datetime.datetime.now()
+        )
+        try:
+            new_client = await self.repository.client_repo.save(values=client_dto.dict())
+            logger.info(f"New client saved: {client_dto.name}")
+            return new_client
+        except Exception as e:
+            logger.error(f"Error saving client: {str(e)}")
+            raise
+
+
+class GetClientStrategy(ClientStrategy):
+    def __init__(self, repository):
+        self.repository = repository
+
+    async def execute(self, client_dto: TelegramClientDTOGet):
+        try:
+            if client_dto.client_id:
+                return await self.repository.client_repo.get_client_by_id(client_id=client_dto.client_id)
+            else:
+                return await self.repository.client_repo.get_client_by_telegram_id(telegram_id=client_dto.telegram_client_id)
+        except Exception as e:
+            logger.error(f"Error getting client: {str(e)}")
+            raise
+
+
+class CreateSessionStrategy(ClientStrategy):
+    @staticmethod
+    async def execute(client_configs: ClientConfigDTO, communicator: BaseCommunicator = ConsoleCommunicator()):
+        string_session = StringSession()
+        client = TelegramClient(
+            string_session, int(client_configs.api_id), client_configs.api_hash,
+            device_model=client_configs.device_model, system_version=client_configs.system_version,
+            app_version=client_configs.app_version, lang_code=client_configs.lang_code,
+            system_lang_code="en-US"
+        )
+        try:
+            await client.start(phone=client_configs.phone_number,
+                               password=communicator.enter_password,
+                               code_callback=communicator.get_code)
+            return string_session.save()
+        except (PhoneCodeInvalidError, SessionPasswordNeededError, PhoneNumberBannedError) as e:
+            logger.error(f"Error in session creation: {str(e)}")
+            raise
+        finally:
+            await client.disconnect()
+
+
+class RunClientStrategy(ClientStrategy):
+    def __init__(self, client_dto: TelegramClientDTOGet, handlers: Optional[List] = None):
+        self.client_dto = client_dto
+        self.handlers = handlers or []
+        self.client = None
+
+    async def add_handlers(self):
+        for handler in self.handlers:
+            self.client.add_event_handler(handler)
+        logger.info("All handlers added")
+
+    async def execute(self):
+        self.client = TelegramClient(
+            StringSession(self.client_dto.session_string), int(self.client_dto.api_id),
+            self.client_dto.api_hash, device_model=self.client_dto.device_model,
+            system_version=self.client_dto.system_version, app_version=self.client_dto.app_version,
+            lang_code=self.client_dto.lang_code, system_lang_code="en-US"
+        )
+        try:
+            await self.try_to_start_and_run()
+        except (AuthKeyUnregisteredError, RPCError) as e:
+            logger.error(f"Error during client run: {str(e)}")
+            raise
+
+    async def try_to_start_and_run(self):
+        try:
+            await self.client.start()
+            logger.info(f"Client started: {self.client_dto.name}")
+            await self.add_handlers()
+            await self.client.run_until_disconnected()
+        except FloodWaitError as e:
+            await self.handle_flood_wait(e)
+
+    async def handle_flood_wait(self, e):
+        logger.warning(f"Flood wait: sleeping for {e.seconds} seconds.")
+        await asyncio.sleep(e.seconds)
+        await self.execute()  # Retry after waiting
+
+
+class TelethonManager:
+    def __init__(self, repository, client_configs: ClientConfigDTO):
+        self.repository = repository
+        self.client_configs = client_configs
+        self.save_strategy = SaveClientStrategy(repository)
+        self.get_strategy = GetClientStrategy(repository)
+        self.session_strategy = CreateSessionStrategy()
+        self.run_strategy: Optional[RunClientStrategy] = None
+        self.saved_client: Optional[TelegramClientDTOGet] = None
+        self.handlers: List = []  # Initialize handlers list
+
+    async def new_client(self, communicator: BaseCommunicator = ConsoleCommunicator()):
+        try:
+            session_string = await self.session_strategy.execute(self.client_configs, communicator)
+            user: User = await self.get_client_user(session_string)
+            self.saved_client = await self.save_strategy.execute(user, session_string, self.client_configs)
+            logger.info(f"New client created and saved: {self.saved_client.name}")
+        except (PhoneNumberBannedError, SessionPasswordNeededError, PhoneCodeInvalidError, RPCError) as e:
+            logger.error(f"Error during new client creation: {str(e)}")
+            raise
+
+    async def run(self):
+        if self.saved_client is None:
+            raise ValueError("No client to run. Call new_client() first.")
+
+        self.run_strategy = RunClientStrategy(client_dto=self.saved_client, handlers=self.handlers)
+
+        try:
+            await self.run_strategy.execute()
+        except AuthKeyUnregisteredError as e:
+            logger.error(f"Error during client run: {str(e)}. Trying re-authentication.")
+            await self.new_client()
+            await self.run()
+
+    async def get_client_user(self, session_string: str) -> User:
+        client = TelegramClient(StringSession(session_string), int(self.client_configs.api_id),
+                                self.client_configs.api_hash)
+        try:
+            await client.start()
+            return await client.get_me()
+        except Exception as e:
+            logger.error(f"Error during client user retrieval: {str(e)}")
+            raise
+        finally:
+            await client.disconnect()
+
+    async def stop_client(self):
+        if self.run_strategy and self.run_strategy.client:
+            await self.run_strategy.client.disconnect()
+            logger.info(f"Client {self.saved_client.name} stopped")
+        else:
+            logger.warning("No active client to stop")
+
+    def add_handlers(self, handlers: List):
+        if handlers:
+            self.handlers.extend(handlers)
+            logger.info(f"{len(handlers)} handlers added to the internal list.")
+
+            # Add handlers to the client if it is running
+            if self.run_strategy and self.run_strategy.client and self.run_strategy.client.is_connected():
+                for handler in handlers:
+                    try:
+                        self.run_strategy.client.add_event_handler(handler)
+                        logger.info(f"Handler added to running client {self.saved_client.name}: {handler}")
+                    except Exception as e:
+                        logger.error(f"Failed to add handler {handler}: {str(e)}")
+            else:
+                logger.warning("Client not running. Handlers will be added when client starts.")
+        else:
+            logger.error("Attempted to add an empty list of handlers.")
+
+
+# Пример использования:
+async def main():
+    # repo = RepoStorage(...)  # Инициализация репозитория
+    # config = ClientConfigDTO(...)  # Настройки клиента
+    # manager = TelethonManager(repository=repo, client_configs=config)
+    #
+    # await manager.new_client()
+    # manager.add_handler(your_handler_function)
+    # await manager.run()
+    # await manager.restart_client()
+    # await manager.stop_client()
+    ...
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

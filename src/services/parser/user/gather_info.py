@@ -46,13 +46,13 @@ class TelegramUserInformationCollector(UserInformationCollector):
         user_dicts = [user.dict() for user in users]
 
         headers = TelegramObjectHeadersDTO(
-            tg_client=json.dumps(client.dict()),
-            tg_user_users=json.dumps(user_dicts)
+            tg_client=client.json(),
+            user=json.dumps(user_dicts)
         )
 
         return NatsReplyRequestQueueMessageDTOStreem(
             subject=self.PARSE_SUBJECT,
-            headers=headers,
+            headers=headers.dict(),
         )
 
     async def _parse_users_info(self, response: str) -> Optional[List[UserDTO]]:

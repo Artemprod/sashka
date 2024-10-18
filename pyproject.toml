@@ -30,6 +30,7 @@ tzlocal = "^5.2"
 nats-py = "^2.9.0"
 aiohttp = "^3.10.8"
 async-cache = "^1.1.1"
+telethon = "^1.37.0"
 
 
 [build-system]

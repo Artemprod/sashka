@@ -6,9 +6,9 @@ from aiocache import cached, Cache
 from src.schemas.communicator.checker import CheckerDTO
 from src.schemas.service.research import ResearchDTOFull
 from src.schemas.service.user import UserDTORel
-from src_v0.database.exceptions.read import ObjectDoesNotExist
-from src_v0.database.postgres.engine.session import DatabaseSessionManager
-from src_v0.database.repository.storage import RepoStorage
+from src.database.exceptions.read import ObjectDoesNotExist
+from src.database.postgres.engine.session import DatabaseSessionManager
+from src.database.repository.storage import RepoStorage
 
 
 class Checker:

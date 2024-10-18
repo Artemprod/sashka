@@ -1,0 +1,115 @@
+import asyncio
+from asyncio import CancelledError
+from typing import Dict, Optional, List
+
+from loguru import logger
+
+from src.database.exceptions.read import EmptyTableError
+from src.dispatcher.communicators.reggestry import ConsoleCommunicator
+from src.distributor.telegram_client.interface.container import InterfaceClientsContainer
+from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
+from src.distributor.telegram_client.telethoncl.manager.manager import TelethonManager
+
+
+class TelethonClientsContainer(InterfaceClientsContainer):
+    def __init__(self,
+                 repository,
+                 dev_mode,
+                 settings=None,
+                 handlers: List = None):
+
+        self.repository = repository
+        self.handlers = handlers or []
+        self.dev_mode = dev_mode
+        self.settings = settings if settings else self._load_settings()
+        self.managers: Dict[str, TelethonManager] = {}
+        self.loop = asyncio.get_event_loop()
+
+        logger.warning("DEV MODE IS ON") if self.dev_mode else logger.warning("PRODUCTION MODE")
+
+    def _load_settings(self):
+        return {"shelve_file_name": "managers"}
+
+    async def create_client(self, client_configs: ClientConfigDTO, communicator=ConsoleCommunicator()):
+        try:
+            manager = TelethonManager(self.repository, client_configs)
+            manager.add_handlers(self.handlers)
+            await manager.new_client(communicator)
+            self.managers[client_configs.name] = manager
+            logger.info(f"Client {client_configs.name} created and added to manager.")
+            return client_configs.name
+        except Exception as e:
+            logger.error(f"Error creating client {client_configs.name}: {str(e)}")
+            raise
+
+    async def create_and_start_client(self, client_configs: ClientConfigDTO, communicator=ConsoleCommunicator()):
+        try:
+            client_name = await self.create_client(client_configs, communicator)
+            await self.start_client(name=client_name)
+        except Exception as e:
+            logger.error(f"Error creating and starting client {client_configs.name}: {str(e)}")
+            raise
+
+    async def start_client(self, name: str):
+        manager = self.managers.get(name)
+        if manager:
+            logger.info(f"Starting client {name}.")
+            try:
+                await manager.run()
+            except Exception as e:
+                logger.error(f"Error starting client {name}: {str(e)}")
+        else:
+            logger.warning(f"Manager for client {name} not found.")
+
+    async def stop_client(self, name: str):
+        manager = self.managers.get(name)
+        if manager:
+            logger.info(f"Stopping client {name}.")
+            await manager.stop_client()
+        else:
+            logger.warning(f"Manager for client {name} not found.")
+
+    def delete_client(self, name: str):
+        if name in self.managers:
+            del self.managers[name]
+            logger.info(f"Deleted manager for client with name {name}.")
+        else:
+            logger.warning(f"Manager for client {name} not found.")
+
+    def get_client_manager_by_name(self, name: str) -> Optional[TelethonManager]:
+        return self.managers.get(name)
+
+    def get_client_manager_by_telegram_id(self, telegram_id: int) -> Optional[TelethonManager]:
+        for manager in self.managers.values():
+            if manager.saved_client and manager.saved_client.telegram_client_id == telegram_id:
+                return manager
+        logger.warning(f"Manager for Telegram ID {telegram_id} not found.")
+        return None
+
+    async def _load_managers_from_db(self):
+        """Load managers from the database and prepare them for running."""
+        logger.info("Loading managers from database...")
+        try:
+            db_managers = await self.repository.client_repo.get_all()
+            for client_model in db_managers:
+                if client_model.name not in self.managers:
+                    dto = ClientConfigDTO.model_validate(client_model, from_attributes=True)
+                    manager = TelethonManager(self.repository, dto)
+                    manager.add_handlers(self.handlers)
+                    self.managers[client_model.name] = manager
+                    logger.info(f"Manager for client {client_model.name} initialized and added to managers collection.")
+            logger.info("All managers loaded from database.")
+        except EmptyTableError:
+            logger.info("Client table is empty.")
+        except Exception as e:
+            logger.error(f"Error loading managers from the database: {str(e)}")
+
+    async def start_all_clients(self):
+        await self._load_managers_from_db()
+        tasks = [self.start_client(name) for name in self.managers]
+        try:
+            await asyncio.gather(*tasks)
+        except Exception as e:
+            logger.error(f"Error in starting all clients: {str(e)}")
+        except CancelledError:
+            logger.info("Client start operation cancelled.")

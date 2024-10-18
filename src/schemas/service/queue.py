@@ -43,7 +43,7 @@ class NatsQueueMessageDTOStreem(NatsQueueMessageDTO):
 
 class NatsReplyRequestQueueMessageDTOStreem(NatsQueueMessageDTO):
     subject: str
-    stream: Optional[str]
+    stream: Optional[str] = None
     headers: Optional[dict] = None
 
 

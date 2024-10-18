@@ -23,6 +23,9 @@ class TelegramClientDTOPost(BaseModel):
     created_at: datetime
 
     class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
         from_attributes = True 
 
 

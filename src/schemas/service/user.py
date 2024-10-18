@@ -3,8 +3,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 from src.schemas.service.research import ResearchDTOGet
-from src_v0.schemas.message import UserMessageDTO, AssistantMessageDTO
-from src_v0.schemas.status import UserStatusDTO, UserStatusNameDTO, UserStatusNameDTOGet
+from src.schemas.service.status import UserStatusDTO
 
 
 class UserDTOQueue(BaseModel):

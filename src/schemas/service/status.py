@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import List
 from pydantic import BaseModel, Field
 
-from src_v0.database.postgres.models.enum_types import ResearchStatusEnum
+from src.database.postgres.models.enum_types import ResearchStatusEnum
 
 
 class UserStatusDTO(BaseModel):

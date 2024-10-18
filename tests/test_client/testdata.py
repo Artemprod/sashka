@@ -3,9 +3,9 @@ from typing import Union, Any
 from contextlib import nullcontext as does_not_raise
 
 import pytest
-from pyrogram.errors import PhoneNumberInvalid, PhoneCodeInvalid, ApiIdInvalid, HashInvalid, PasswordHashInvalid
+from pyrogram.errors import PhoneNumberInvalid, ApiIdInvalid, PasswordHashInvalid
 
-from src.telegram_client.exceptions.autrization import MaxAttemptsExceededError
+from src.distributor.telegram_client.exceptions import MaxAttemptsExceededError
 
 test_api_id = '17349'
 test_api_hash = "344583e45741c457fe1862106095a5eb"

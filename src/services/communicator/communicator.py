@@ -23,9 +23,9 @@ from src.services.communicator.messager import MessageFirstSend, ResearchMessage
 from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
-from src_v0.database.postgres.engine.session import DatabaseSessionManager
-from src_v0.database.postgres.models.enum_types import UserStatusEnum
-from src_v0.database.repository.storage import RepoStorage
+from src.database.postgres.engine.session import DatabaseSessionManager
+from src.database.postgres.models.enum_types import UserStatusEnum
+from src.database.repository.storage import RepoStorage
 
 from abc import ABC
 from typing import Union
