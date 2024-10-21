@@ -48,7 +48,7 @@ async def pub():
             api_id=API_ID,
             api_hash=API_HASH,
             test_mode=False,
-            phone_number="573175306617",
+            phone_number="+994557812682",
             password='7532',
             parse_mode=ParseMode.MARKDOWN.value,
         )

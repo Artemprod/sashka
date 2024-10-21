@@ -27,6 +27,19 @@ class BaseCommunicator(metaclass=CommunicatorRegistryBase):
     async def get_code(self, *args, **kwargs) -> str:
         raise NotImplemented
 
+    async def recovery_code(self, *args, **kwargs):
+        raise NotImplemented
+    async def enter_phone_number(self, *args, **kwargs):
+        raise NotImplemented
+    async def enter_cloud_password(self,*args, **kwargs ):
+        raise NotImplemented
+    async def confirm(self, *args, **kwargs):
+        raise NotImplemented
+    async def first_name(self, *args, **kwargs):
+            raise NotImplemented
+    async def last_name(self, *args, **kwargs):
+            raise NotImplemented
+
     async def send_error(self, *args, **kwargs):
         raise NotImplemented
 
@@ -59,7 +72,7 @@ class ConsoleCommunicator(BaseCommunicator):
         return phone_number
 
     @staticmethod
-    async def enter_password() -> str:
+    async def enter_cloud_password() -> str:
         print("Работает коммуникактор")
         password = await ainput("password: ")
         return password

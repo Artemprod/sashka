@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 
@@ -6,7 +7,7 @@ from faststream.nats import NatsBroker
 from loguru import logger
 from pydantic import ValidationError
 from telethon import events, types, functions, TelegramClient
-from telethon.tl.types import Message
+from telethon.tl.types import Message, PeerUser, User
 
 from src.distributor.telegram_client.pyro.client.roters.message.models import HeaderUserMessageDTOQueue
 
@@ -17,16 +18,16 @@ env.read_env('.env')
 @events.register(events.NewMessage(incoming=True))
 async def handle_voice_message(event):
     logger.info(f"New message")
-    print()
     client: TelegramClient = event.client
     client_info = await client.get_me()
-
     # Создаем объект заголовка сообщения
+    s = await event.get_input_sender()
+    sender: User = await event.client.get_entity(s)
     try:
         outcome_message = HeaderUserMessageDTOQueue(
-            from_user=str(event.message.from_user.id),
-            user_name=str(event.message.from_user.username) if event.message.from_user.username else "Unknown",
-            chat=str(event.message.chat.id),
+            from_user=str(event.sender_id),
+            user_name=str(sender.first_name) if sender.first_name else "Unknown",
+            chat=str(event.chat_id),
             media="None",
             voice="None",
             client_telegram_id=str(client_info.id),
@@ -39,7 +40,7 @@ async def handle_voice_message(event):
         # Открываем контекстный менеджер на брокере
         try:
             await broker.publish(
-                message=event.message.text,
+                message=event.message.message,
                 subject="message.income.new",
                 headers=outcome_message.dict()
             )

@@ -55,14 +55,16 @@ class TelethonClientsContainer(InterfaceClientsContainer):
     async def create_and_start_client(self, client_configs: ClientConfigDTO, communicator=ConsoleCommunicator()):
         try:
             client_name = await self.create_client(client_configs, communicator)
+            logger.info(f'Mangager creaste client')
             await self.start_client(name=client_name)
+
         except Exception as e:
             logger.error(f"Error creating and starting client {client_configs.name}: {str(e)}")
             raise
 
     async def start_client(self, name: str):
         manager = self.managers.get(name)
-        if manager:
+        if manager and manager.saved_client:
             logger.info(f"Starting client {name}.")
             try:
                 await manager.run()

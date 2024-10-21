@@ -166,16 +166,27 @@ async def gather_information(user_data: Union["types.User", List["types.User"]])
         raise e
 
 
-async def make_request(data: Datas) -> Union["types.User", List["types.User"]]:
+# async def make_request(data: Datas) -> Union["types.User", List["types.User"]]:
+#     try:
+#         user_ids: List[int] = [user.tg_user_id for user in data.users]
+#         return await data.client.get_users(user_ids=user_ids)
+#
+#     except PeerIdInvalid:
+#         logger.warning("PeerIdInvalid: Trying to send by ID.")
+#         user_names: List[str] = [user.name for user in data.users]
+#         return await data.client.get_users(user_ids=user_names)
+async def make_request(data: Datas):
     try:
         user_ids: List[int] = [user.tg_user_id for user in data.users]
-        return await data.client.get_users(user_ids=user_ids)
+        return [await data.client.get_input_entity(user_id) for user_id in user_ids]
 
-    except PeerIdInvalid:
-        logger.warning("PeerIdInvalid: Trying to send by ID.")
+    except ValueError:
+        logger.warning("ValueError: Trying to send by ID.")
         user_names: List[str] = [user.name for user in data.users]
-        return await data.client.get_users(user_ids=user_names)
+        return [await data.client.get_input_entity(name) for name in user_names]
 
+    except Exception as e:
+        raise e
 
 @router.subscriber(subject="parser.gather.information.many_users")
 async def parse_user_information(msg: 'NatsMessage', data: Datas = Depends(derive_data)):
