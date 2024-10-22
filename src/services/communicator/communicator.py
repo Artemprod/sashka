@@ -139,6 +139,7 @@ class TelegramCommunicator:
             raise e
 
     async def _add_new_user(self, message_object: "IncomeUserMessageDTOQueue") -> Optional[List["UserDTOFull"]]:
+
         telegram_client: TelegramClientDTOGet = await self._repository.client_repo.get_client_by_telegram_id(
             telegram_id=message_object.client_telegram_id
         )

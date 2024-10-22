@@ -184,6 +184,7 @@ class TelethonManager:
         self.saved_client: Optional[TelegramClientDTOGet] = None
         self.handlers: List = []  # Initialize handlers list
 
+
     async def new_client(self, communicator: BaseCommunicator = ConsoleCommunicator()):
         try:
             session_string,user = await self.session_strategy.execute(self.client_configs, communicator)

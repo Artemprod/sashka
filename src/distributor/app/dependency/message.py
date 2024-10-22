@@ -5,9 +5,10 @@ from typing import Union, Optional
 from faststream import Context
 from faststream.nats import NatsMessage
 from loguru import logger
+from telethon import TelegramClient
 
-from src.distributor.app.routers.parse.gather_info import Datas
-from src.distributor.app.schemas.message import UserDTOBase
+
+from src.distributor.app.schemas.message import UserDTOBase, Datas
 from src.distributor.telegram_client.pyro.client.container import ClientsManager
 from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
 
@@ -50,11 +51,12 @@ async def _get_data_from_headers(msg: NatsMessage, context: Context = Context())
         logger.error("Missing client name in headers.")
         raise ValueError("Missing client name in headers.")
 
-    container = get_container(context=context, container_type="telethon_container")
+    container: 'TelethonClientsContainer' = context.get("telethon_container")
+
     if container is None:
         raise ValueError("Container not found ")
 
-    client = container.get_client_manager_by_name(name=client_name)
+    client: 'TelegramClient' = container.get_telethon_client__by_name(name=client_name)
 
     current_time = datetime.now(tz=timezone.utc)
     send_time_timestamp = msg.headers.get('send_time_next_message_timestamp')

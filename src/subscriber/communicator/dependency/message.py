@@ -1,3 +1,5 @@
+import json
+
 from faststream import Context
 from faststream.nats import NatsMessage
 from loguru import logger
@@ -5,46 +7,35 @@ from loguru import logger
 from src.schemas.communicator.message import IncomeUserMessageDTOQueue
 
 
-async def get_data_from_headers(body: str, msg: NatsMessage, context=Context()) -> IncomeUserMessageDTOQueue:
+async def get_data_from_headers(body: str) -> IncomeUserMessageDTOQueue:
     # Проверка наличия заголовков
-    headers = msg.headers
-    if not headers:
-        logger.error("Headers are missing from the message.")
-        raise ValueError("Headers are missing from the message.")
+    if not body:
+        logger.error("Body is missing from the message.")
+        raise ValueError("Body is missing from the message.")
 
     # Извлечение и преобразование значений из заголовков
     try:
-        from_user = int(headers.get("from_user", 0))
-        chat = int(headers.get("chat", from_user))  # Используем from_user, если chat отсутствует
-        user_name = headers.get("user_name", "Unknown")
-        media = headers.get("media", "false").lower() == "true"
-        voice = headers.get("voice", "false").lower() == "true"
-        client_telegram_id = int(headers.get("client_telegram_id", 0))
+        # Попытка валидации данных с использованием Pydantic
+        data = IncomeUserMessageDTOQueue.model_validate_json(body)
 
         # Проверка критических значений
-        if from_user == 0:
-            logger.error("Missing user id in headers.")
-            raise ValueError("Missing user id in headers.")
+        if not data.from_user:
+            logger.error("Missing 'from_user' in headers.")
+            raise ValueError("Missing 'from_user' in headers.")
 
-        if client_telegram_id == 0:
-            logger.error("Missing client telegram id in headers.")
-            raise ValueError("Missing client telegram id in headers.")
+        if not data.client_telegram_id:
+            logger.error("Missing 'client_telegram_id' in headers.")
+            raise ValueError("Missing 'client_telegram_id' in headers.")
 
-        if not body:
+        # Дополнительная проверка на пустоту данных в теле
+        if not body.strip():
             logger.error("Empty message body.")
             raise ValueError("Empty message body.")
 
-        # Создание объекта IncomeUserMessageDTOQueue
-        return IncomeUserMessageDTOQueue(
-            from_user=from_user,
-            chat=chat,
-            user_name=user_name,
-            media=media,
-            voice=voice,
-            text=body,
-            client_telegram_id=client_telegram_id,
-        )
+        # Успешная валидация и создание объекта DTO
+        return data
 
-    except (ValueError, TypeError) as e:
-        logger.error(f"Error processing headers: {e}")
-        raise ValueError("Invalid data in headers.") from e
+    except (ValueError, TypeError, json.JSONDecodeError) as e:
+        # Логируем и выбрасываем ошибку, если что-то пошло не так при валидации
+        logger.error(f"Error processing body: {e}")
+        raise ValueError("Invalid data in body.") from e

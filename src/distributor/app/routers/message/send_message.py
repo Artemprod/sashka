@@ -24,13 +24,18 @@ stream = JStream(name="WORK_QUEUE_4", retention=RetentionPolicy.WORK_QUEUE)
 stream_2 = JStream(name="CONVERSATION", retention=RetentionPolicy.WORK_QUEUE)
 
 
+# async def send_message(client: TelegramClient, user: UserDTOBase, body: str):
+#     try:
+#         return await client.send_message(entity=user.name, message=body)
+#     except PeerIdInvalid:
+#         logger.warning("PeerIdInvalid: Trying to send by ID.")
+#         return await client.send_message(entity=user.tg_user_id, message=body)
+
 async def send_message(client: TelegramClient, user: UserDTOBase, body: str):
     try:
-        return await client.send_message(entity=user.name, message=body)
-    except PeerIdInvalid:
-        logger.warning("PeerIdInvalid: Trying to send by ID.")
         return await client.send_message(entity=user.tg_user_id, message=body)
-
+    except Exception as e:
+        logger.warning(f" Trying to send by ID. {e}")
 
 @router.subscriber(stream=stream, subject="test_4.messages.send.first", deliver_policy=DeliverPolicy.ALL, no_ack=True)
 async def send_first_message_subscriber(body: str, msg: NatsMessage, context=Context(),

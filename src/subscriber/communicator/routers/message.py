@@ -19,6 +19,7 @@ async def new_message_handler(
     """Обрабатывает новые входящие сообщения."""
     # Получение экземпляра TelegramCommunicator из контекста
     communicator: TelegramCommunicator = context.get("communicator")
+    logger.info(f"ЭТО СФОРМИРОВАННОЕ СООБЩЕНИЕ{income_message_data}")
     try:
         # Обработка сообщения с использованием TelegramCommunicator
         await communicator.reply_message(message_object=income_message_data)

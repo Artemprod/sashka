@@ -6,6 +6,7 @@ from pyrogram import Client
 from telethon import TelegramClient
 
 from src.distributor.telegram_client.pyro.client.container import ClientsManager
+from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
 
 
 class NatsHeaders(BaseModel):
@@ -34,10 +35,12 @@ class Datas(BaseModel):
     user: UserDTOBase
     client_name: str
     client: Union[Client, TelegramClient]
-    container: ClientsManager
+    container: Union[ClientsManager,TelethonClientsContainer]
     current_time: datetime
     send_time: datetime
 
     class Config:
         from_attributes = True
         arbitrary_types_allowed = True
+
+Datas.model_rebuild()

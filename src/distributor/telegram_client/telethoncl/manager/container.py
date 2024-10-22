@@ -4,6 +4,7 @@ from typing import Dict, Optional, List
 
 from environs import Env
 from loguru import logger
+from telethon import TelegramClient
 
 from src.database.exceptions.read import EmptyTableError
 from src.database.postgres.engine.session import DatabaseSessionManager
@@ -90,6 +91,10 @@ class TelethonClientsContainer(InterfaceClientsContainer):
 
     def get_client_manager_by_name(self, name: str) -> Optional[TelethonManager]:
         return self.managers.get(name)
+
+    def get_telethon_client__by_name(self, name: str) -> Optional[TelegramClient]:
+        manager: TelethonManager = self.managers.get(name)
+        return manager.run_strategy.client
 
     def get_client_manager_by_telegram_id(self, telegram_id: int) -> Optional[TelethonManager]:
         for manager in self.managers.values():

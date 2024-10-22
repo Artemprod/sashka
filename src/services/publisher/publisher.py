@@ -66,6 +66,7 @@ class NatsPublisher:
 
     async def _send_request(self, broker: NatsBroker,
                             nats_message: NatsReplyRequestQueueMessageDTOStreem) -> Optional[str]:
+
         return await broker.publish(
             headers=nats_message.headers,
             subject=nats_message.subject,

@@ -323,7 +323,7 @@ class ResearchMessageAnswer(MessageAnswer):
                      destination_configs: NatsDestinationDTO,
                      research_id: int):
 
-        await self.save_user_message(content=message.text,
+        await self.save_user_message(content=message.message,
                                      user_id=message.from_user,
                                      chat_id=message.chat,
                                      is_voice=message.voice,
@@ -350,7 +350,7 @@ class CommonMessageAnswer(MessageAnswer):
                      destination_configs: NatsDestinationDTO,
                      **kwargs):
 
-        await self.save_user_message(content=message.text,
+        await self.save_user_message(content=message.message,
                                      user_id=message.from_user,
                                      chat_id=message.chat,
                                      is_voice=message.voice,

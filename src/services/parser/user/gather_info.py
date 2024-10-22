@@ -30,6 +30,7 @@ class TelegramUserInformationCollector(UserInformationCollector):
     async def collect_users_information(self, users: List[UserDTOBase], client: TelegramClientDTOGet) -> Optional[
         List[UserDTO]]:
         message = self._create_nats_message(users, client)
+        print("NATS MESSAGE", message)
         try:
             response = await self.publisher.request_reply(nats_message=message)
             if response:
