@@ -8,7 +8,7 @@ from loguru import logger
 from numpy.compat import unicode
 from pydantic import ValidationError
 from telethon import events, types, functions, TelegramClient
-from telethon.tl.types import Message, PeerUser, User
+from telethon.tl.types import Message, PeerUser, User, InputMessagesFilterPhotos, TextImage
 
 from src.distributor.telegram_client.pyro.client.roters.message.models import HeaderUserMessageDTOQueue
 from src.distributor.telegram_client.telethoncl.models.messages import OutcomeMessageDTOQueue
