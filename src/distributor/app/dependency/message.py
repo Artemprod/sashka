@@ -64,7 +64,6 @@ async def _get_data_from_headers(msg: NatsMessage, context: Context = Context())
         float(send_time_timestamp) if send_time_timestamp else current_time.timestamp(),
         tz=timezone.utc
     )
-
     return Datas(
         user=user,
         client_name=client_name,
