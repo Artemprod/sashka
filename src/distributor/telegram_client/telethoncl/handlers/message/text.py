@@ -11,14 +11,15 @@ from telethon import events, types, functions, TelegramClient
 from telethon.tl.types import Message, PeerUser, User, InputMessagesFilterPhotos, TextImage
 
 from src.distributor.telegram_client.pyro.client.roters.message.models import HeaderUserMessageDTOQueue
+from src.distributor.telegram_client.telethoncl.filters.media import TextFilterNewMessage
 from src.distributor.telegram_client.telethoncl.models.messages import OutcomeMessageDTOQueue
 
 env = Env()
 env.read_env('.env')
 
 
-@events.register(events.NewMessage(incoming=True, from_users=6915860188))
-async def handle_voice_message(event):
+@events.register(events.NewMessage(incoming=True, from_users=6915860188, func=TextFilterNewMessage(source_type='user')))
+async def handle_text_message(event):
 
     logger.info(f"New message")
     client: TelegramClient = event.client
