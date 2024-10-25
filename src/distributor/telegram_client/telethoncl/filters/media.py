@@ -4,23 +4,30 @@ from typing import Optional, List, Union, Tuple
 from environs import Env
 from loguru import logger
 from telethon import events
-from telethon.tl.types import PeerUser, PeerChat, PeerChannel, User, Chat, Channel
+from telethon.tl.types import PeerUser, PeerChat, PeerChannel, User, Chat, Channel, DocumentAttributeAudio
+
+from src.distributor.telegram_client.telethoncl.filters.model import SourceType
+from telethon.tl.types import (
+    MessageMediaDocument,
+    MessageMediaPhoto,
+    DocumentAttributeAudio,
+    DocumentAttributeVideo,
+    DocumentAttributeSticker,
+    DocumentAttributeAnimated,
+    MessageMediaContact,
+    MessageMediaGeo,
+    MessageMediaVenue,
+    MessageMediaPoll
+)
 
 
 class Filter:
     """Базовый фильтр с логикой обработки системных и ограниченных пользователей."""
 
-    class SourceType(str, Enum):
-        USER = "user"
-        PRIVATE_CHAT = "chat"
-        GROUP = "group"
-        SUPERGROUP = "supergroup"
-        CHANNEL = "channel"
-        BOT = "bot"
-        ANY = "any"
+    SourceType = SourceType
 
     TELEGRAM_SYSTEM_ACCOUNTS: List[Union[str, int]] = [
-        "@PremiumBot", "@Telegram", "@PassportBot", "@GDPRbot",
+        "@PremiumBot", "@Prremiummm_bot", "@Telegram", "@PassportBot", "@GDPRbot",
         "@BotSupport", "@MTProxybot", "@DiscussBot", "@WebAppsBot",
         "@DurgerKingBot", "@BotFather", "@SpamBot", "@GameBot",
         "777000", "333000", "42777",
@@ -100,7 +107,7 @@ class MediaFilter(Filter):
         Filter.SourceType.ANY: None
     }
 
-    def __init__(self, source_type: Union[str, Filter.SourceType] = Filter.SourceType.ANY):
+    def __init__(self, source_type: Union[str, Filter.SourceType] = Filter.SourceType.ANY, ):
         logger.debug("Initializing MediaFilter...")
         super().__init__()
         if isinstance(source_type, str):
@@ -120,8 +127,16 @@ class MediaFilter(Filter):
         return peer_type
 
     def _check_sender_restrictions(self, sender) -> bool:
-        sender_id = sender.username or str(sender.id)
-        result = not (self.is_system_account(sender_id) or self.is_restricted(sender_id))
+        sender_username = sender.username
+        sender_id = str(sender.id)
+
+        result = not (
+                self.is_system_account(sender_username) or
+                self.is_restricted(sender_username)
+        ) and not (
+                self.is_system_account(sender_id) or
+                self.is_restricted(sender_id)
+        )
         logger.debug(f"Checked sender restrictions for {sender_id}: {result}")
         return result
 
@@ -161,6 +176,7 @@ class MediaFilter(Filter):
 
     async def __call__(self, event: events.NewMessage, *args, **kwargs) -> bool:
         logger.debug(f"Filtering message {event}")
+
         if not self._validate_message_content(event):
             logger.debug("Message content validation failed.")
             return False
@@ -168,6 +184,12 @@ class MediaFilter(Filter):
         chat, sender = await self._get_chat_and_sender(event)
         if not chat or not sender:
             logger.debug("Chat or sender validation failed.")
+            return False
+
+        # Сравнение ID отправителя с моим ID
+        me = await event.client.get_me()
+        if sender.id == me.id:
+            logger.debug(f"Message is from self (id: {me.id}), blocking.")
             return False
 
         if not self._check_sender_restrictions(sender):
@@ -182,72 +204,145 @@ class MediaFilter(Filter):
         return f"MediaFilter(source_type={self.source_type})"
 
 
-class TextFilterNewMessage(MediaFilter):
-    """Фильтр, проверяющий только текстовые сообщения в зависимости от указанного типа источника."""
+class TextFilter(MediaFilter):
+    """Фильтр, проверяющий только текстовые сообщения."""
 
     def _validate_message_content(self, event: events.NewMessage.Event) -> bool:
         result = bool(event and event.message and event.message.text and not event.message.media)
-        logger.debug(f"Validated message content for text and non-media: {result}")
+        logger.debug(f"Validated text message content: {result}")
         return result
 
 
+class VoiceFilter(MediaFilter):
+    """Фильтр, проверяющий наличие голосового сообщения."""
+
+    def _validate_message_content(self, event: events.NewMessage.Event) -> bool:
+        if not (event.message and isinstance(event.message.media, MessageMediaDocument)):
+            return False
+
+        # Проверяем атрибуты документа на наличие голосового сообщения
+        doc = event.message.media.document
+        is_voice = any(
+            isinstance(attr, DocumentAttributeAudio) and attr.voice
+            for attr in doc.attributes
+        )
+        logger.debug(f"Validated voice message content: {is_voice}")
+        return is_voice
+
+
 class AudioFilter(MediaFilter):
-    ...
+    """Фильтр, проверяющий наличие аудиофайла."""
 
+    def _validate_message_content(self, event: events.NewMessage.Event) -> bool:
+        if not (event.message and isinstance(event.message.media, MessageMediaDocument)):
+            return False
 
-class DocumentFilter(MediaFilter):
-    ...
+        doc = event.message.media.document
+        is_audio = any(
+            isinstance(attr, DocumentAttributeAudio) and not attr.voice
+            for attr in doc.attributes
+        )
+        logger.debug(f"Validated audio message content: {is_audio}")
+        return is_audio
 
 
 class VideoFilter(MediaFilter):
-    ...
+    """Фильтр, проверяющий наличие видеофайла."""
+
+    def _validate_message_content(self, event: events.NewMessage.Event) -> bool:
+        if not (event.message and isinstance(event.message.media, MessageMediaDocument)):
+            return False
+
+        doc = event.message.media.document
+        is_gif = any(
+            isinstance(attr, DocumentAttributeAnimated)
+            for attr in doc.attributes
+        )
+        is_video = any(
+            isinstance(attr, DocumentAttributeVideo) and not attr.round_message
+            for attr in doc.attributes
+        ) and not is_gif
+
+        logger.debug(f"Validated video message content: {is_video}")
+        return is_video
 
 
-@events.register(events.NewMessage(
-    incoming=True,
-    func=lambda e: e.message.text and not e.message.media
-))
-async def handle_text_messages(event):
-    logger.info(f"Получено текстовое сообщение: {event.message.text}")
+class PhotoFilter(MediaFilter):
+    """Фильтр, проверяющий наличие фотографии."""
+
+    def _validate_message_content(self, event: events.NewMessage.Event) -> bool:
+        result = bool(event.message and isinstance(event.message.media, MessageMediaPhoto))
+        logger.debug(f"Validated photo message content: {result}")
+        return result
 
 
-# Фильтр сообщений с видео
-@events.register(events.NewMessage(
-    incoming=True,
-    func=lambda e: e.message.video is not None
-))
-async def handle_video_messages(event):
-    logger.info("Получено видео сообщение")
-    video = event.message.video
-    logger.info(f"Длительность видео: {video.duration} секунд")
+class StickerFilter(MediaFilter):
+    """Фильтр, проверяющий наличие стикера."""
+
+    def _validate_message_content(self, event: events.NewMessage.Event) -> bool:
+        if not (event.message and isinstance(event.message.media, MessageMediaDocument)):
+            return False
+
+        doc = event.message.media.document
+        is_sticker = any(
+            isinstance(attr, DocumentAttributeSticker)
+            for attr in doc.attributes
+        )
+        logger.debug(f"Validated sticker message content: {is_sticker}")
+        return is_sticker
 
 
-# Фильтр сообщений с документами
-@events.register(events.NewMessage(
-    incoming=True,
-    func=lambda e: e.message.document is not None
-))
-async def handle_document_messages(event):
-    logger.info("Получен документ")
-    doc = event.message.document
-    logger.info(f"Имя файла: {doc.attributes[0].file_name}")
+class GifFilter(MediaFilter):
+    """Фильтр, проверяющий наличие анимации (GIF)."""
+
+    def _validate_message_content(self, event: events.NewMessage.Event) -> bool:
+        if not (event.message and isinstance(event.message.media, MessageMediaDocument)):
+            return False
+
+        doc = event.message.media.document
+
+        is_gif = any(
+            isinstance(attr, DocumentAttributeAnimated)
+            for attr in doc.attributes
+        )
+
+        logger.debug(f"Validated animated gif content: {is_gif}")
+        return is_gif
 
 
-# Фильтр голосовых сообщений
-@events.register(events.NewMessage(
-    incoming=True,
-    func=lambda e: e.message.voice is not None
-))
-async def handle_voice_messages(event):
-    logger.info("Получено голосовое сообщение")
-    voice = event.message.voice
-    logger.info(f"Длительность: {voice.duration} секунд")
+class ContactFilter(MediaFilter):
+    """Фильтр, проверяющий наличие контактной информации."""
+
+    def _validate_message_content(self, event: events.NewMessage.Event) -> bool:
+        result = bool(event.message and isinstance(event.message.media, MessageMediaContact))
+        logger.debug(f"Validated contact message content: {result}")
+        return result
 
 
-# Фильтр по нескольким условиям (например, текст + фото)
-@events.register(events.NewMessage(
-    incoming=True,
-    func=lambda e: e.message.photo is not None and e.message.text
-))
-async def handle_photo_with_caption(event):
-    logger.info(f"Получено фото с подписью: {event.message.text}")
+class LocationFilter(MediaFilter):
+    """Фильтр, проверяющий наличие информации о местоположении."""
+
+    def _validate_message_content(self, event: events.NewMessage.Event) -> bool:
+        has_geo = isinstance(event.message.media, MessageMediaGeo)
+        has_venue = isinstance(event.message.media, MessageMediaVenue)
+        result = bool(event.message and (has_geo or has_venue))
+        logger.debug(f"Validated location content: {result}")
+        return result
+
+
+class PollFilter(MediaFilter):
+    """Фильтр, проверяющий наличие опроса."""
+
+    def _validate_message_content(self, event: events.NewMessage.Event) -> bool:
+        result = bool(event.message and isinstance(event.message.media, MessageMediaPoll))
+        logger.debug(f"Validated poll content: {result}")
+        return result
+
+
+class ForwardFilter(MediaFilter):
+    """Фильтр, проверяющий, является ли сообщение пересланным."""
+
+    def _validate_message_content(self, event: events.NewMessage.Event) -> bool:
+        result = bool(event.message and event.message.fwd_from)
+        logger.debug(f"Validated forwarded message: {result}")
+        return result

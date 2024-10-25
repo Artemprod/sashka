@@ -1,7 +1,7 @@
 from src.distributor.telegram_client.telethoncl.models.messages import OutcomeMessageDTOQueue
 
 
-def create_outcome_message(event, sender, client_info) -> OutcomeMessageDTOQueue:
+def create_outcome_message(event, sender, client_info) -> str:
     message = str(event.message.message)
     from_user = str(event.sender_id)
     user_name = str(sender.first_name) if sender.first_name else "Unknown"
