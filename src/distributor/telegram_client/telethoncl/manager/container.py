@@ -9,7 +9,8 @@ from telethon import TelegramClient
 from src.database.exceptions.read import EmptyTableError
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
-from src.dispatcher.communicators.reggestry import ConsoleCommunicator
+from src.dispatcher.communicators.consol import ConsoleCommunicator
+
 from src.distributor.telegram_client.interface.container import InterfaceClientsContainer
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 from src.distributor.telegram_client.telethoncl.manager.manager import TelethonManager

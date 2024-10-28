@@ -4,7 +4,8 @@ from src.services.parser.user.gather_info import TelegramUserInformationCollecto
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.manager import TelegramResearchManager
 from src.web.loader.on_startup import initialize_research_manager
-from src.web.routers.reserach.telegram import router
+from src.web.routers.reserach.telegram import router as research_router
+from src.web.routers.account.client import router as client_router
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 from fastapi import FastAPI
@@ -35,6 +36,7 @@ def create_server(lifespan_func=lifespan):
     server = FastAPI(lifespan=lifespan_func,
                      title="APPLICATION",
                      )
-    server.include_router(router)
+    server.include_router(research_router)
+    server.include_router(client_router)
 
     return server

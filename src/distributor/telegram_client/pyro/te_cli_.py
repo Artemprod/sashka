@@ -26,7 +26,9 @@ from pyrogram.session import Auth, Session
 
 from pyrogram.types import User, TermsOfService
 
-from src.dispatcher.communicators.reggestry import ConsoleCommunicator
+from src.dispatcher.communicators.consol import ConsoleCommunicator
+
+
 
 log = logging.getLogger(__name__)
 

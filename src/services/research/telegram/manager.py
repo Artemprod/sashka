@@ -7,7 +7,7 @@ from loguru import logger
 from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.owner import ResearchOwnerDTO, ResearchOwnerFullDTO
 from src.schemas.service.research import ResearchDTOPost, ResearchDTOFull, ResearchDTORel, ResearchDTOBeDb
-from src.schemas.service.user import UserDTOFull, UserDTOBase
+from src.schemas.service.user import UserDTOFull, UserDTOBase, UserDTO
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.research.base import BaseResearchManager
 
@@ -15,7 +15,7 @@ from src.database.postgres.models.enum_types import UserStatusEnum, ResearchStat
 
 from src.database.repository.storage import RepoStorage
 
-from src.schemas.user import UserDTO
+
 
 
 # TODO переделать класс вынести в отдельные классы сущности ресерч создатель иследования и тд разные стратегии

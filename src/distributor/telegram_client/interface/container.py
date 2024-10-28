@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict
 
-from src.dispatcher.communicators.reggestry import ConsoleCommunicator
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 
 

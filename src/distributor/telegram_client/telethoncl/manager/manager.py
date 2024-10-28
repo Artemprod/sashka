@@ -10,7 +10,8 @@ from telethon.errors import RPCError, SessionPasswordNeededError, AuthKeyUnregis
 from telethon.sessions import StringSession
 from telethon.tl.types import User
 
-from src.dispatcher.communicators.reggestry import BaseCommunicator, ConsoleCommunicator
+from src.dispatcher.communicators.consol import ConsoleCommunicator
+from src.dispatcher.communicators.reggestry import BaseCommunicator
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 from src.distributor.telegram_client.telethoncl.exceptions.autrization import UserNotAuthorizedError
 from src.distributor.telegram_client.telethoncl.exceptions.data import NoClientDataError

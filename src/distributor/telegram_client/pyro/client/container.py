@@ -14,7 +14,7 @@ from src.schemas.service.client import TelegramClientDTOGet, TelegramClientDTOPo
 from src.database.exceptions.read import EmptyTableError
 
 from src.database.repository.storage import RepoStorage
-from src.dispatcher.communicators.reggestry import ConsoleCommunicator
+
 
 from src.database.connections.redis_connect import RedisClient
 from loguru import logger
@@ -228,7 +228,7 @@ class ClientsManager(InterfaceClientsContainer):
             logger.info(f"Deleted client with name {name}")
         else:
             logger.warning(f"Client with name {name} not found")
-
+    #TODO Тут будет ошибка с коммуникатором нужнго переделать логику загрузки коммуникатора
     async def _load_managers_from_db(self):
         """Load managers from the database."""
         logger.info("Loading managers from database...")
@@ -238,7 +238,7 @@ class ClientsManager(InterfaceClientsContainer):
                 if client_model.name not in self.managers:
                     dto = ClientConfigDTO.model_validate(client_model, from_attributes=True)
                     client = Client(**dto.dict())
-                    manager = Manager(client=client, communicator=ConsoleCommunicator())
+                    manager = Manager(client=client, communicator=...)
                     if self._routers:
                         self.include_routers(manager, self.routers)
                     else:

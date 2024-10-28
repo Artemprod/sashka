@@ -2,7 +2,7 @@ import asyncio
 from loguru import logger
 from pyrogram import Client, errors, idle, raw
 
-from src.dispatcher.communicators.reggestry import BaseCommunicator, ConsoleCommunicator
+from src.dispatcher.communicators.reggestry import BaseCommunicator
 from src.distributor.telegram_client.pyro.client.roters.router import Router
 from src.distributor.telegram_client.pyro.exceptions.autrization import MaxAttemptsExceededError, \
     ClientAuthorizationConnectionError, AutorizationFaildError
@@ -22,9 +22,9 @@ class Manager:
     auth_attempts = 4
 
     def __init__(self,
+                 communicator,
                  client: Client = None,
                  dev_mode: bool = False,
-                 communicator: BaseCommunicator = ConsoleCommunicator()
                  ):
 
         self.app: Client = client
