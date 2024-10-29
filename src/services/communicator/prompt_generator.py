@@ -30,7 +30,7 @@ class BasePromptGenerator(ABC):
 
 # TODO вообще можно сократить количесвто кода и просто отправлять ассистента это я че то тут заморочился
 class FirstMessagePromptGenerator(BasePromptGenerator):
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def generate_prompt(self, research_id, *args, **kwargs) -> PromptDTO:
         assistant = await self._get_assistant(research_id=research_id)
         if not assistant:
@@ -45,7 +45,6 @@ class FirstMessagePromptGenerator(BasePromptGenerator):
 
 class ResearchMessagePromptGenerator(BasePromptGenerator):
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_prompt(self, research_id, *args, **kwargs) -> PromptDTO:
         assistant = await self._get_assistant(research_id=research_id)
         if not assistant:
@@ -60,7 +59,6 @@ class ResearchMessagePromptGenerator(BasePromptGenerator):
 
 class CommonMessagePromptGenerator(BasePromptGenerator):
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_prompt(self, assistant_id, *args, **kwargs) -> PromptDTO:
         # TODO Вынесе ты блять уже этих ассистентов в отделный модуль заебал !
         assistant: AssistantDTOGet = await self.repository.assistant_repo.get_assistant(assistant_id=assistant_id)
@@ -76,8 +74,7 @@ class CommonMessagePromptGenerator(BasePromptGenerator):
 
 class PingPromptGenerator(BasePromptGenerator):
 
-    @cached(ttl=300, cache=Cache.MEMORY)
-    async def generate_prompt(self, message_number: int) -> PromptDTO:
+    async def generate_prompt(self, message_number: int, ) -> PromptDTO:
         try:
             prompt: PingPromptDTO = await self.repository.ping_prompt_repo.get_ping_prompt_by_order_number(
                 ping_order_number=message_number)
@@ -93,15 +90,12 @@ class PromptGenerator:
         self.research_prompt_generator = ResearchMessagePromptGenerator(repository=repository)
         self.common_prompt_generator = CommonMessagePromptGenerator(repository=repository)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_first_message_prompt(self, research_id):
         return await self.first_message_generator.generate_prompt(research_id=research_id)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_research_prompt(self, research_id) -> PromptDTO:
         return await self.research_prompt_generator.generate_prompt(research_id)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_common_prompt(self, assistant_id: int) -> PromptDTO:
         return await self.common_prompt_generator.generate_prompt(assistant_id=assistant_id)
 
@@ -112,6 +106,5 @@ class ExtendedPingPromptGenerator(PromptGenerator):
         PromptGenerator.__init__(self, repository=repository)
         self.ping_prompt_generator = PingPromptGenerator(repository=repository)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def generate_ping_prompt(self, message_number: int) -> PromptDTO:
         return await self.ping_prompt_generator.generate_prompt(message_number=message_number)

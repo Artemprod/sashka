@@ -30,7 +30,6 @@ class TelegramClientDTOPost(BaseModel):
 
 
 class TelegramClientDTOGet(TelegramClientDTOPost):
-    
     client_id: int
 
     class Config:

@@ -42,7 +42,7 @@ class TelegramResearchManager(BaseResearchManager):
         try:
             # TODO Испарвить овнера понять че хотел сервис айди 
             # Создаем овнера в базще еси нет
-            print()
+
             owner = await self._create_new_owner(owner_dto=owner)
             telegram_client: TelegramClientDTOGet = await self._get_telegram_client()
 
@@ -53,8 +53,11 @@ class TelegramResearchManager(BaseResearchManager):
             # Ставим статус для исследования
             await self._set_research_status(db_research)
 
-            users = [UserDTOBase(name=names) for names in research.examinees_user_names]
+            #Todo пока оатсвлю так что тут как бы мы понимаем что есть id  и имена и они уникальны ине пересекаютсья но нужно передалть
+            users = [UserDTOBase(name=names) for names in research.examinees_user_names if research.examinees_user_names is not None]
+            users.extend([UserDTOBase(tg_user_id=tg_user_id) for tg_user_id in research.examinees_ids if research.examinees_ids])
             # Собрать информацию о пользователях и добавить их в исследованиAе при первом контакте использовать только имя
+
             users_dto = await self._collect_user_information(telegram_client=telegram_client,
                                                              users=users)
 
@@ -64,7 +67,7 @@ class TelegramResearchManager(BaseResearchManager):
             await self._set_user_status(research=research)
 
             # Связать пользователей с исследованием
-            await self._bind_users_to_research(db_research)
+            await self._bind_users_to_research(research_id=db_research.research_id, telegram_user_ids=research.examinees_ids)
 
             # Возврат DTO с сохраненным исследованием
             saved_research: ResearchDTORel = await self._get_saved_research(db_research.research_id)
@@ -99,7 +102,6 @@ class TelegramResearchManager(BaseResearchManager):
 
         for user_id in db_users:
             try:
-                print()
                 await self._database_repository.status_repo.user_status.add_user_status(
                     values={
                         "user_id": user_id,
@@ -127,7 +129,8 @@ class TelegramResearchManager(BaseResearchManager):
         clients = [client for client in await self._database_repository.client_repo.get_all() if client.session_string]
         return clients[-1] if clients else None
 
-    async def _collect_user_information(self, telegram_client: TelegramClientDTOGet,
+    async def _collect_user_information(self,
+                                        telegram_client: TelegramClientDTOGet,
                                         users: List[UserDTOBase]) -> Optional[
         List[UserDTO]]:
 
@@ -140,11 +143,12 @@ class TelegramResearchManager(BaseResearchManager):
         except Exception as e:
             raise e
 
-    def _create_research_dto(self, research: ResearchDTOPost, owner: Any, telegram_client: Any) -> ResearchDTOBeDb:
+    @staticmethod
+    def _create_research_dto(research: ResearchDTOPost, owner: Any, telegram_client: TelegramClientDTOGet) -> ResearchDTOBeDb:
         return ResearchDTOBeDb(
 
             owner_id=owner.owner_id,
-            telegram_client_id=telegram_client.telegram_client_id,
+            telegram_client_id=telegram_client.client_id,
             **research.dict()
         )
 
@@ -161,15 +165,15 @@ class TelegramResearchManager(BaseResearchManager):
             values=[user.dict() for user in users_dto]
         )
 
-    async def _bind_users_to_research(self, research: ResearchDTOFull) -> None:
+    async def _bind_users_to_research(self, research_id:int, telegram_user_ids:List) -> None:
         db_users = []
-        for user in research.examinees_ids:
+        for user_id in telegram_user_ids:
             get_users_db_id = await self._database_repository.user_in_research_repo.short.get_user_by_telegram_id(
-                telegram_id=user)
+                telegram_id=user_id)
             db_users.append(get_users_db_id)
 
         for db_user in db_users:
             await self._database_repository.user_in_research_repo.short.bind_research(
                 user_id=db_user.user_id,
-                research_id=research.research_id
+                research_id=research_id
             )

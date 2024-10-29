@@ -32,7 +32,7 @@ async def start_research(
         subject_message = NatsQueueMessageDTOSubject(
             message='',
             subject="research.start",
-            headers=json.dumps({"research_id": created_research.research_id})
+            headers={"research_id": str(created_research.research_id)}
         )
         await publisher.publish_message_to_subject(subject_message=subject_message)
 

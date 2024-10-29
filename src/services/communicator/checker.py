@@ -15,7 +15,7 @@ class Checker:
     def __init__(self, repository: 'RepoStorage'):
         self._repository = repository
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def check_user(self, user_telegram_id: int) -> CheckerDTO:
         """
         1. Пвроерить в базе даннх пользователь ?
@@ -35,11 +35,10 @@ class Checker:
 
 
             user_research: Optional[int] = await self._get_user_research_id(user_telegram_id)
-
             return CheckerDTO(
                 user_telegram_id=user_telegram_id,
                 user_in_db=True,
-                user_research=user_research
+                user_research_id=user_research
             )
         except Exception as e:
             # TODO Логирование ошибки

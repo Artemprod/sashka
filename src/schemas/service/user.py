@@ -2,10 +2,25 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from pydantic import BaseModel, Field
 
-from src.schemas.service.research import ResearchDTOGet
-from src.schemas.service.status import UserStatusDTO
+
+# Общая конфигурация для сериализации datetime объектов
+class ConfigBase:
+    from_attributes = True
+    json_encoders = {
+        datetime: lambda dt: dt.strftime("%Y-%m-%d %H:%M:%S") if dt else None
+    }
 
 
+# Базовый класс DTO
+class UserDTOBase(BaseModel):
+    name: Optional[str] = None
+    tg_user_id: Optional[int] = None
+
+    class Config(ConfigBase):
+        pass
+
+
+# Класс, представляющий очередь пользователей
 class UserDTOQueue(BaseModel):
     tg_user_id: int
     is_contact: bool
@@ -21,22 +36,14 @@ class UserDTOQueue(BaseModel):
     name: Optional[str] = None
     last_name: Optional[str] = None
     status: str
-    last_online_date: Optional[datetime]  # Можно оставить datetime, а не строку
+    last_online_date: Optional[datetime] = None  # Можно оставить как datetime
     phone_number: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-        # Преобразование даты в строку при сериализации
-        json_encoders = {
-            datetime: lambda dt: dt.strftime("%Y-%m-%d %H:%M:%S")
-        }
+    class Config(ConfigBase):
+        pass
 
 
-class UserDTOBase(BaseModel):
-    name: Optional[str]
-    tg_user_id: Optional[int]
-
-
+# Расширенный класс DTO с дополнительными полями
 class UserDTO(UserDTOBase):
     second_name: Optional[str] = None
     phone_number: Optional[str] = None
@@ -49,24 +56,27 @@ class UserDTO(UserDTOBase):
     language_code: Optional[str] = None
     created_at: Optional[datetime] = datetime.now()
 
-    class Config:
-        from_attributes = True
+    class Config(ConfigBase):
+        pass
 
 
+# Полный класс DTO, включающий user_id
 class UserDTOFull(UserDTO):
     user_id: int
 
-    class Config:
-        from_attributes = True
+    class Config(ConfigBase):
+        pass
 
-    # DTO с отношениями
+class UserDTQueue(BaseModel):
+    name: str
+    tg_user_id: str
 
-
+# DTO с отношениями между объектами
 class UserDTORel(UserDTOFull):
     status: "UserStatusNameDTOGet"
     messages: List["UserMessageDTO"] = Field(default_factory=list)
     assistant_messages: List["AssistantMessageDTO"] = Field(default_factory=list)
     researches: List["ResearchDTOGet"] = Field(default_factory=list)
 
-    class Config:
-        from_attributes = True
+    class Config(ConfigBase):
+        pass

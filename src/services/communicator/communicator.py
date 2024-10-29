@@ -101,7 +101,7 @@ class TelegramCommunicator:
         """Обрабатывает и отвечает на входящее сообщение."""
 
         check = await self._checker.check_user(user_telegram_id=message_object.from_user)
-
+        print()
         if not check.user_in_db:
             new_user = await self._add_new_user(message_object)
             if not new_user:
@@ -111,6 +111,7 @@ class TelegramCommunicator:
                 check.user_in_db = True
 
         if check.user_in_db:
+
             await self._handle_message(message_object, check.user_research_id)
         else:
             logger.warning(f"User not in database: {message_object.from_user}")

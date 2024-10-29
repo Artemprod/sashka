@@ -10,13 +10,14 @@ from loguru import logger
 
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.schemas.service.research import ResearchDTOFull
-from src.schemas.service.user import UserDTOFull, UserDTOBase
+from src.schemas.service.user import UserDTOFull, UserDTOBase, UserDTQueue
 from src.services.publisher.publisher import NatsPublisher
 from src.services.publisher.notification import TelegramNotificator
 from src.database.postgres.engine.session import DatabaseSessionManager
 
 from src.database.postgres.models.enum_types import ResearchStatusEnum, UserStatusEnum
 from src.database.repository.storage import RepoStorage
+from src.services.research.models import PingDataQueueDTO
 
 
 class ResearchStarter:
@@ -97,13 +98,13 @@ class ResearchStopper:
 
         if research_status.status_name != ResearchStatusEnum.IN_PROGRESS and not user_in_progress:
             logger.info("Исследование завершено")
-            await self.notifier.notify_completion()
+            # await self.notifier.notify_completion()
 
         else:
             logger.info("Исследование не завершено")
             logger.info(
                 f"Статус исследования: {research_status.status_name}, Пользователи в процессе: {len(user_in_progress)}")
-            await self.notifier.handle_incomplete_research()
+            # await self.notifier.handle_incomplete_research()
 
     async def _get_users_in_research(self, research_id) -> List[UserDTOFull]:
         users_in_research = await self.repository.user_in_research_repo.short.get_users_by_research_id(
@@ -147,13 +148,14 @@ class ResearchOverChecker:
 
             # Проверка на наличие активных пользователей
             user_in_progress = await self._get_users_in_progress(research_id)
+
             if not user_in_progress:
                 await self.stopper.complete_research(research_id)
                 logger.info(f"Завершил исследование {research_id}, так как закончились пользователи")
                 break
 
             # Проверка на смену статуса исследования
-            if research_status not in [ResearchStatusEnum.IN_PROGRESS, ResearchStatusEnum.WAIT]:
+            if research_status not in [ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.WAIT.value]:
                 await self.stopper.complete_research(research_id)
                 logger.info(f"Завершил исследование {research_id} по смене статуса")
                 break
@@ -289,6 +291,7 @@ class UserPingator:
 
     async def ping_users(self, research_id: int):
         """Пинг пользователей до тех пор, пока есть активные пользователи."""
+        print("______________________СТАРТАНУЛ ПИНГ ")
         research_info = await self.repo.research_repo.short.get_research_by_id(research_id=research_id)
         attempt = 0
 
@@ -300,13 +303,13 @@ class UserPingator:
                 logger.info("Все пользователи завершили задачи. Остановка пинга.")
                 break
 
-            if research_status not in [ResearchStatusEnum.IN_PROGRESS, ResearchStatusEnum.WAIT]:
+            if research_status not in [ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.WAIT.value]:
                 logger.info("Все пользователи завершили задачи. Остановка пинга.")
                 break
 
             # Параллельная обработка пользователей
             await self.ping_multiple_users(users, research_info)
-
+            print("______________________СДЕЛАЛ ПИНГ КРУГ")
             await asyncio.sleep(self.config.ping_interval)
             attempt += 1
 
@@ -322,10 +325,12 @@ class UserPingator:
         """Обработка пинга для одного пользователя."""
         try:
             unresponded_messages = await self.count_unresponded_assistant_message(user.tg_user_id)
+            print("_________________________ UNRESPOND MESSAGES ", unresponded_messages)
             if unresponded_messages == 0:
                 return
 
             if unresponded_messages > self.config.max_pings:
+                print("_________________________ CONDITION MESSAGES ", unresponded_messages > self.config.max_pings)
                 logger.info(f"Превышено максимальное количество пингов для пользователя {user.tg_user_id}.")
                 return
 
@@ -334,8 +339,10 @@ class UserPingator:
 
             current_time_utc = datetime.now(timezone.utc)
             if send_time <= current_time_utc:
-                await self.send_command_message_ping_user(user=user, message_number=unresponded_messages,
+                await self.send_command_message_ping_user(user=user,
+                                                          message_number=unresponded_messages,
                                                           research_id=research_info.research_id)
+
         except Exception as e:
             logger.error(f"Ошибка в обработке пинга для пользователя {user.tg_user_id}: {str(e)}")
 
@@ -343,17 +350,18 @@ class UserPingator:
     async def send_command_message_ping_user(self, user: UserDTOFull, message_number: int, research_id: int):
         """Отправка пинг-сообщения."""
 
+        user_queue_dto = UserDTQueue(name=str(user.name), tg_user_id=str(user.tg_user_id))
+        message_dto = PingDataQueueDTO(user=user_queue_dto.dict(),
+                                       message_number=str(message_number),
+                                       research_id=str(research_id))
         subject_message: NatsQueueMessageDTOSubject = NatsQueueMessageDTOSubject(
-
-            message="",
+            message=message_dto.model_dump_json(serialize_as_any=True),
             subject=self.config.command_ping_subject,
-            headers=json.dumps({"user": user.dict(),
-                                "message_number": message_number,
-                                "research_id": research_id}),
         )
 
         try:
             await self.publisher.publish_message_to_subject(subject_message=subject_message)
+            logger.info(f"Отправил в паблишер сообщение {subject_message}")
         except Exception as e:
             logger.error(f"Ошибка при отправке пинг-сообщения: {str(e)}")
 
@@ -361,7 +369,9 @@ class UserPingator:
 
     async def get_research_current_status(self, research_id: int) -> str:
         research_status = await self.repo.status_repo.research_status.get_research_status(research_id=research_id)
-        return research_status.status_name.value
+        if research_status:
+            return research_status.status_name
+        raise ValueError("No status name value")
 
     async def count_unresponded_assistant_message(self, telegram_id: int) -> int:
         """Получение всех неотвеченных сообщений от ассистента."""
@@ -371,16 +381,20 @@ class UserPingator:
 
     async def calculate_send_time(self, telegram_id: int, time_delay: int) -> datetime:
         """Расчёт времени отправки следующего пинга."""
-        last_user_message = await self.repo.message_repo.user.get_last_user_message_by_user_telegram_id(telegram_id)
-
-        last_message_time = last_user_message.created_at.replace(
-            tzinfo=timezone.utc) if last_user_message.created_at.tzinfo is None else last_user_message.created_at
-        return last_message_time + timedelta(hours=time_delay)
+        try:
+            last_user_message = await self.repo.message_repo.user.get_last_user_message_by_user_telegram_id(telegram_id)
+            # TODO поменять потом на часасы секунды
+            last_message_time = last_user_message.created_at.replace(
+                tzinfo=timezone.utc) if last_user_message.created_at.tzinfo is None else last_user_message.created_at
+            return last_message_time + timedelta(seconds=time_delay)
+        except Exception as e:
+            logger.error("Error with calculation time send time")
+            raise e
 
     async def get_active_users(self, research_id) -> List[UserDTOFull]:
         """Получение пользователей со статусом IN_PROGRESS."""
-        return await self.repo.status_repo.user_status.get_users_by_research_with_status(research_id=research_id,
-                                                                                         status=UserStatusEnum.IN_PROGRESS)
+        return await self.repo.user_in_research_repo.short.get_users_by_research_with_status(research_id=research_id,
+                                                                                             status=UserStatusEnum.IN_PROGRESS)
 
 
 class ResearchProcess:

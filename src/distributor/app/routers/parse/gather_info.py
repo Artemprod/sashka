@@ -1,5 +1,6 @@
 import ast
 import asyncio
+import json
 from datetime import datetime
 from typing import Optional, List, Union
 
@@ -22,7 +23,7 @@ broker = NatsBroker()
 
 async def derive_data(msg: NatsMessage, context=Context()) -> Datas:
     print(msg.headers)
-    users: list[dict] = ast.literal_eval(msg.headers.get("user"))
+    users: list[dict] = json.loads(msg.headers.get("user"))
     users_dto = [UserDTOBase(name=user['name'], tg_user_id=user["tg_user_id"]) for user in users]
 
     client_dto = TelegramClientDTO.model_validate_json(msg.headers.get("tg_client"))

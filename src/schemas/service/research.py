@@ -3,7 +3,11 @@ from datetime import datetime, timedelta
 from typing import Optional, List
 from pydantic import BaseModel, Field
 
-
+from src.schemas.service.assistant import AssistantDTOGet
+from src.schemas.service.client import TelegramClientDTOGet
+from src.schemas.service.owner import ResearchOwnerDTO
+from src.schemas.service.status import ResearchStatusName
+from src.schemas.service.user import UserDTO
 
 
 class ResearchDTOPost(BaseModel):
@@ -43,6 +47,7 @@ class ResearchDTOGet(BaseModel):
         from_attributes = True
 
 class ResearchDTOBeDb(ResearchDTOGet):
+
     owner_id: int
     telegram_client_id: Optional[int]
 
@@ -57,9 +62,12 @@ class ResearchDTORel(ResearchDTOFull):
 
     owner: "ResearchOwnerDTO"
     telegram_client: "TelegramClientDTOGet"
-    assistant: "AssistantDTO"
-    status: "ResearchStatusName"
-    users: List["UserDTO"] = Field(default_factory=list)
+    assistant: AssistantDTOGet
+    status: ResearchStatusName
+    users: List[UserDTO] = Field(default_factory=list)
+
+    class Config:
+        from_attributes = True
 
 
 

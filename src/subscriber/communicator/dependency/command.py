@@ -53,18 +53,20 @@ async def get_command_start_dialog_data_from_headers(body: str, msg: NatsMessage
         )
 
 
-async def get_command_ping_user(body: str, msg: NatsMessage, context=Context()) -> CommandPingUserDTO:
+async def get_command_ping_user(body:str, msg: NatsMessage) -> CommandPingUserDTO:
     # Проверка наличия заголовков
-    headers = msg.headers
-    if not headers:
-        logger.error("Headers are missing from the message.")
-        raise ValueError("Headers are missing from the message.")
+
+    decode_message = json.loads(msg.body.decode("utf-8"))
+    print("__________DECODE BODY", decode_message)
+    if not decode_message:
+        logger.error("Body are missing from the message.")
+        raise ValueError("Body are missing from the message.")
 
     # Извлечение и преобразование значений из заголовков
     try:
-        user:dict = json.loads(headers.get("user", 0))
-        research_id = int(headers.get("research_id", -1))
-        message_number = int(headers.get("message_number", -1))
+        user:dict = decode_message.get("user", 0)
+        research_id = int(decode_message.get("research_id", -1))
+        message_number = int(decode_message.get("message_number", -1))
 
         # Проверка критических значений
         if user == 0:

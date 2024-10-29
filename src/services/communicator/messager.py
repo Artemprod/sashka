@@ -332,9 +332,9 @@ class ResearchMessageAnswer(MessageAnswer):
         assistant = await self.get_assistant(research_id=research_id)
         client: TelegramClientDTOGet = await self.get_client_name(research_id)
         context = await self.context_former.form_context(telegram_id=message.from_user)
-        prompt = await self.prompt_generator.research_prompt_generator.generate_prompt(research_id=research_id)
+        prompt:PromptDTO = await self.prompt_generator.research_prompt_generator.generate_prompt(research_id=research_id)
         response: ContextResponseDTO = await self.context_request.get_response(
-            context_obj=ContextRequestDTO(prompt=prompt, context=context))
+            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, context=context))
         await self._publish_and_save_message(content=response,
                                              client=client,
                                              user=UserDTOBase(name=message.user_name,tg_user_id=message.from_user),
@@ -391,11 +391,11 @@ class PingMessage(MessageAnswer):
 
         assistant_id:int = await self.get_assistant(research_id=research_id)
         client: TelegramClientDTOGet = await self.get_client_name(research_id)
-        context = await self.context_former.form_context(telegram_id=user.from_user)
-        prompt = await self.prompt_generator.ping_prompt_generator.generate_prompt(message_number=message_number)
+        context = await self.context_former.form_context(telegram_id=user.tg_user_id)
+        prompt:PromptDTO = await self.prompt_generator.ping_prompt_generator.generate_prompt(message_number=message_number)
 
         response: ContextResponseDTO = await self.context_request.get_response(
-            context_obj=ContextRequestDTO(prompt=prompt, context=context))
+            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, context=context))
 
         # TODO убрать этот метод в коммуникатор я думаю это ответсвенность коммуникатора за публикацию
         await self._publish_and_save_message(content=response,

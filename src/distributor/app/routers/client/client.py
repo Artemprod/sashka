@@ -45,4 +45,4 @@ async def create_telethon_client(message, context=Context()):
     try:
         await task
     except Exception as e:
-        raise
+        raise e
