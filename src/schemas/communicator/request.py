@@ -11,3 +11,4 @@ class SingleRequestDTO(BaseModel):
 class ContextRequestDTO(BaseModel):
     context: List[Dict[str, str]]
     system_prompt: str
+    user_prompt:str

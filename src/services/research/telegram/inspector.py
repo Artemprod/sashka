@@ -18,6 +18,7 @@ from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.postgres.models.enum_types import ResearchStatusEnum, UserStatusEnum
 from src.database.repository.storage import RepoStorage
 from src.services.research.models import PingDataQueueDTO
+from src.services.research.utils import CyclePingAttemptCalculator
 
 
 class ResearchStarter:
@@ -50,7 +51,6 @@ class ResearchStarter:
         users_dto = [UserDTOBase(name=user.name, tg_user_id=user.tg_user_id).dict() for user in user_group]
         await self._publish_star_dialog_command(users=users_dto, research_id=research_id)
 
-        # await self.communicator.make_first_message_distribution(users_dto, research_id=research_id)
         logger.info("Команда отправлена ")
 
     async def _publish_star_dialog_command(self, users: List[dict], research_id: int):
@@ -276,47 +276,43 @@ class UserPingator:
     @dataclass
     class PingatorConfig:
         max_pings: int = 4
-        ping_attempts: int = 20
+        ping_attempts_multiplier: int = 2
         ping_interval: int = 10  # в секундах
         command_ping_subject: str = "command.user.ping"
-
-    def __init__(self, repo: RepoStorage,
-                 publisher: NatsPublisher,
-                 ):
-
-        self.settings = None
+    def __init__(self, repo, publisher):
         self.repo = repo
         self.publisher = publisher
         self.config = UserPingator.PingatorConfig()
+        self._attempt_calculator = CyclePingAttemptCalculator
 
     async def ping_users(self, research_id: int):
         """Пинг пользователей до тех пор, пока есть активные пользователи."""
-        print("______________________СТАРТАНУЛ ПИНГ ")
-        research_info = await self.repo.research_repo.short.get_research_by_id(research_id=research_id)
-        attempt = 0
+        logger.info(f"Start ping for research {research_id} ")
 
-        while attempt < self.config.ping_attempts:
+        research_info: ResearchDTOFull = await self.repo.research_repo.short.get_research_by_id(research_id=research_id)
+        max_attempt = self._attempt_calculator(
+            research_info=research_info,
+            attempt_multiplicative=self.config.ping_attempts_multiplier).calculate_max_attempts()
+
+        attempt = 0
+        while attempt < max_attempt:
             users = await self.get_active_users(research_id)
             research_status = await self.get_research_current_status(research_id)
 
-            if not users:
-                logger.info("Все пользователи завершили задачи. Остановка пинга.")
+            # Объединенные проверки завершения
+            if not users or research_status not in [ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.WAIT.value]:
+                logger.info("Все пользователи завершили задачи либо исследование неактивно. Остановка пинга.")
                 break
 
-            if research_status not in [ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.WAIT.value]:
-                logger.info("Все пользователи завершили задачи. Остановка пинга.")
-                break
-
-            # Параллельная обработка пользователей
-            await self.ping_multiple_users(users, research_info)
-            print("______________________СДЕЛАЛ ПИНГ КРУГ")
+            await self.ping_users_concurrently(users, research_info)
             await asyncio.sleep(self.config.ping_interval)
             attempt += 1
 
-    async def ping_multiple_users(self, users: List[UserDTOFull], research_info: ResearchDTOFull):
-        # Используем asyncio.gather для параллельных пингов с обработкой исключений
+    async def ping_users_concurrently(self, users: List[UserDTOFull], research_info: ResearchDTOFull):
+        """Пингует пользователей параллельно с обработкой исключений."""
         tasks = [self.handle_user_ping(user, research_info) for user in users]
         results = await asyncio.gather(*tasks, return_exceptions=True)
+
         for result in results:
             if isinstance(result, Exception):
                 logger.error(f"Ошибка пинга пользователя: {str(result)}")
@@ -325,23 +321,19 @@ class UserPingator:
         """Обработка пинга для одного пользователя."""
         try:
             unresponded_messages = await self.count_unresponded_assistant_message(user.tg_user_id)
-            print("_________________________ UNRESPOND MESSAGES ", unresponded_messages)
             if unresponded_messages == 0:
                 return
 
             if unresponded_messages > self.config.max_pings:
-                print("_________________________ CONDITION MESSAGES ", unresponded_messages > self.config.max_pings)
                 logger.info(f"Превышено максимальное количество пингов для пользователя {user.tg_user_id}.")
                 return
 
             time_delay = PingDelayCalculator.calculate(unresponded_messages)
             send_time = await self.calculate_send_time(user.tg_user_id, time_delay)
-
             current_time_utc = datetime.now(timezone.utc)
+
             if send_time <= current_time_utc:
-                await self.send_command_message_ping_user(user=user,
-                                                          message_number=unresponded_messages,
-                                                          research_id=research_info.research_id)
+                await self.send_command_message_ping_user(user=user, message_number=unresponded_messages, research_id=research_info.research_id)
 
         except Exception as e:
             logger.error(f"Ошибка в обработке пинга для пользователя {user.tg_user_id}: {str(e)}")
@@ -386,7 +378,7 @@ class UserPingator:
             # TODO поменять потом на часасы секунды
             last_message_time = last_user_message.created_at.replace(
                 tzinfo=timezone.utc) if last_user_message.created_at.tzinfo is None else last_user_message.created_at
-            return last_message_time + timedelta(seconds=time_delay)
+            return last_message_time + timedelta(hours=time_delay)
         except Exception as e:
             logger.error("Error with calculation time send time")
             raise e
