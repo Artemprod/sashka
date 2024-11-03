@@ -23,7 +23,7 @@ from src.database.postgres.t_data_objects import assistant_list, service
 from src.database.repository.owner import ResearchOwnerRepositoryFullModel
 from src.database.repository.storage import RepoStorage
 # from src.resrcher.resercher import TelegramResearcher
-from src.schemas.assistant import AssistantDTO
+
 
 session = DatabaseSessionManager(database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
 
