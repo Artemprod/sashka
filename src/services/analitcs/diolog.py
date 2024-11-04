@@ -1,9 +1,12 @@
 import asyncio
+import io
 from collections import defaultdict
+
 from typing import Dict, List, Optional
 
 import pandas
 import pandas as pd
+from loguru import logger
 
 from sqlalchemy import text
 from src.database.postgres.engine.session import DatabaseSessionManager
@@ -79,13 +82,49 @@ class UserDialog(Dialogs):
         self.dialog = dialog_df
         return self
 
-    async def get_csv(self):
+    async def get_csv(self, path: str) -> str:
         await self.__def_validate_dialog()
-        self.dialog.to_csv(encoding='utf-8')
+        try:
+            file = self.dialog.to_csv(path_or_buf=path, encoding='utf-8')
+            logger.info(f"csv File {file} saved")
+        except Exception as e:
+            logger.error(f" Faild to save csv file ")
+            raise e
+        else:
+            return path
 
-    async def get_excel(self):
+    async def get_csv_buffer(self) -> bytes:
         await self.__def_validate_dialog()
-        self.dialog.to_excel(sheet_name=self.telegram_id, encoding='utf-8')
+        output = io.BytesIO()
+        try:
+            # Записываем DataFrame в CSV-формат, указывая в качестве аргумента BytesIO
+            self.dialog.to_csv(output, index=False, encoding='utf-8')
+            logger.info("CSV file created successfully in buffer")
+        except Exception as e:
+            logger.error("Failed to create CSV file in buffer: %s", e)
+            raise e
+        output.seek(0)
+        return output.getvalue()
+
+    async def get_excel_buffer(self) -> bytes:
+        await self.__def_validate_dialog()
+
+        output = io.BytesIO()
+
+        try:
+            # Используем ExcelWriter с объектом BytesIO через менеджер контекста
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                self.dialog.to_excel(writer, sheet_name=str(self.telegram_id), index=False)
+
+            logger.info("Excel file created successfully in buffer")
+
+        except Exception as e:
+            logger.error("Failed to create Excel file in buffer: %s", e)
+            raise e
+
+        output.seek(0)
+
+        return output.getvalue()
 
     async def __def_validate_dialog(self):
         if not self.dialog:
@@ -137,13 +176,13 @@ if __name__ == "__main__":
     async def main():
         session = DatabaseSessionManager(
             database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
-        diologs = ResearchDialogs(research_id=80, session_manager=session)
-        result = await diologs.get_dialogs()
-        print(result)
-        print()
-        # diolog = UserDialog(telegram_id=301213126, session_manager=session)
-        # await diolog.get_dialog()
-        # print(diolog.dialog)
+        # diologs = ResearchDialogs(research_id=80, session_manager=session)
+        # result = await diologs.get_dialogs()
+        # print(result)
+        # print()
+        diolog = UserDialog(telegram_id=301213126, session_manager=session)
+        r = await diolog.get_csv_buffer()
+        print(r)
 
 
     asyncio.run(main())

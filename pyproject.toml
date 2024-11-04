@@ -32,6 +32,7 @@ aiohttp = "^3.10.8"
 async-cache = "^1.1.1"
 telethon = "^1.37.0"
 pandas = "^2.2.3"
+xlsxwriter = "^3.2.0"
 
 
 [build-system]

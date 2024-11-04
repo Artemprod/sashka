@@ -10,7 +10,7 @@ from src.services.analitcs.diolog import ResearchDialogs, UserDialog
 from src.services.analitcs.models.metrics import DialogMetrics
 
 
-class DialogAnalyzer(ABC):
+class MetricCalculator(ABC):
     """Абстрактный класс для анализа диалогов."""
 
     @abstractmethod
@@ -18,11 +18,15 @@ class DialogAnalyzer(ABC):
         pass
 
 
-class Metrics(DialogAnalyzer):
-    def __init__(self, research_id: int, session_manager):
+class BasicMetricCalculator(MetricCalculator):
+    def __init__(self,
+                 research_id: int,
+                 session_manager,
+                 dialogs: Optional[ResearchDialogs] = None):
+
         self.research_id = research_id
         self._session_manager = session_manager
-        self._dialogs: Optional[ResearchDialogs] = None
+        self._dialogs: Optional[ResearchDialogs] = dialogs
 
     @property
     async def dialogs(self) -> ResearchDialogs:
@@ -99,11 +103,12 @@ class Metrics(DialogAnalyzer):
     async def completed_dialog_conversion(self):
         ...
 
+
 if __name__ == "__main__":
     async def main():
         session = DatabaseSessionManager(
             database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
-        m = Metrics(research_id=80, session_manager=session)
+        m = BasicMetricCalculator(research_id=80, session_manager=session)
         r = await m.analyze()
         print(r)
 
