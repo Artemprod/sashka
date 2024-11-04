@@ -12,4 +12,3 @@ class AnalyticCollector:
             raise AttributeError("Class does not have 'type' attribute.")
         # Возвращаем класс, чтобы декоратор не изменял его
         return cls
-
