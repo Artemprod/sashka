@@ -138,10 +138,12 @@ if __name__ == "__main__":
         csv_class:AnalyticCSV= AnalyticCollector.instruments['csv'](research_id=80,
                                                                     session_manager=session,
                                                                     metric_calculator=BasicMetricCalculator)
-        excel_class = AnalyticCollector.instruments['excel']
+        excel_class = AnalyticCollector.instruments['excel'](research_id=80,
+                                                                    session_manager=session,
+                                                                    metric_calculator=BasicMetricCalculator)
         print(csv_class)  # Должно напечатать класс AnalyticCSV
         print(excel_class)  # Должно напечатать класс AnalyticExcel
-        r = await csv_class.provide_data()
+        r = await excel_class.provide_data(path=r'D:\projects\AIPO_V2\CUSTDEVER\src\services\analitcs\test.xlsx')
         print(r)
 
 

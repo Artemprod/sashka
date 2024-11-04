@@ -130,7 +130,7 @@ class UserDialog(Dialogs):
         await self.__def_validate_dialog()
 
         try:
-            self.dialog.to_excel(path, encoding='utf-8')
+            self.dialog.to_excel(path)
             logger.info(f"excel File  saved")
         except Exception as e:
             logger.error(f" Faild to save excel file ")
@@ -139,7 +139,7 @@ class UserDialog(Dialogs):
             return path
 
     async def __def_validate_dialog(self):
-        if not self.dialog:
+        if self.dialog is None or self.dialog.empty:
             await self.get_dialog()
 
 
