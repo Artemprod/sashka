@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 from src.services.analitcs.models.metrics import DialogMetrics
 import csv
 import io
@@ -7,10 +9,17 @@ from typing import List, Union
 
 import pandas as pd
 
+class Exporter(ABC):
+    @abstractmethod
+    def export(self, *args, **kwargs):
+        pass
 
-class CsvExporter:
+    @abstractmethod
+    def export_buffer(self,*args, **kwargs):
+        pass
+class CsvExporter(Exporter):
     @staticmethod
-    def export_to_csv(data: List['DialogMetrics'], filepath: Union[str, Path], encoding: str = 'utf-8') -> None:
+    def export(data: List['DialogMetrics'], filepath: Union[str, Path], encoding: str = 'utf-8') -> None:
         """Экспорт списка объектов DialogMetrics в CSV файл."""
         if not data:
             raise ValueError("Список данных для экспорта не может быть пустым")
@@ -34,7 +43,7 @@ class CsvExporter:
             raise OSError(f"Ошибка при записи CSV файла: {e}")
 
     @staticmethod
-    def export_to_csv_buffer(data: List['DialogMetrics'], encoding: str = 'utf-8') -> io.BytesIO:
+    def export_buffer(data: List['DialogMetrics'], encoding: str = 'utf-8') -> io.BytesIO:
         """Экспорт списка объектов DialogMetrics в CSV буфер."""
         if not data:
             raise ValueError("Список данных для экспорта не может быть пустым")
@@ -62,9 +71,9 @@ class CsvExporter:
             raise RuntimeError(f"Ошибка при записи CSV в буфер: {e}")
 
 
-class ExcelExporter:
+class ExcelExporter(Exporter):
     @staticmethod
-    def export_to_excel(data: List['DialogMetrics'], filepath: Union[str, Path]) -> None:
+    def export(data: List['DialogMetrics'], filepath: Union[str, Path]) -> None:
         """Экспорт списка объектов DialogMetrics в Excel файл."""
         if not data:
             raise ValueError("Список данных для экспорта не может быть пустым")
@@ -81,7 +90,7 @@ class ExcelExporter:
             raise OSError(f"Ошибка при записи Excel файла: {e}")
 
     @staticmethod
-    def export_to_excel_buffer(data: List['DialogMetrics']) -> io.BytesIO:
+    def export_buffer(data: List['DialogMetrics']) -> io.BytesIO:
         """Экспорт списка объектов DialogMetrics в Excel буфер."""
         if not data:
             raise ValueError("Список данных для экспорта не может быть пустым")

@@ -1,5 +1,6 @@
 from loguru import logger
 
+from src.services.analitcs.decorator.collector import AnalyticCollector
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.manager import TelegramResearchManager
@@ -25,6 +26,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.research_manager = initialize_research_manager(publisher=publisher,
                                                             repository=repository)
+
+    app.state.analytic_collector = AnalyticCollector
     app.state.publisher = publisher
     app.state.db_session = session
     logger.info("Initialized classes")

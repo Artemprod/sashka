@@ -1,22 +1,43 @@
 from fastapi import APIRouter, Depends, HTTPException
-from loguru import logger
 from src.database.postgres.engine.session import DatabaseSessionManager
-from src.services.analitcs.diolog import ResearchDialogs
-from src.web.dependencies.researcher.start import get_research_manager, get_publisher, get_db_session
+from src.services.analitcs.metrics import BasicMetricCalculator
+from src.web.dependencies.researcher.start import (get_research_manager, get_publisher, get_db_session,
+                                                   get_analytic_instruments)
+from src.web.utils.file import ZIPFileHandler
+from src.web.utils.funcs import produce_analytic_data
 
 router = APIRouter(prefix="/analytic/dialog", tags=["Telegram"])
 
 
+# TODO Добавить сохранение файлов по пути
 
 
+@router.post("/csv", status_code=200)
+async def get_csv_research_data(
+    research_id: int,
+    db_session: DatabaseSessionManager = Depends(get_db_session),
+    analytic: dict = Depends(get_analytic_instruments),
+):
+    csv_analytic = analytic['csv'](
+        research_id=research_id,
+        session_manager=db_session,
+        metric_calculator=BasicMetricCalculator,
+    )
+    data = await produce_analytic_data(csv_analytic)
+    file_handler = ZIPFileHandler(data, "csv")
+    return file_handler.create_response()
 
-@router.post("/get_dialog",status_code=200)
-async def start_research(research_id:int, db_session: DatabaseSessionManager = Depends(get_db_session)):
-    """Запускает новый процесс исследования."""
-    research_dialogs: ResearchDialogs = ResearchDialogs(session_manager=db_session, research_id=research_id)
-    try:
-        dialogs = await research_dialogs.get_dialogs()
-        return dialogs
-    except Exception as e:
-        logger.error(f"Failed : {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to start research: {str(e)}")
+@router.post("/excel", status_code=200)
+async def get_excel_research_data(
+    research_id: int,
+    db_session: DatabaseSessionManager = Depends(get_db_session),
+    analytic: dict = Depends(get_analytic_instruments),
+):
+    excel_analytic = analytic['excel'](
+        research_id=research_id,
+        session_manager=db_session,
+        metric_calculator=BasicMetricCalculator,
+    )
+    data = await produce_analytic_data(excel_analytic)
+    file_handler = ZIPFileHandler(data, "xlsx")
+    return file_handler.create_response()

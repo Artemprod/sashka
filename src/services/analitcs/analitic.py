@@ -67,12 +67,12 @@ class Analytic(ABC):
         if all(isinstance(dialog, BytesIO) for dialog in dialogs):
             return AnalyticDataBufferDTO(
                 dialogs=dialogs,
-                metric=exporter_cls.export_to_csv_buffer([metrics]),
+                metric=exporter_cls.export_buffer([metrics]),
             )
         elif all(isinstance(dialog, str) for dialog in dialogs):
             return AnalyticFileDTO(
                 dialogs=dialogs,
-                metric=exporter_cls.export_to_csv(data=[metrics], filepath=metric_path),
+                metric=exporter_cls.export(data=[metrics], filepath=metric_path),
             )
         else:
             logger.info(f"Unknown format of objects in dialogs: {[type(dialog) for dialog in dialogs]}")

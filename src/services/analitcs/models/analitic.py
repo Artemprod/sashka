@@ -12,11 +12,11 @@ class AnalyticDataDTO(BaseModel):
 
 class AnalyticDataBufferDTO(AnalyticDataDTO):
     dialogs: List[BytesIO]
-    metric: DialogMetrics
+    metric: BytesIO
 
 class AnalyticFileDTO(AnalyticDataDTO):
     dialogs: List[str]
-    metric: DialogMetrics
+    metric: str
 
 
 
