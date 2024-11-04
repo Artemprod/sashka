@@ -82,7 +82,7 @@ class UserDialog(Dialogs):
         self.dialog = dialog_df
         return self
 
-    async def get_csv(self, path: str) -> str:
+    async def get_csv_file(self, path: str) -> str:
         await self.__def_validate_dialog()
         try:
             file = self.dialog.to_csv(path_or_buf=path, encoding='utf-8')
@@ -93,7 +93,7 @@ class UserDialog(Dialogs):
         else:
             return path
 
-    async def get_csv_buffer(self) -> bytes:
+    async def get_csv_buffer(self) -> io.BytesIO:
         await self.__def_validate_dialog()
         output = io.BytesIO()
         try:
@@ -104,9 +104,9 @@ class UserDialog(Dialogs):
             logger.error("Failed to create CSV file in buffer: %s", e)
             raise e
         output.seek(0)
-        return output.getvalue()
+        return output
 
-    async def get_excel_buffer(self) -> bytes:
+    async def get_excel_buffer(self) -> io.BytesIO:
         await self.__def_validate_dialog()
 
         output = io.BytesIO()
@@ -124,7 +124,7 @@ class UserDialog(Dialogs):
 
         output.seek(0)
 
-        return output.getvalue()
+        return output
 
     async def __def_validate_dialog(self):
         if not self.dialog:

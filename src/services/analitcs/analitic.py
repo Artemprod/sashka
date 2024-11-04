@@ -1,11 +1,12 @@
 from abc import abstractmethod, ABC
-from typing import Optional
+from typing import Optional, Union
 
 from loguru import logger
 
 from src.services.analitcs.decorator.collector import AnalyticCollector
 from src.services.analitcs.diolog import ResearchDialogs
 from src.services.analitcs.metrics import MetricCalculator
+from src.services.analitcs.models.analitic import AnalyticFileBufferDTO, AnalyticDataBufferDTO
 
 
 class Analytic(ABC):
@@ -39,7 +40,7 @@ class Analytic(ABC):
             raise
 
     @abstractmethod
-    async def provide_data(self):
+    async def provide_data(self, *args, **kwargs):
         """
         возвращет серию файлов отдельные файлы для диалогов отдельный фал для аналитики
         :return:
@@ -57,14 +58,16 @@ class AnalyticCSV(Analytic):
     возвращет серию файлов отдельные файлы для диалогов отдельный фал для аналитики в формате csv
     """
 
-    async def provide_data(self):
+    async def provide_data(self, path=None)->Union[AnalyticDataBufferDTO,AnalyticFileBufferDTO]:
         """
         Возвращает спсок csv по дмлогам и аналитик
         :return:
         """
-        dialogs = await self.dialogs
-        for user_telegram_id, dialog in dialogs.dialogs.items():
-            dialog.get_csv()
+        dialogs_objects = await self.dialogs
+        dialogs = []
+        for user_telegram_id, dialog in dialogs_objects.dialogs.items():
+            if not path:
+                dialog = dialogs.append(dialog.get_csv_buffer())
 
 
 
