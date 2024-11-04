@@ -98,7 +98,7 @@ class AnalyticExcel(Analytic):
     async def provide_data(self, folder_path: str = None) -> Union[AnalyticDataBufferDTO, AnalyticFileDTO]:
         """Возвращает список excel по диалогам и аналитик."""
         dialogs_objects = await self.dialogs
-        return await self._process_dialogs(dialogs_objects.dialogs, folder_path, ExcelExporter, 'xlsx')
+        return await self._process_dialogs(dialogs_objects.dialogs, folder_path, ExcelExporter, 'excel')
 
 
 if __name__ == "__main__":
