@@ -15,7 +15,9 @@ class AnalyticDataBufferDTO(AnalyticDataDTO):
     metric: DialogMetrics
 
 
-class AnalyticFileBufferDTO(AnalyticDataDTO):
+class AnalyticFileDTO(AnalyticDataDTO):
     dialogs: List[str]
     metric: DialogMetrics
+
+
 

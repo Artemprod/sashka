@@ -126,6 +126,18 @@ class UserDialog(Dialogs):
 
         return output
 
+    async def get_excel_file(self, path) -> io.BytesIO:
+        await self.__def_validate_dialog()
+
+        try:
+            self.dialog.to_excel(path, encoding='utf-8')
+            logger.info(f"excel File  saved")
+        except Exception as e:
+            logger.error(f" Faild to save excel file ")
+            raise e
+        else:
+            return path
+
     async def __def_validate_dialog(self):
         if not self.dialog:
             await self.get_dialog()

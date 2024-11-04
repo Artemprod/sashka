@@ -1,4 +1,5 @@
 from abc import abstractmethod, ABC
+from io import BytesIO
 from typing import Optional, Union
 
 from loguru import logger
@@ -6,19 +7,17 @@ from loguru import logger
 from src.services.analitcs.decorator.collector import AnalyticCollector
 from src.services.analitcs.diolog import ResearchDialogs
 from src.services.analitcs.metrics import MetricCalculator
-from src.services.analitcs.models.analitic import AnalyticFileBufferDTO, AnalyticDataBufferDTO
+from src.services.analitcs.models.analitic import AnalyticDataBufferDTO, AnalyticFileDTO
 
 
 class Analytic(ABC):
-
-    def __init__(self,
-                 research_id: int,
-                 session_manager,
-                 metric_calculator):
+    def __init__(self, research_id: int, session_manager, metric_calculator):
         self.research_id = research_id
         self._session_manager = session_manager
-        self.metric_calculator:MetricCalculator = metric_calculator(research_id=research_id,
-                                                                    session_manager=session_manager)
+        self.metric_calculator: MetricCalculator = metric_calculator(
+            research_id=research_id,
+            session_manager=session_manager
+        )
         self._dialogs: Optional[ResearchDialogs] = None
 
     @property
@@ -43,43 +42,82 @@ class Analytic(ABC):
     @abstractmethod
     async def provide_data(self, *args, **kwargs):
         """
-        возвращет серию файлов отдельные файлы для диалогов отдельный фал для аналитики
-        :return:
+        возвращает серию файлов:
+        отдельные файлы для диалогов,
+        отдельный файл для аналитики
         """
-
         pass
-
 
 
 @AnalyticCollector
 class AnalyticCSV(Analytic):
     type = 'csv'
     """
-
-    возвращет серию файлов отдельные файлы для диалогов отдельный фал для аналитики в формате csv
+    Возвращает серию файлов:
+    отдельные файлы для диалогов,
+    отдельный файл для аналитики в формате csv
     """
 
-    async def provide_data(self, path:str=None)->Union[AnalyticDataBufferDTO,AnalyticFileBufferDTO]:
-        """
-        Возвращает спсок csv по дмлогам и аналитик
-        :return:
-        """
+    async def provide_data(self, path: str = None) -> Union[AnalyticDataBufferDTO, AnalyticFileDTO]:
+        """ Возвращает список csv по диалогам и аналитик """
         dialogs_objects = await self.dialogs
         dialogs = []
+
         for user_telegram_id, dialog in dialogs_objects.dialogs.items():
             if not path:
                 dialogs.append(dialog.get_csv_buffer())
             else:
                 dialogs.append(dialog.get_csv_file(path))
-        metrics =
 
+        metrics = await self.metric_calculator.analyze()
+
+        if all(isinstance(dialog, BytesIO) for dialog in dialogs):
+            return AnalyticDataBufferDTO(
+                dialogs=dialogs,
+                metric=metrics,
+            )
+        elif all(isinstance(dialog, str) for dialog in dialogs):
+            return AnalyticFileDTO(
+                dialogs=dialogs,
+                metric=metrics,
+            )
+        else:
+            logger.info(f"Unknown format of objects in dialogs: {(type(dialog) for dialog in dialogs)}")
+            raise ValueError(f"Unknown format of objects in dialogs: {(type(dialog) for dialog in dialogs)}")
 
 
 @AnalyticCollector
 class AnalyticExcel(Analytic):
     type = 'excel'
+    """
+    Возвращает серию файлов:
+    отдельные файлы для диалогов,
+    отдельный файл для аналитики в формате excel
+    """
 
-    async def provide_data(self):
-        pass
+    async def provide_data(self, path: str = None) -> Union[AnalyticDataBufferDTO, AnalyticFileDTO]:
+        """ Возвращает список excel по диалогам и аналитик """
+        dialogs_objects = await self.dialogs
+        dialogs = []
 
-    ...
+        for user_telegram_id, dialog in dialogs_objects.dialogs.items():
+            if not path:
+                dialogs.append(dialog.get_excel_buffer())
+            else:
+                dialogs.append(dialog.get_excel_file(path))
+
+        metrics = await self.metric_calculator.analyze()
+
+        if all(isinstance(dialog, BytesIO) for dialog in dialogs):
+            return AnalyticDataBufferDTO(
+                dialogs=dialogs,
+                metric=metrics,
+            )
+        elif all(isinstance(dialog, str) for dialog in dialogs):
+            return AnalyticFileDTO(
+                dialogs=dialogs,
+                metric=metrics,
+            )
+        else:
+            logger.info(f"Unknown format of objects in dialogs: {(type(dialog) for dialog in dialogs)}")
+            raise ValueError(f"Unknown format of objects in dialogs: {(type(dialog) for dialog in dialogs)}")
