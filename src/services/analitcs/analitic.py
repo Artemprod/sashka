@@ -14,10 +14,11 @@ class Analytic(ABC):
     def __init__(self,
                  research_id: int,
                  session_manager,
-                 metric_calculator: MetricCalculator):
+                 metric_calculator):
         self.research_id = research_id
         self._session_manager = session_manager
-        self.metric_calculator = metric_calculator
+        self.metric_calculator:MetricCalculator = metric_calculator(research_id=research_id,
+                                                                    session_manager=session_manager)
         self._dialogs: Optional[ResearchDialogs] = None
 
     @property
@@ -58,7 +59,7 @@ class AnalyticCSV(Analytic):
     возвращет серию файлов отдельные файлы для диалогов отдельный фал для аналитики в формате csv
     """
 
-    async def provide_data(self, path=None)->Union[AnalyticDataBufferDTO,AnalyticFileBufferDTO]:
+    async def provide_data(self, path:str=None)->Union[AnalyticDataBufferDTO,AnalyticFileBufferDTO]:
         """
         Возвращает спсок csv по дмлогам и аналитик
         :return:
@@ -67,8 +68,10 @@ class AnalyticCSV(Analytic):
         dialogs = []
         for user_telegram_id, dialog in dialogs_objects.dialogs.items():
             if not path:
-                dialog = dialogs.append(dialog.get_csv_buffer())
-
+                dialogs.append(dialog.get_csv_buffer())
+            else:
+                dialogs.append(dialog.get_csv_file(path))
+        metrics =
 
 
 
