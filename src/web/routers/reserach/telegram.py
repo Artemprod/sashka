@@ -10,7 +10,7 @@ from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.manager import TelegramResearchManager
 from src.web.dependencies.researcher.start import get_research_manager, get_publisher
 
-router = APIRouter(prefix="/research/telegram", tags=["Telegram"])
+router = APIRouter(prefix="/research/telegram", tags=["Research"])
 
 
 

@@ -11,7 +11,7 @@ from src.distributor.telegram_client.telethoncl.manager.container import Teletho
 
 
 class UserDTOBase(BaseModel):
-    name: Optional[str]
+    username: Optional[str]
     tg_user_id: Optional[int]
 
 
@@ -31,6 +31,7 @@ Datas.model_rebuild()
 
 class UserInfo(BaseModel):
     tg_user_id: int
+    username:str
     is_contact: bool
     is_mutual_contact: bool
     is_deleted: bool
@@ -43,6 +44,7 @@ class UserInfo(BaseModel):
     is_premium: bool
     name: Optional[str] = None
     last_name: Optional[str] = None
+    second_name: Optional[str] = None
     status: Optional[str] = None
     last_online_date: Optional[datetime]= Field(default=datetime.now())
     phone_number: Optional[str] = None

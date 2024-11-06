@@ -12,19 +12,19 @@ class User(ModelBase):
     __tablename__ = 'users'
 
     user_id: Mapped[intpk]
-    name: Mapped[str]
-    second_name: Mapped[Optional[str]]
-    phone_number: Mapped[Optional[str]]
-
-    tg_user_id: Mapped[int] = mapped_column(BigInteger,nullable=False, unique=True)
-
-    tg_link: Mapped[Optional[str]]
-    is_verified: Mapped[Optional[bool]]
-    is_scam: Mapped[Optional[bool]]
-    is_fake: Mapped[Optional[bool]]
-    is_premium: Mapped[Optional[bool]]
-    last_online_date: Mapped[Optional[datetime]]
-    language_code: Mapped[Optional[str]]
+    tg_user_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, unique=True)
+    username: Mapped[Optional[str]] = mapped_column(nullable=True,unique=True)
+    name: Mapped[Optional[str]] = mapped_column(nullable=True)
+    second_name: Mapped[Optional[str]] = mapped_column(nullable=True)
+    phone_number: Mapped[Optional[str]] = mapped_column(nullable=True)
+    tg_link: Mapped[Optional[str]] = mapped_column(nullable=True)
+    is_verified: Mapped[Optional[bool]] = mapped_column(nullable=True)
+    is_scam: Mapped[Optional[bool]] = mapped_column(nullable=True)
+    is_fake: Mapped[Optional[bool]] = mapped_column(nullable=True)
+    is_premium: Mapped[Optional[bool]] = mapped_column(nullable=True)
+    last_online_date: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    language_code: Mapped[Optional[str]] = mapped_column(nullable=True)
+    is_info: Mapped[bool] = mapped_column(nullable=False, default=False)
     created_at: Mapped[created_at]
 
     status: Mapped["UserStatus"] = relationship(

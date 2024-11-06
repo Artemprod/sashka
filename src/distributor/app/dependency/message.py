@@ -45,7 +45,6 @@ async def _get_data_from_headers(msg: NatsMessage, context: Context = Context())
     logger.debug(f"Message headers: {msg.headers}")
 
     user = await _extract_user_from_headers(msg.headers)
-
     client_name = msg.headers.get("tg_client") or msg.headers.get("tg_client_name")
     if not client_name:
         logger.error("Missing client name in headers.")
@@ -56,7 +55,7 @@ async def _get_data_from_headers(msg: NatsMessage, context: Context = Context())
     if container is None:
         raise ValueError("Container not found ")
 
-    client: 'TelegramClient' = container.get_telethon_client__by_name(name=client_name)
+    client: 'TelegramClient' = container.get_telethon_client_by_name(name=client_name)
 
     current_time = datetime.now(tz=timezone.utc)
     send_time_timestamp = msg.headers.get('send_time_next_message_timestamp')

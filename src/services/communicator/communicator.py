@@ -89,7 +89,7 @@ class TelegramCommunicator:
     async def make_first_message_distribution(self, research_id: int, users: List[UserDTOBase]):
         try:
             await self._first_message_distributes.handle(users=users,
-                                                         destination_configs=self._destination_configs['reply'],
+                                                         destination_configs=self._destination_configs['firs_message'],
                                                          research_id=research_id)
         except Exception as e:
             raise e
@@ -100,21 +100,64 @@ class TelegramCommunicator:
     async def reply_message(self, message_object: "IncomeUserMessageDTOQueue"):
         """Обрабатывает и отвечает на входящее сообщение."""
 
-        check = await self._checker.check_user(user_telegram_id=message_object.from_user)
-        if not check.user_in_db:
-            new_user = await self._add_new_user(message_object)
-            if not new_user:
-                logger.error(f"Failed to create new user for telegram_id: {message_object.from_user}")
-                return  # Можно отправить пользователю сообщение об ошибке
+        try:
+            check = await self._checker.check_user(user_telegram_id=message_object.from_user)
+
+            if not check.user_in_db:
+                # Попытка создания нового пользователя
+                new_user = await self._add_new_user(message_object)
+
+                if not new_user:
+                    logger.error(f"Failed to create new user for telegram_id: {message_object.from_user}")
+                    # Здесь можно добавить логику уведомления пользователя об ошибке
+                    return
+                else:
+                    check.user_in_db = True
+
+            if check.user_in_db:
+                if not check.is_has_info:
+                    # Собираем информацию о пользователе
+                    print()
+                    asyncio.create_task(self._collect_user_information(message_object))
+
+                # Обрабатываем сообщение независимо от того, есть ли информация о пользователе или нет
+                await self._handle_message(message_object, check.user_research_id)
             else:
-                check.user_in_db = True
+                logger.warning(f"User not in database: {message_object.from_user}")
+                # Здесь можно добавить логику уведомления пользователя о необходимости регистрации
 
-        if check.user_in_db:
+        except Exception as e:
+            logger.error(f"An error occurred while processing the message from {message_object.from_user}: {e}")
+            # Здесь можно добавить логику уведомления пользователя об ошибке
 
-            await self._handle_message(message_object, check.user_research_id)
-        else:
-            logger.warning(f"User not in database: {message_object.from_user}")
-            # Можно отправить сообщение пользователю о необходимости регистрации
+
+    async def _collect_user_information(self, message_object: "IncomeUserMessageDTOQueue"):
+        print()
+        try:
+            # Получаем информацию о Telegram-клиенте
+            telegram_client: TelegramClientDTOGet = await self._repository.client_repo.get_client_by_telegram_id(
+                telegram_id=message_object.client_telegram_id
+            )
+            print()
+            # Собираем информацию о пользователе
+            user_info: List[UserDTO] = await self._info_collector.collect_users_information(
+                users=[UserDTOBase(username=message_object.user_name, tg_user_id=message_object.from_user)],
+                client=telegram_client
+            )
+            print()
+            # Обновляем информацию о пользователях в базе данных
+            for user in user_info:
+                user.is_info = True
+                await self._repository.user_in_research_repo.short.update_user_info(telegram_id=message_object.from_user,values=user.dict())
+                logger.info(f"User {user.tg_user_id} information updated in database")
+
+
+
+        except Exception as e:
+            logger.error(f"Failed to collect or update user information: {e}")
+            raise  # Перебрасываем ошибку, чтобы внешний код также мог её обработать
+
+
 
     async def ping_user(self, user: UserDTOBase, message_number,research_id):
         try:

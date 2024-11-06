@@ -62,6 +62,32 @@ class UserStatusRepository(BaseRepository):
                 else:
                     return None
 
+    async def update_user_status(self, user_id: int, status: UserStatusEnum) -> Optional[UserStatusDTO]:
+        """
+        Обновляет статус одного пользователя.
+
+        :param user_id: Идентификатор пользователя.
+        :param status: Новый статус для пользователя.
+        :return: DTO с обновленным статусом пользователя или None, если пользователь не найден.
+        """
+        async with self.db_session_manager.async_session_factory() as session:
+            async with session.begin():
+                # Обновляем статус конкретного пользователя
+                stmt = (
+                    update(UserStatus)
+                    .values(status_name=status, updated_at=datetime.datetime.now())
+                    .where(UserStatus.user_id == user_id)
+                    .returning(UserStatus)
+                )
+                result = await session.execute(stmt)
+                updated_status = result.scalar()
+
+                if updated_status:
+                    await session.commit()
+                    return UserStatusDTO.model_validate(updated_status, from_attributes=True)
+                else:
+                    return None
+
 
 class ResearchStatusRepository(BaseRepository):
 

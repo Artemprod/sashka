@@ -7,7 +7,8 @@ class IncomeUserMessageDTOQueue(BaseModel):
 
     message:str
     from_user: int
-    user_name: str
+    first_name:str
+    username: str
     chat: int
     media: bool
     voice: bool

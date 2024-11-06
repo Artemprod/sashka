@@ -13,7 +13,7 @@ class ConfigBase:
 
 # Базовый класс DTO
 class UserDTOBase(BaseModel):
-    name: Optional[str] = None
+    username: Optional[str] = None
     tg_user_id: Optional[int] = None
 
     class Config(ConfigBase):
@@ -23,6 +23,7 @@ class UserDTOBase(BaseModel):
 # Класс, представляющий очередь пользователей
 class UserDTOQueue(BaseModel):
     tg_user_id: int
+    username:str
     is_contact: bool
     is_mutual_contact: bool
     is_deleted: bool
@@ -35,6 +36,7 @@ class UserDTOQueue(BaseModel):
     is_premium: bool
     name: Optional[str] = None
     last_name: Optional[str] = None
+    second_name: Optional[str] = None
     status: str
     last_online_date: Optional[datetime] = None  # Можно оставить как datetime
     phone_number: Optional[str] = None
@@ -45,6 +47,8 @@ class UserDTOQueue(BaseModel):
 
 # Расширенный класс DTO с дополнительными полями
 class UserDTO(UserDTOBase):
+
+
     second_name: Optional[str] = None
     phone_number: Optional[str] = None
     tg_link: Optional[str] = None
@@ -54,6 +58,7 @@ class UserDTO(UserDTOBase):
     is_premium: Optional[bool] = None
     last_online_date: Optional[datetime] = None
     language_code: Optional[str] = None
+    is_info: Optional[bool] = False
     created_at: Optional[datetime] = datetime.now()
 
     class Config(ConfigBase):
@@ -68,7 +73,7 @@ class UserDTOFull(UserDTO):
         pass
 
 class UserDTQueue(BaseModel):
-    name: str
+    user: str
     tg_user_id: str
 
 # DTO с отношениями между объектами

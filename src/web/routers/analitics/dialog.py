@@ -6,13 +6,13 @@ from src.web.dependencies.researcher.start import (get_research_manager, get_pub
 from src.web.utils.file import ZIPFileHandler
 from src.web.utils.funcs import produce_analytic_data
 
-router = APIRouter(prefix="/analytic/dialog", tags=["Telegram"])
+router = APIRouter(prefix="/analytic/dialog", tags=["Analytic"])
 
 
 # TODO Добавить сохранение файлов по пути
 
 
-@router.post("/csv", status_code=200)
+@router.post("/csv/zip", status_code=200)
 async def get_csv_research_data(
     research_id: int,
     db_session: DatabaseSessionManager = Depends(get_db_session),
@@ -27,7 +27,7 @@ async def get_csv_research_data(
     file_handler = ZIPFileHandler(data, "csv")
     return file_handler.create_response()
 
-@router.post("/excel", status_code=200)
+@router.post("/excel/zip", status_code=200)
 async def get_excel_research_data(
     research_id: int,
     db_session: DatabaseSessionManager = Depends(get_db_session),

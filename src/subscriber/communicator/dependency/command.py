@@ -14,7 +14,7 @@ def form_user_info(users: str) -> List[UserDTOBase]:
     except Exception as e:
         raise e
     else:
-        users_dto = [UserDTOBase(name=user["name"], tg_user_id=user["tg_user_id"])
+        users_dto = [UserDTOBase(name=user["username"], tg_user_id=user["tg_user_id"])
                      for user in deserialization_users]
         return users_dto
 
@@ -23,6 +23,7 @@ async def get_command_start_dialog_data_from_headers(body: str, msg: NatsMessage
                                                      context=Context()) -> CommandStartDiologDTO:
     # Проверка наличия заголовков
     headers = msg.headers
+    print("________________HEADERS", headers)
     if not headers:
         logger.error("Headers are missing from the message.")
         raise ValueError("Headers are missing from the message.")
@@ -30,6 +31,7 @@ async def get_command_start_dialog_data_from_headers(body: str, msg: NatsMessage
     # Извлечение и преобразование значений из заголовков
     try:
         users = headers.get("users", 0)
+        print("_______________USERS",users)
         research_id = int(headers.get("research_id", -1))
         # Проверка критических значений
         if users == 0:

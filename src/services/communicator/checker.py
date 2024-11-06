@@ -15,7 +15,6 @@ class Checker:
     def __init__(self, repository: 'RepoStorage'):
         self._repository = repository
 
-
     async def check_user(self, user_telegram_id: int) -> CheckerDTO:
         """
         1. Пвроерить в базе даннх пользователь ?
@@ -32,13 +31,13 @@ class Checker:
             if not user_in_db:
                 return CheckerDTO(user_telegram_id=user_telegram_id, user_in_db=False)
 
-
-
             user_research: Optional[int] = await self._get_user_research_id(user_telegram_id)
+            is_has_info = await self._is_has_info(user_telegram_id=user_telegram_id)
             return CheckerDTO(
                 user_telegram_id=user_telegram_id,
                 user_in_db=True,
-                user_research_id=user_research
+                user_research_id=user_research,
+                is_has_info=is_has_info
             )
         except Exception as e:
             # TODO Логирование ошибки
@@ -60,6 +59,14 @@ class Checker:
             return research.research_id
         except ObjectDoesNotExist:
             return None
+
+    async def _is_has_info(self, user_telegram_id: int = None, username: str = None) -> bool:
+        try:
+            result = await self._repository.user_in_research_repo.short.get_users_info_status(user_telegram_id=user_telegram_id,
+                                                                                      username=username)
+            return result
+        except Exception as e:
+            raise e
 
 
 if __name__ == '__main__':

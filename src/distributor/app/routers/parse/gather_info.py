@@ -22,14 +22,13 @@ broker = NatsBroker()
 
 
 async def derive_data(msg: NatsMessage, context=Context()) -> Datas:
-
     print(msg.headers)
     users: list[dict] = json.loads(msg.headers.get("user"))
-    users_dto = [UserDTOBase(name=user['name'], tg_user_id=user["tg_user_id"]) for user in users]
+    users_dto = [UserDTOBase(username=user['username'], tg_user_id=user["tg_user_id"]) for user in users]
 
     client_dto = TelegramClientDTO.model_validate_json(msg.headers.get("tg_client"))
     container: 'TelethonClientsContainer' = context.get("telethon_container")
-    client: 'TelegramClient' = container.get_telethon_client__by_name(name=client_dto.name)
+    client: 'TelegramClient' = container.get_telethon_client_by_name(name=client_dto.name)
     print(client)
     print(msg)
     return Datas(
@@ -40,31 +39,11 @@ async def derive_data(msg: NatsMessage, context=Context()) -> Datas:
     )
 
 
-# async def form_user_information(user:User) -> UserInfo:
-#     print("form_user_information---------------", user)
-#     type( user)
-#     return UserInfo(
-#         tg_user_id=user.id,
-#         is_contact=user.is_contact,
-#         is_mutual_contact=user.is_mutual_contact,
-#         is_deleted=user.is_deleted,
-#         is_bot=user.is_bot,
-#         is_verified=user.is_verified,
-#         is_restricted=user.is_restricted,
-#         is_scam=user.is_scam,
-#         is_fake=user.is_fake,
-#         is_support=user.is_support,
-#         is_premium=user.is_premium,
-#         name=user.first_name,
-#         last_name=user.last_name,
-#         status=user.status.value,
-#         last_online_date=user.last_online_date,
-#         phone_number=user.phone_number
-#     )
-
 async def form_user_information(user: User) -> UserInfo:
+
     return UserInfo(
         tg_user_id=user.id,
+        username=user.username,
         is_contact=user.contact,
         is_mutual_contact=user.mutual_contact,
         is_deleted=user.deleted,
@@ -77,6 +56,7 @@ async def form_user_information(user: User) -> UserInfo:
         is_premium=user.premium,
         name=user.first_name,
         last_name=user.last_name,
+        second_name=user.last_name,
         status=str(user.status),
         phone_number=user.phone
     )
@@ -94,20 +74,26 @@ async def gather_information(user_data):
 
 
 async def make_request(data: Datas):
+    user_names = [user.username for user in data.users]
+    user_ids = [user.tg_user_id for user in data.users]
     try:
-        user_ids: List[int] = [user.tg_user_id for user in data.users]
-        [await data.client.get_input_entity(user_id) for user_id in user_ids]
-        return [await data.client.get_entity(user_id) for user_id in user_ids]
+        print()
+        # Определяем, используем ли имена или идентификаторы
+        if user_names:
+            return [await data.client.get_entity(name) for name in user_names]
+        else:
+            return [await data.client.get_entity(user_id) for user_id in user_ids]
 
-    except ValueError:
-        logger.warning("ValueError: Trying to send by ID.")
-        user_names: List[str] = [user.name for user in data.users]
-        [await data.client.get_input_entity(name) for name in user_names]
+    except ValueError as e:
+        logger.warning(f"ValueError: Trying to send by name. {e}")
+        print()
+        # Предполагается новое самостоятельное поведение при ошибке
         return [await data.client.get_entity(name) for name in user_names]
 
     except Exception as e:
-        logger.error(f"Error in making request {e}")
-        raise e
+        print()
+        logger.error(f"Error in making request: {e}")
+        raise
 
 
 @router.subscriber(subject="parser.gather.information.many_users", )
@@ -118,6 +104,7 @@ async def parse_user_information(msg: 'NatsMessage', data: Datas = Depends(deriv
     try:
         user_data = await make_request(data=data)
         user_info = await gather_information(user_data)
+        print()
         response_data: ResponseModel = ResponseModel(response=SuccessResponse(data=user_info))
 
     except Exception as e:

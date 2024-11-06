@@ -7,6 +7,7 @@ from faststream.nats import NatsBroker
 
 from loguru import logger
 
+from src.distributor.app.schemas.response import ErrorResponse
 from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.queue import NatsReplyRequestQueueMessageDTOStreem, TelegramObjectHeadersDTO
 from src.schemas.service.response import ResponseModel
@@ -33,9 +34,14 @@ class TelegramUserInformationCollector(UserInformationCollector):
         print("NATS MESSAGE", message)
         try:
             response = await self.publisher.request_reply(nats_message=message)
+            print()
             if response:
                 logger.info(f"Ответ от сервера получен")
-                return await self._parse_users_info(response)
+                response_model = ResponseModel.model_validate_json(response)
+                if not isinstance(response_model,ErrorResponse ):
+                    return await self._parse_users_info(response_model)
+                else:
+                    logger.warning(f"Error in response {response_model.error_message}")
         except Exception as e:
             logger.error(f"Ошибка при сборе информации о пользователях: {e}")
             raise
@@ -56,7 +62,7 @@ class TelegramUserInformationCollector(UserInformationCollector):
             headers=headers.dict(),
         )
 
-    async def _parse_users_info(self, response: str) -> Optional[List[UserDTO]]:
+    async def _parse_users_info(self, response: ResponseModel) -> Optional[List[UserDTO]]:
         users = []
         async for user in self._user_generator(response):
             user_dto = await self.convert_to_user_dto(user)
@@ -64,10 +70,12 @@ class TelegramUserInformationCollector(UserInformationCollector):
         return users if users else None
 
     @staticmethod
-    async def _user_generator(response: str) -> AsyncGenerator[UserDTOQueue, None]:
-        response_model = ResponseModel.model_validate_json(response)
-        for user_data in response_model.response.data:
+    async def _user_generator(response: ResponseModel) -> AsyncGenerator[UserDTOQueue, None]:
+
+        for user_data in response.response.data:
             yield user_data
+
+
 
     @staticmethod
     async def convert_to_user_dto(user_data: UserDTOQueue) -> UserDTO:

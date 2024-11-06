@@ -7,7 +7,8 @@ class OutcomeMessageDTOQueue(BaseModel):
 
     message: str
     from_user: str
-    user_name: str
+    first_name:str
+    username: str
     chat: str
     media: str
     voice: str

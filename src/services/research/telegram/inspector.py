@@ -43,12 +43,11 @@ class ResearchStarter:
         )
         user_group: List[UserDTOFull] = await self._get_users_in_research(research_id)
 
-        user_ids = [user.tg_user_id for user in user_group]
-
         await self.repository.status_repo.user_status.update_status_group_of_user(
-            user_group=user_ids, status=UserStatusEnum.IN_PROGRESS
+            user_group=[user.tg_user_id for user in user_group], status=UserStatusEnum.IN_PROGRESS
         )
-        users_dto = [UserDTOBase(name=user.name, tg_user_id=user.tg_user_id).dict() for user in user_group]
+        users_dto = [UserDTOBase(username=user.username, tg_user_id=user.tg_user_id).dict() for user in user_group]
+        print()
         await self._publish_star_dialog_command(users=users_dto, research_id=research_id)
 
         logger.info("Команда отправлена ")
@@ -342,7 +341,7 @@ class UserPingator:
     async def send_command_message_ping_user(self, user: UserDTOFull, message_number: int, research_id: int):
         """Отправка пинг-сообщения."""
 
-        user_queue_dto = UserDTQueue(name=str(user.name), tg_user_id=str(user.tg_user_id))
+        user_queue_dto = UserDTQueue(name=str(user.username), tg_user_id=str(user.tg_user_id))
         message_dto = PingDataQueueDTO(user=user_queue_dto.dict(),
                                        message_number=str(message_number),
                                        research_id=str(research_id))

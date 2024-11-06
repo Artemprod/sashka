@@ -34,7 +34,8 @@ async def handle_text_message_user_chat(event):
         outcome_message = OutcomeMessageDTOQueue(
             message=str(event.message.message),
             from_user=str(event.sender_id),
-            user_name=str(sender.first_name) if sender.first_name else "Unknown",
+            first_name=str(sender.first_name) if sender.first_name else "Unknown",
+            username=sender.username,
             chat=str(event.chat_id),
             media="None",
             voice="None",

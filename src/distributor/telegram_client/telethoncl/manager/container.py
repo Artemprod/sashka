@@ -93,7 +93,7 @@ class TelethonClientsContainer(InterfaceClientsContainer):
     def get_client_manager_by_name(self, name: str) -> Optional[TelethonManager]:
         return self.managers.get(name)
 
-    def get_telethon_client__by_name(self, name: str) -> Optional[TelegramClient]:
+    def get_telethon_client_by_name(self, name: str) -> Optional[TelegramClient]:
         manager: TelethonManager = self.managers.get(name)
         return manager.run_strategy.client
 

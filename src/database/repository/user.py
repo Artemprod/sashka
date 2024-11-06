@@ -37,26 +37,47 @@ class UserRepository(BaseRepository):
                 return UserDTOFull.model_validate(new_user, from_attributes=True)
 
     async def add_many_users(self, values: List[dict]) -> Optional[List[UserDTOFull]]:
+        """
+        Добавляет всех пользоавтелй которых нет в базе данных
+        :param values:
+        :return:
+        """
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
-                # Сначала получить всех существующих пользователей по tg_user_id
-                user_ids_to_check = [value['tg_user_id'] for value in values]
-                existing_users = await session.execute(
-                    select(User).where(User.tg_user_id.in_(user_ids_to_check))
+                # Извлекаем все  username и tg_user_id из входных данных
+                usernames_to_check = [value['username'] for value in values if 'username' in value]
+                tg_user_ids_to_check = [value['tg_user_id'] for value in values if 'tg_user_id' in value]
+
+                # Получаем всех существующих пользователей по username
+                existing_users_by_username = await session.execute(
+                    select(User).where(User.username.in_(usernames_to_check))
                 )
-                existing_users = {user.tg_user_id for user in existing_users.scalars().all()}
+                existing_usernames = {user.username for user in existing_users_by_username.scalars().all()}
 
-                # Фильтруем новых пользователей, которых еще нет в базе данных
+                # Получаем всех существующих пользователей по tg_user_id
+                existing_users_by_tg_user_id = await session.execute(
+                    select(User).where(User.tg_user_id.in_(tg_user_ids_to_check))
+                )
+
+                existing_tg_user_ids = {user.tg_user_id for user in existing_users_by_tg_user_id.scalars().all()}
+
+                # Фильтруем только новых пользователей, которых еще нет в базе данных
                 new_users = [
-                    User(**value) for value in values
-                    if value['tg_user_id'] not in existing_users
+                    User(**value)
+                    for value in values
+                    if value.get('username') not in existing_usernames and
+                       value.get('tg_user_id') not in existing_tg_user_ids
                 ]
-
+                print()
+                # Если новых пользователей нет, возвращаем None
                 if not new_users:
                     return None
 
+                # Добавляем пользователей и фиксируем изменения
                 session.add_all(new_users)
                 await session.commit()
+
+                # Возвращаем список добавленных пользователей
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in new_users]
 
     @cached(ttl=300, cache=Cache.MEMORY)
@@ -77,6 +98,15 @@ class UserRepository(BaseRepository):
                 users = result.scalars().all()
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
 
+    @cached(ttl=300, cache=Cache.MEMORY)
+    async def get_users_by_username(self, username: str) -> Optional[List[UserDTOFull]]:
+        async with self.db_session_manager.async_session_factory() as session:  # Тип: AsyncSession
+            async with session.begin():
+                # Создаем запрос, который фильтрует пользователей по имени
+                stmt = select(User).filter(User.username == username)
+                result = await session.execute(stmt)
+                users = result.scalars().all()
+                return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
     @cached(ttl=300, cache=Cache.MEMORY)
     async def check_user(self, telegram_id: int) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
@@ -108,6 +138,26 @@ class UserRepository(BaseRepository):
                 users = execution.scalars().all()
                 # DONE Конгвертация в DTO
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
+
+    async def update_user_info(self, telegram_id, values):
+        async with self.db_session_manager.async_session_factory() as session:
+            async with session.begin():  # использовать транзакцию
+                # Обновляем информацию о пользователе
+                stmt = (
+                    update(User)
+                    .where(User.tg_user_id == telegram_id)
+                    .values(**values)
+                    .returning(User)
+                )
+                update_result = await session.execute(stmt)
+                updated_user = update_result.scalar_one_or_none()
+
+                if updated_user is None:
+                    logger.error(f"User with telegram_id {telegram_id} not found")
+                    raise ValueError("User not found")
+
+                logger.info(f"User information updated for user with telegram_id {telegram_id}")
+                return UserDTOFull.model_validate(updated_user, from_attributes=True)
 
     async def update_user_status(self, telegram_id, status: UserStatusEnum):
         async with (self.db_session_manager.async_session_factory() as session):
@@ -142,13 +192,60 @@ class UserRepository(BaseRepository):
                 await session.commit()
 
     @cached(ttl=300, cache=Cache.MEMORY)
-    async def get_user_id_by_telegram_id(self, telegram_id: int) -> int:
+    async def get_user_id_by_telegram_id(self, telegram_id: int) -> Optional[int]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
                 stmt = select(User.user_id).filter(User.tg_user_id == telegram_id)
                 result = await session.execute(stmt)
                 user_id = result.first()
-                return user_id[0]
+                return user_id[0] if user_id else None
+
+    @cached(ttl=300, cache=Cache.MEMORY)
+    async def get_user_id_by_username(self, username: str) -> Optional[int]:
+        async with self.db_session_manager.async_session_factory() as session:  # Тип: AsyncSession
+            async with session.begin():
+                stmt = select(User.user_id).where(User.username == username)
+                result = await session.execute(stmt)
+                user_id = result.first()
+                # Если пользователь найден, возвращаем его ID, иначе None
+                return user_id[0] if user_id else None
+
+    @cached(ttl=300, cache=Cache.MEMORY)
+    async def get_many_user_ids_by_telegram_ids(self, telegram_ids: List[int]) -> List[int]:
+        async with self.db_session_manager.async_session_factory() as session:
+            async with session.begin():
+                stmt = select(User.user_id).where(User.tg_user_id.in_(telegram_ids))
+                result = await session.execute(stmt)
+                return [row[0] for row in result.fetchall()]
+
+    @cached(ttl=300, cache=Cache.MEMORY)
+    async def get_many_user_ids_by_usernames(self, usernames: List[str]) -> List[int]:
+        async with self.db_session_manager.async_session_factory() as session:
+            async with session.begin():
+                stmt = select(User.user_id).where(User.username.in_(usernames))
+                result = await session.execute(stmt)
+                return [row[0] for row in result.fetchall()]
+    async def get_users_info_status(self, user_telegram_id: int = None, username: str = None) -> bool:
+        if not user_telegram_id and not username:
+            logger.error("No parameter provided")
+            raise ValueError("Either `user_telegram_id` or `username` must be provided")
+
+        async with self.db_session_manager.async_session_factory() as session:
+            async with session.begin():  # использовать транзакцию
+                query = select(User)
+                if user_telegram_id:
+                    query = query.filter(User.tg_user_id == user_telegram_id)
+                elif username:
+                    query = query.filter(User.username == username)
+
+                execution = await session.execute(query)
+                user = execution.scalar_one_or_none()
+
+                if user is None:
+                    logger.error("User not found")
+                    raise ValueError("User not found")
+
+                return user.is_info
 
 
 class UserRepositoryFullModel(BaseRepository):
