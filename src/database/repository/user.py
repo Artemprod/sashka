@@ -68,7 +68,7 @@ class UserRepository(BaseRepository):
                     if value.get('username') not in existing_usernames and
                        value.get('tg_user_id') not in existing_tg_user_ids
                 ]
-                print()
+
                 # Если новых пользователей нет, возвращаем None
                 if not new_users:
                     return None

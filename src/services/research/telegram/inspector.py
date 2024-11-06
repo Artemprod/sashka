@@ -47,7 +47,7 @@ class ResearchStarter:
             user_group=[user.tg_user_id for user in user_group], status=UserStatusEnum.IN_PROGRESS
         )
         users_dto = [UserDTOBase(username=user.username, tg_user_id=user.tg_user_id).dict() for user in user_group]
-        print()
+
         await self._publish_star_dialog_command(users=users_dto, research_id=research_id)
 
         logger.info("Команда отправлена ")

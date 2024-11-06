@@ -338,7 +338,7 @@ class ResearchMessageAnswer(MessageAnswer):
             context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt,user_prompt=prompt.user_prompt, context=context))
         await self._publish_and_save_message(content=response,
                                              client=client,
-                                             user=UserDTOBase(name=message.user_name,tg_user_id=message.from_user),
+                                             user=UserDTOBase(username=message.username,tg_user_id=message.from_user),
                                              assistant_id=assistant,
                                              destination_configs=destination_configs)
 
@@ -368,7 +368,7 @@ class CommonMessageAnswer(MessageAnswer):
 
         await self._publish_and_save_message(content=response,
                                              client=client,
-                                             user=UserDTOBase(name=message.user_name,
+                                             user=UserDTOBase(username=message.username,
                                                               tg_user_id=message.from_user),
                                              assistant_id=assistant.assistant_id,
                                              destination_configs=destination_configs)

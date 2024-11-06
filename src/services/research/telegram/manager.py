@@ -86,33 +86,41 @@ class TelegramResearchManager(BaseResearchManager):
 
     async def _set_user_status(self, research: ResearchDTOPost) -> None:
         """Устанавливает статус пользователей и возвращает список пользователей, для которых статус не был установлен."""
+        db_users = set()
 
         # Получаем список user_id из базы данных для указанных telegram_id
-        db_users = [
-            await self._database_repository.user_in_research_repo.short.get_user_id_by_telegram_id(telegram_id=user)
-            for user in research.examinees_ids
-        ]
+        if research.examinees_ids:
+            user_ids = await self._database_repository.user_in_research_repo.short.get_many_user_ids_by_telegram_ids(
+                telegram_ids=research.examinees_ids
+            )
+            db_users.update(user_ids)
+
+        # Получаем список user_id из базы данных для указанных имен пользователей
+        if research.examinees_user_names:
+            user_ids = await self._database_repository.user_in_research_repo.short.get_many_user_ids_by_usernames(
+                usernames=research.examinees_user_names
+            )
+            db_users.update(user_ids)
 
         for user_id in db_users:
+            if user_id is None:
+                continue
             try:
                 # Пытаемся добавить новый статус для пользователя
                 await self._database_repository.status_repo.user_status.add_user_status(
                     values={
                         "user_id": user_id,
                         "status_name": UserStatusEnum.WAIT,
-                        "created_at": datetime.datetime.now()
+                        "created_at": datetime.datetime.now(),
                     }
                 )
             except IntegrityError as e:
                 # Проверяем, если это ошибка уникальности
-
                 logger.info(f"Повторяющееся значение ключа для user_id={user_id}: {e}")
                 # Обновляем статус пользователя, если запись уже существует
                 await self._database_repository.status_repo.user_status.update_user_status(
-                    user_id=user_id,
-                    status=UserStatusEnum.WAIT
+                    user_id=user_id, status=UserStatusEnum.WAIT
                 )
-
             except Exception as e:
                 logger.error(f"Неизвестная ошибка для user_id={user_id}: {e}")
 
@@ -168,7 +176,6 @@ class TelegramResearchManager(BaseResearchManager):
 
         # Добавляем пользователей в базу данных
         try:
-            print()
             return await self._database_repository.user_in_research_repo.short.add_many_users(
                 values=[user.dict() for user in users_dto]
             )
@@ -201,7 +208,7 @@ class TelegramResearchManager(BaseResearchManager):
                 usernames=research.examinees_user_names
             )
             db_users_ids.extend(users_by_usernames)
-        print()
+
         # Привязываем пользователей к исследованию
         for user_id in db_users_ids:
             await self._database_repository.user_in_research_repo.short.bind_research(

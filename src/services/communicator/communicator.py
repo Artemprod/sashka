@@ -117,7 +117,6 @@ class TelegramCommunicator:
             if check.user_in_db:
                 if not check.is_has_info:
                     # Собираем информацию о пользователе
-                    print()
                     asyncio.create_task(self._collect_user_information(message_object))
 
                 # Обрабатываем сообщение независимо от того, есть ли информация о пользователе или нет
@@ -132,19 +131,19 @@ class TelegramCommunicator:
 
 
     async def _collect_user_information(self, message_object: "IncomeUserMessageDTOQueue"):
-        print()
+
         try:
             # Получаем информацию о Telegram-клиенте
             telegram_client: TelegramClientDTOGet = await self._repository.client_repo.get_client_by_telegram_id(
                 telegram_id=message_object.client_telegram_id
             )
-            print()
+
             # Собираем информацию о пользователе
             user_info: List[UserDTO] = await self._info_collector.collect_users_information(
-                users=[UserDTOBase(username=message_object.user_name, tg_user_id=message_object.from_user)],
+                users=[UserDTOBase(username=message_object.username, tg_user_id=message_object.from_user)],
                 client=telegram_client
             )
-            print()
+
             # Обновляем информацию о пользователях в базе данных
             for user in user_info:
                 user.is_info = True
