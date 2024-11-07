@@ -1,0 +1,286 @@
+services:
+
+  postgres_db:
+    container_name: postgres_container
+    image: postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: "${POSTGRES_DATABASE}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    ports:
+      - "2345:5432"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks:
+      - insighter_worker_prod_new
+
+#  migration:
+#    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+#    container_name: migration_alembic
+#    depends_on:
+#      - postgres_db
+#    env_file:
+#      - .env
+#    environment:
+#      DATABASE_URL: "${POSTGRES_URL}"
+#    command: ["make", "migrate"]
+#    networks:
+#      - insighter_worker_prod_new
+
+
+  redis_cache:
+    image: redis
+    container_name: server_redis_cache
+    env_file:
+      - .env
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    restart: always
+    volumes:
+      - redis_cache:/DB/Redis/data/
+    command: ["redis-server", "--port", "${REDIS_PORT}"]
+    networks:
+      - insighter_worker_prod_new
+
+  nats_production:
+    image: nats
+    container_name: nats_worker
+    env_file:
+      - .env
+    ports:
+      - "${NATS_PORT}:${NATS_PORT}"
+      - "8222:8222"
+    restart: always
+    volumes:
+      - nats_production:/DB/nats/data/
+    networks:
+      - insighter_worker_prod_new
+
+  rabbitmq_server_pruduction:
+      image: rabbitmq:management
+      container_name: rabbit_worker
+      ports:
+        - "${RABBITMQ_PORT}:5672"
+        - "15672:15672"
+      environment:
+        RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD}"
+        RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER}"
+      restart: always
+      volumes:
+        - rabbitmq_server_pruduction:/rabit/data/
+      networks:
+        - insighter_worker_prod_new
+
+  insighter_worker_1:
+    depends_on:
+      - nats_production
+      - rabbitmq_server_pruduction
+      - redis_cache
+      - postgres_db
+
+    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+    container_name: insighter_worker_1
+    volumes:
+      - worker_volume:/var/lib/worker
+    restart: always
+    env_file:
+      - .env
+    command: ["make", "run_worker"]
+    networks:
+      - insighter_worker_prod_new
+
+  insighter_worker_2:
+    depends_on:
+      - nats_production
+      - rabbitmq_server_pruduction
+      - redis_cache
+      - postgres_db
+
+    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+    container_name: insighter_worker_2
+    volumes:
+      - worker_volume:/var/lib/worker
+    restart: always
+    env_file:
+      - .env
+    command: ["make", "run_worker"]
+    networks:
+      - insighter_worker_prod_new
+
+  insighter_worker_3:
+    depends_on:
+      - nats_production
+      - rabbitmq_server_pruduction
+      - redis_cache
+      - postgres_db
+
+    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+    container_name: insighter_worker_3
+    volumes:
+      - worker_volume:/var/lib/worker
+    restart: always
+    env_file:
+      - .env
+    command: ["make", "run_worker"]
+    networks:
+      - insighter_worker_prod_new
+
+  insighter_worker_4:
+    depends_on:
+      - nats_production
+      - rabbitmq_server_pruduction
+      - redis_cache
+      - postgres_db
+
+    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+    container_name: insighter_worker_4
+    volumes:
+      - worker_volume:/var/lib/worker
+    restart: always
+    env_file:
+      - .env
+    command: [ "make", "run_worker" ]
+    networks:
+      - insighter_worker_prod_new
+
+  insighter_worker_5:
+    depends_on:
+      - nats_production
+      - rabbitmq_server_pruduction
+      - redis_cache
+      - postgres_db
+
+    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+    container_name: insighter_worker_5
+    volumes:
+      - worker_volume:/var/lib/worker
+    restart: always
+    env_file:
+      - .env
+    command: [ "make", "run_worker" ]
+    networks:
+      - insighter_worker_prod_new
+
+  insighter_worker_6:
+    depends_on:
+      - nats_production
+      - rabbitmq_server_pruduction
+      - redis_cache
+      - postgres_db
+
+    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+    container_name: insighter_worker_6
+    volumes:
+      - worker_volume:/var/lib/worker
+    restart: always
+    env_file:
+      - .env
+    command: [ "make", "run_worker" ]
+    networks:
+      - insighter_worker_prod_new
+
+  insighter_worker_7:
+    depends_on:
+      - nats_production
+      - rabbitmq_server_pruduction
+      - redis_cache
+      - postgres_db
+
+    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+    container_name: insighter_worker_7
+    volumes:
+      - worker_volume:/var/lib/worker
+    restart: always
+    env_file:
+      - .env
+    command: [ "make", "run_worker" ]
+    networks:
+      - insighter_worker_prod_new
+
+  insighter_worker_8:
+    depends_on:
+      - nats_production
+      - rabbitmq_server_pruduction
+      - redis_cache
+      - postgres_db
+
+    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+    container_name: insighter_worker_8
+    volumes:
+      - worker_volume:/var/lib/worker
+    restart: always
+    env_file:
+      - .env
+    command: [ "make", "run_worker" ]
+    networks:
+      - insighter_worker_prod_new
+
+  insighter_worker_9:
+    depends_on:
+      - nats_production
+      - rabbitmq_server_pruduction
+      - redis_cache
+      - postgres_db
+
+    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+    container_name: insighter_worker_9
+    volumes:
+      - worker_volume:/var/lib/worker
+    restart: always
+    env_file:
+      - .env
+    command: [ "make", "run_worker" ]
+    networks:
+      - insighter_worker_prod_new
+
+  insighter_worker_10:
+    depends_on:
+      - nats_production
+      - rabbitmq_server_pruduction
+      - redis_cache
+      - postgres_db
+
+    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+    container_name: insighter_worker_10
+    volumes:
+      - worker_volume:/var/lib/worker
+    restart: always
+    env_file:
+      - .env
+    command: [ "make", "run_worker" ]
+    networks:
+      - insighter_worker_prod_new
+
+  insighter_fast_api_server:
+    depends_on:
+      - nats_production
+      - rabbitmq_server_pruduction
+      - redis_cache
+      - postgres_db
+
+    container_name: insighter_fast_api_server
+    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+    volumes:
+      - worker_volume:/var/lib/worker
+    restart: always
+    env_file:
+      - .env
+    command: ["make", "run_server"]
+    ports:
+      - "9192:9192"
+    networks:
+      - insighter_worker_prod_new
+
+volumes:
+  redis_cache:
+  postgres:
+  nats_production:
+  rabbitmq_server_pruduction:
+  worker_volume:
+
+networks:
+  insighter_worker_prod_new:
+    external: true

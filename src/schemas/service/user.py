@@ -73,7 +73,7 @@ class UserDTOFull(UserDTO):
         pass
 
 class UserDTQueue(BaseModel):
-    user: str
+    name: str
     tg_user_id: str
 
 # DTO с отношениями между объектами

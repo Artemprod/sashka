@@ -47,7 +47,6 @@ class ResearchStarter:
             user_group=[user.tg_user_id for user in user_group], status=UserStatusEnum.IN_PROGRESS
         )
         users_dto = [UserDTOBase(username=user.username, tg_user_id=user.tg_user_id).dict() for user in user_group]
-
         await self._publish_star_dialog_command(users=users_dto, research_id=research_id)
 
         logger.info("Команда отправлена ")
@@ -377,7 +376,7 @@ class UserPingator:
             # TODO поменять потом на часасы секунды
             last_message_time = last_user_message.created_at.replace(
                 tzinfo=timezone.utc) if last_user_message.created_at.tzinfo is None else last_user_message.created_at
-            return last_message_time + timedelta(hours=time_delay)
+            return last_message_time + timedelta(seconds=time_delay)
         except Exception as e:
             logger.error("Error with calculation time send time")
             raise e

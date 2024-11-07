@@ -36,8 +36,9 @@ class FirstMessagePromptGenerator(BasePromptGenerator):
         if not assistant:
             raise
         user_prompt_part = assistant.first_message_prompt if assistant.first_message_prompt else ""
-        user_prompt = f"{user_prompt_part} {assistant.user_prompt} {args} {kwargs}"
+        user_prompt = f"{user_prompt_part}  {args} {kwargs}"
         return PromptDTO(
+            assistant_message=assistant.user_prompt,
             user_prompt=user_prompt,
             system_prompt=assistant.system_prompt
         )

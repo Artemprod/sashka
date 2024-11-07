@@ -8,6 +8,7 @@ class AssistantDTOPost(BaseModel):
     name: str
     system_prompt: str
     user_prompt: str
+
     first_message_prompt: Optional[str] = None
     middle_part_prompt: Optional[str] = None
     last_message_prompt: Optional[str] = None

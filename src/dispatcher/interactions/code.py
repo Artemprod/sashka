@@ -17,21 +17,27 @@ class TelegramGetter(CodeGetter): pass
 class RedisTelegramGetter:
     BASE_TIMEOUT = 60 * 5  # Базовый тайм-аут ожидания данных в секундах
     BASE_TABLE_NAME = 'telegram'
+    REDIS_URL = f'redis://{"localhost"}:{6379}/{10}'
 
-    def __init__(self, redis_url: str = 'redis://localhost:6379/10'):
-        self._redis_url = redis_url if redis_url else self._load_redis_url_from_env()
+    def __init__(self,
+                 settings=None, ):
+        self._redis_url = self._load_redis_url()
+        self.settings = settings
 
-    @staticmethod
-    def _load_redis_url_from_env() -> str:
-        env = Env()
-        env.read_env('.env')
-        try:
-            redis_url = env("REDIS_URL")
-            logger.debug("Redis URL successfully loaded")
-            return redis_url
-        except EnvError as e:
-            logger.error("Failed to load Redis URL from environment")
-            raise e
+    def _load_redis_url(self) -> str:
+        if not self.settings:
+            logger.warning("No settings load from env")
+            env = Env()
+            env.read_env('.env')
+            try:
+                redis_url = env("REDIS_URL")
+                logger.debug("Redis URL successfully loaded")
+                return redis_url
+            except EnvError as e:
+                logger.error("Failed to load Redis URL from environment")
+                raise e
+        else:
+            return self.settings.redis_url
 
     async def _wait_for_telegram_data(self, key: str) -> tuple:
         """Ожидает данные от Redis по указанному ключу."""
