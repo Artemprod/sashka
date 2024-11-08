@@ -40,7 +40,6 @@ async def command_user_ping(
 ):
     """Обрабатывает новые входящие сообщения."""
     # Получение экземпляра TelegramCommunicator из контекста
-    print("ПОСЛЕ ПОЛУЯЧЕНЯ ЗАВИСИМОТСИ ")
     communicator: TelegramCommunicator = context.get("communicator")
     try:
         # Обработка сообщения с использованием TelegramCommunicator
