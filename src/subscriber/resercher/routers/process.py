@@ -29,7 +29,7 @@ def task_completion_callback(task: asyncio.Task, research_id: int):
     else:
         logger.info(f"Research task {research_id} finished successfully")
 
-@router.subscriber(subject="research.start")
+@router.subscriber(subject="research.telegram.start")
 async def new_message_handler(
     body: str,
     msg: NatsMessage,

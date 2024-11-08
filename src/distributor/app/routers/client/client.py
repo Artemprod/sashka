@@ -14,20 +14,6 @@ from src.distributor.telegram_client.telethoncl.manager.container import Teletho
 
 router = NatsRouter()
 
-
-# @router.subscriber("client.pyrogram.create", )
-# async def create_client(message, context=Context()):
-#     """Инициализирует клиента и запускает его"""
-#
-#     container: ClientsManager = context.get("pyrogram_container")
-#     dto = ClientConfigDTO(**message)
-#     container.routers = [answ_router]
-#     task = asyncio.create_task(container.create_client_connection(client_configs=dto, communicator=ConsoleCommunicator()))
-#     try:
-#         await task
-#     except Exception as e:
-#         raise
-
 @router.subscriber("client.telethon.create", )
 async def create_telethon_client(message, context=Context()):
     """Инициализирует клиента и запускает его"""
