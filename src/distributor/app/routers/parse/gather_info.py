@@ -3,6 +3,7 @@ from faststream import Depends
 from faststream.nats import NatsRouter, NatsBroker, NatsMessage
 from loguru import logger
 
+from configs.nats import nats_distributor_settings
 from src.distributor.app.schemas.parse import Datas
 from src.distributor.app.schemas.response import ResponseModel, SuccessResponse, ErrorResponse
 from src.distributor.app.utils.parse import derive_data, make_request, gather_information
@@ -11,7 +12,7 @@ router = NatsRouter()
 broker = NatsBroker()
 
 
-@router.subscriber(subject="parser.gather.information.many_users", )
+@router.subscriber(subject=nats_distributor_settings.parser.base_info.subject)
 async def parse_user_information(msg: 'NatsMessage', data: Datas = Depends(derive_data)):
     logger.info("Подключаюсь к брокеру...")
     await broker.connect()

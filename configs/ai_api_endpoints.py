@@ -1,6 +1,4 @@
 import sys
-
-
 from pydantic import Field, field_validator
 
 from configs.base import BaseConfig

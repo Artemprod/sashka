@@ -1,11 +1,12 @@
-
 from typing import Optional
 from pydantic import Field, field_validator
 from configs.base import BaseConfig
 
 from pathlib import Path
 import sys
+
 sys.path.append(str(Path(__file__).parent.parent))
+
 
 class NATS(BaseConfig):
     class RPCConfigs(BaseConfig):
@@ -71,8 +72,8 @@ class NATSDistributor(BaseConfig):
         base_info: TelegramUserBaseInfo = Field(default_factory=TelegramUserBaseInfo)
 
     class Client(BaseConfig):
-        subject: str = Field("distribute.client.create",
-                             validation_alias='DISTRIBUTOR_CLIENT_CREATE')
+        create_new_client: str = Field("distribute.client.create",
+                                       validation_alias='DISTRIBUTOR_CLIENT_CREATE')
 
     class Research: pass
 
@@ -82,7 +83,6 @@ class NATSDistributor(BaseConfig):
 
 
 nast_base_settings = NATS()
-
 nats_subscriber_communicator_settings = NATSCommunicatorSubscriber()
 nats_subscriber_researcher_settings = NATSResearchSubscriber()
 nats_distributor_settings = NATSDistributor()
