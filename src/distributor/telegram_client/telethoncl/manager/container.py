@@ -136,12 +136,3 @@ class TelethonClientsContainer(InterfaceClientsContainer):
             logger.info("Client start operation cancelled.")
 
 
-if __name__ == '__main__':
-    env = Env()
-    env.read_env('.env')
-    repository = RepoStorage(database_session_manager=DatabaseSessionManager(
-        database_url=env("DATABASE_URL")))
-
-    a = TelethonClientsContainer(repository=repository)
-    a['manager'] = TelethonManager
-    print(a['manager'])

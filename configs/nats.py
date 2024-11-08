@@ -80,3 +80,10 @@ class NATSDistributor(BaseConfig):
     message: Message = Field(default_factory=Message)
     parser: Parse = Field(default_factory=Parse)
     client: Client = Field(default_factory=Client)
+
+
+nast_base_settings = NATS()
+
+nats_subscriber_communicator_settings = NATSCommunicatorSubscriber()
+nats_subscriber_researcher_settings = NATSResearchSubscriber()
+nats_distributor_settings = NATSDistributor()

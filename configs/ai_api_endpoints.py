@@ -44,5 +44,6 @@ class OpenAiApiConfigs(AIAPIBaseConfig):
         return f"{self.https_base_url}{self.endpoint_prefix}{self.context_response}"
 
 
-a = OpenAiApiConfigs()
-print(a.context_response_url)
+ai_api_endpoint_base_settings = AIAPIBaseConfig()
+open_ai_api_endpoint_settings = OpenAiApiConfigs()
+

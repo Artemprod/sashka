@@ -1,10 +1,4 @@
-import os
-from typing import Optional
-
-from dotenv import load_dotenv
-from pydantic import Field, RedisDsn
-from pydantic_settings import BaseSettings
-
+from pydantic import Field
 from configs.base import BaseConfig
 
 
@@ -33,6 +27,7 @@ class RedisTelegramGetter(RedisConfigs):
         return f"{super().redis_url}/{self.database}"
 
 
-telegram_config = RedisTelegramGetter()
+redis_base_configs = RedisConfigs()
+telegram_redis_getter_config = RedisTelegramGetter()
+redis_cache_config = RedisTelegramGetter()
 
-print(telegram_config.redis_url)

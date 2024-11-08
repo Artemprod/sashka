@@ -37,7 +37,9 @@ class Filter:
 
     RESTRICTED_USERS: Optional[List[Union[str, int]]] = []
 
-    def __init__(self):
+    def __init__(self, settings):
+        self.settings = settings
+
         logger.debug("Initializing Filter...")
         restricted_from_env = self._load_restricted_users()
         if not Filter.RESTRICTED_USERS:
@@ -107,9 +109,9 @@ class MediaFilter(Filter):
         Filter.SourceType.ANY: None
     }
 
-    def __init__(self, source_type: Union[str, Filter.SourceType] = Filter.SourceType.ANY, ):
+    def __init__(self,settings, source_type: Union[str, Filter.SourceType] = Filter.SourceType.ANY, ):
         logger.debug("Initializing MediaFilter...")
-        super().__init__()
+        super().__init__(settings)
         if isinstance(source_type, str):
             source_type = Filter.SourceType(source_type.lower())
 

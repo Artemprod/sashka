@@ -214,18 +214,6 @@ class TelethonManager:
             await self.new_client()
             await self.run()
 
-    # async def get_client_user(self, session_string: str) -> User:
-    #     client = TelegramClient(StringSession(session_string),
-    #                             int(self.client_configs.api_id),
-    #                             self.client_configs.api_hash)
-    #     try:
-    #         await client.start()
-    #         return await client.get_me()
-    #     except Exception as e:
-    #         logger.error(f"Error during client user retrieval: {str(e)}")
-    #         raise
-    #     finally:
-    #         await client.disconnect()
 
     async def stop_client(self):
         if self.run_strategy and self.run_strategy.client:
@@ -252,20 +240,3 @@ class TelethonManager:
         else:
             logger.error("Attempted to add an empty list of handlers.")
 
-
-# Пример использования:
-async def main():
-    # repo = RepoStorage(...)  # Инициализация репозитория
-    # config = ClientConfigDTO(...)  # Настройки клиента
-    # manager = TelethonManager(repository=repo, client_configs=config)
-    #
-    # await manager.new_client()
-    # manager.add_handler(your_handler_function)
-    # await manager.run()
-    # await manager.restart_client()
-    # await manager.stop_client()
-    ...
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
