@@ -1,3 +1,4 @@
+from configs.ai_api_endpoints import open_ai_api_endpoint_settings
 from src.services.communicator.communicator import TelegramCommunicator
 from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
@@ -14,8 +15,8 @@ def initialize_communicator() -> TelegramCommunicator:
 
     publisher = NatsPublisher()
     info_collector = TelegramUserInformationCollector(publisher=publisher)
-    single_request = SingleRequest()
-    context_request = ContextRequest()
+    single_request = SingleRequest(url=open_ai_api_endpoint_settings.single_response_url)
+    context_request = ContextRequest(url=open_ai_api_endpoint_settings.context_response)
     prompt_generator = ExtendedPingPromptGenerator(repository=repository)
     communicator = TelegramCommunicator(repository=repository,
                                         info_collector=info_collector,

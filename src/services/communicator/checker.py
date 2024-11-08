@@ -27,7 +27,6 @@ class Checker:
         """
         try:
             user_in_db = await self._is_user_in_database(user_telegram_id)
-            print(user_in_db)
             if not user_in_db:
                 return CheckerDTO(user_telegram_id=user_telegram_id, user_in_db=False)
 

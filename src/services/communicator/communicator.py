@@ -7,6 +7,7 @@ from typing import Union, List, Optional, Any, Tuple, Dict
 
 from loguru import logger
 
+from configs.nats import nats_distributor_settings
 from src.schemas.communicator.checker import CheckerDTO
 from src.schemas.communicator.distanation import NatsDestinationDTO
 from src.schemas.communicator.message import IncomeUserMessageDTOQueue
@@ -45,7 +46,8 @@ class TelegramCommunicator:
                  single_request: "SingleRequest",
                  context_request: "ContextRequest",
                  prompt_generator: "ExtendedPingPromptGenerator",
-                 destination_configs: Optional[Dict] = None):
+                 destination_configs: Optional[Dict] = None,
+                 ):
 
         self._repository = repository
         self._info_collector = info_collector
@@ -82,8 +84,10 @@ class TelegramCommunicator:
     @staticmethod
     def _load_destination_configs() -> dict:
         return {
-            "reply": NatsDestinationDTO(subject="test.message.conversation.send", stream="CONVERSATION"),
-            "firs_message": NatsDestinationDTO(subject="test_4.messages.send.first", stream="WORK_QUEUE_4"),
+            "reply": NatsDestinationDTO(subject=nats_distributor_settings.message.send_message.subject,
+                                        stream=nats_distributor_settings.message.send_message.stream),
+            "firs_message": NatsDestinationDTO(subject=nats_distributor_settings.first_message_message.subject,
+                                               stream=nats_distributor_settings.first_message_message.stream),
         }
 
     async def make_first_message_distribution(self, research_id: int, users: List[UserDTOBase]):

@@ -6,6 +6,7 @@ from environs import Env
 from loguru import logger
 from telethon import TelegramClient
 
+from configs.clients import telethon_container_settings
 from src.database.exceptions.read import EmptyTableError
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
@@ -19,14 +20,12 @@ from src.distributor.telegram_client.telethoncl.manager.manager import TelethonM
 class TelethonClientsContainer(InterfaceClientsContainer):
     def __init__(self,
                  repository,
-                 dev_mode=False,
-                 settings=None,
                  handlers: List = None):
 
         self.repository = repository
         self.handlers = handlers or []
-        self.dev_mode = dev_mode
-        self.settings = settings if settings else self._load_settings()
+        self.dev_mode = telethon_container_settings.def_mode
+        self.settings = telethon_container_settings
         self.managers: Dict[str, TelethonManager] = {}
         self.loop = asyncio.get_event_loop()
 

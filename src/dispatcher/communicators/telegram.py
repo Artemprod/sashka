@@ -44,9 +44,7 @@ class TelegramCommunicator(BaseCommunicator):
         ...
 
 
-if __name__ == '__main__':
 
-    tg = TelegramCommunicator(user_id=123)
 
 
 

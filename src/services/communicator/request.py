@@ -6,6 +6,7 @@ import aiohttp
 from aiohttp import ClientSession
 from loguru import logger
 
+from configs.ai_api_endpoints import ai_api_endpoint_base_settings
 from src.schemas.communicator.request import ContextRequestDTO, SingleRequestDTO
 from src.schemas.communicator.response import ContextResponseDTO, SingleResponseDTO
 
@@ -15,15 +16,8 @@ class AiConnector(ABC):
     Задача этого типа класса общаться по API-запросам с сервером, где находится ИИ.
     """
 
-    def __init__(self, settings: dict = None):
-        self.settings = settings or self._load_settings()
-
-    @staticmethod
-    def _load_settings():
-        return {
-            'api_url': "http://localhost:9193/openai/request/",
-            'timeout': 120  # Default timeout in seconds
-        }
+    def __init__(self, url: str):
+        self.url = url
 
     @abstractmethod
     async def get_response(self, *args, **kwargs):
@@ -33,9 +27,9 @@ class AiConnector(ABC):
         try:
 
             async with session.post(
-                    url=self.settings['api_url'] + url,
+                    url=url,
                     json=send_object.dict(),
-                    timeout=self.settings.get('timeout')
+                    timeout=ai_api_endpoint_base_settings.response_timeout
             ) as result:
                 result.raise_for_status()  # Ensure the response status is OK
                 response_data = await result.json()
@@ -57,7 +51,7 @@ class ContextRequest(AiConnector):
 
     async def get_response(self, context_obj: 'ContextRequestDTO') -> 'ContextResponseDTO':
         # Использование базового метода для управления сессией и обработкой исключений
-        response = await self.perform_request(send_object=context_obj,url="context")
+        response = await self.perform_request(send_object=context_obj, url=self.url)
         return ContextResponseDTO(**response)
 
 
@@ -65,7 +59,5 @@ class SingleRequest(AiConnector):
 
     async def get_response(self, single_obj: 'SingleRequestDTO') -> 'SingleResponseDTO':
         # Использование базового метода для управления сессией и обработкой исключений
-        response = await self.perform_request(send_object=single_obj, url="single")
+        response = await self.perform_request(send_object=single_obj, url=self.url)
         return SingleResponseDTO(**response)
-
-

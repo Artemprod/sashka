@@ -8,6 +8,8 @@ from typing import List, Dict, Optional
 
 from loguru import logger
 
+from configs.nats import nats_subscriber_communicator_settings
+from configs.research import research_pingator_settings
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.schemas.service.research import ResearchDTOFull
 from src.schemas.service.user import UserDTOFull, UserDTOBase, UserDTQueue
@@ -253,42 +255,32 @@ class StopWordChecker:
 
 
 class PingDelayCalculator:
-
-    def __init__(self, settings=None):
-        self.settings = settings if settings else self._load_settings()
-
-    @staticmethod
-    def _load_settings() -> Dict:
-        return {"table": {1: 1, 2: 6, 3: 24, 4: 48, 5: 72, 6: 100}}
+    def __init__(self):
+        # Используем лучше читаемое присваивание
+        self.table: Dict[int, int] = research_pingator_settings.ping_delay.table or self._load_table()
 
     @staticmethod
-    def calculate(n: int) -> int:
-        """
-        Рассчитывает задержку пинга, используя таблицу для n <= 6 и формулу для n > 6.
-        """
-        table = {1: 1, 2: 6, 3: 24, 4: 48, 5: 72, 6: 100}
+    def _load_table() -> Dict[int, int]:
+        return {1: 1, 2: 6, 3: 24, 4: 48, 5: 72, 6: 100}
 
+    def calculate(self, n: int) -> int:
+        """ Рассчитывает задержку пинга, используя таблицу для n <= 6 и формулу для n > 6. """
         if n < 0:
-            logger.warning("Wrong input, n must be non-negative")
+            logger.warning("Input value of n must be non-negative. Returning 0.")
             return 0
-        elif n <= 6:
-            return table[n]
+        elif n in self.table:
+            return self.table[n]
         else:
             return int(math.ceil(10 * math.log(n) * (n - 3) + 24))
 
 
 class UserPingator:
-    @dataclass
-    class PingatorConfig:
-        max_pings: int = 4
-        ping_attempts_multiplier: int = 2
-        ping_interval: int = 10  # в секундах
-        command_ping_subject: str = "command.user.ping"
+
 
     def __init__(self, repo, publisher):
         self.repo = repo
         self.publisher = publisher
-        self.config = UserPingator.PingatorConfig()
+        self.config = research_pingator_settings
         self._attempt_calculator = CyclePingAttemptCalculator
 
     async def ping_users(self, research_id: int):
@@ -331,7 +323,7 @@ class UserPingator:
             if unresponded_messages == 0:
                 return
 
-            if unresponded_messages > self.config.max_pings:
+            if unresponded_messages > self.config.max_pings_messages:
                 logger.info(f"Превышено максимальное количество пингов для пользователя {user.tg_user_id}.")
                 return
 
@@ -356,7 +348,7 @@ class UserPingator:
                                        research_id=str(research_id))
         subject_message: NatsQueueMessageDTOSubject = NatsQueueMessageDTOSubject(
             message=message_dto.model_dump_json(serialize_as_any=True),
-            subject=self.config.command_ping_subject,
+            subject=nats_subscriber_communicator_settings.commands.ping_user,
         )
 
         try:

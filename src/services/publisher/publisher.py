@@ -4,6 +4,7 @@ from typing import Dict, Union, Optional
 from faststream.nats import NatsBroker
 from loguru import logger
 
+from configs.nats import nast_base_settings
 from src.schemas.service.queue import NatsQueueMessageDTOStreem, NatsQueueMessageDTOSubject, \
     NatsReplyRequestQueueMessageDTOStreem
 
@@ -16,9 +17,9 @@ class NatsPublisher:
     @staticmethod
     def _load_settings() -> Dict[str, Union[str, int, float]]:
         return {
-            "nats_server": "nats://localhost:4222",
-            "MAX_RETRIES": 10,
-            "RPC_TIMEOUT": 10.0,
+            "nats_server": nast_base_settings.nats_server_url,
+            "MAX_RETRIES": nast_base_settings.rpc.max_retries,
+            "RPC_TIMEOUT": nast_base_settings.rpc.timeout,
         }
 
     async def publish_message_to_subject(self, subject_message: NatsQueueMessageDTOSubject) -> None:

@@ -8,6 +8,7 @@ from typing import Union, List, Optional, Any, Tuple, Dict
 
 from loguru import logger
 
+from configs.communicator import communicator_first_message_policy
 from src.schemas.communicator.distanation import NatsDestinationDTO
 from src.schemas.communicator.message import IncomeUserMessageDTOQueue
 from src.schemas.communicator.prompt import PromptDTO
@@ -36,11 +37,12 @@ class MessageGeneratorTimeDelay:
     def __init__(self, settings: dict = None):
         self.settings = settings if settings else self._load_settings()
 
-    def _load_settings(self):
+    @staticmethod
+    def _load_settings():
         return {
-            "send_policy": 10,
-            "delay_between_bunch": timedelta(hours=24),
-            "delay_between_messages": timedelta(minutes=5),
+            "send_policy": communicator_first_message_policy.people_in_bunch,
+            "delay_between_bunch": communicator_first_message_policy.delay_between_bunch,
+            "delay_between_messages": communicator_first_message_policy.delay_between_messages,
         }
 
     def generate(self, users: List[UserDTOBase]):

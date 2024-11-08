@@ -7,6 +7,7 @@ from faststream.nats import NatsBroker
 
 from loguru import logger
 
+from configs.nats import nats_distributor_settings
 from src.distributor.app.schemas.response import ErrorResponse
 from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.queue import NatsReplyRequestQueueMessageDTOStreem, TelegramObjectHeadersDTO
@@ -23,7 +24,7 @@ class UserInformationCollector(ABC):
 
 
 class TelegramUserInformationCollector(UserInformationCollector):
-    PARSE_SUBJECT = "parser.gather.information.many_users"
+    PARSE_SUBJECT = nats_distributor_settings.parser.base_info.subject
 
     def __init__(self, publisher: NatsPublisher):
         self.publisher = publisher
@@ -38,7 +39,7 @@ class TelegramUserInformationCollector(UserInformationCollector):
             if response:
                 logger.info(f"Ответ от сервера получен")
                 response_model = ResponseModel.model_validate_json(response)
-                if not isinstance(response_model,ErrorResponse ):
+                if not isinstance(response_model, ErrorResponse):
                     return await self._parse_users_info(response_model)
                 else:
                     logger.warning(f"Error in response {response_model.error_message}")
@@ -75,29 +76,6 @@ class TelegramUserInformationCollector(UserInformationCollector):
         for user_data in response.response.data:
             yield user_data
 
-
-
     @staticmethod
     async def convert_to_user_dto(user_data: UserDTOQueue) -> UserDTO:
         return UserDTO(**user_data.dict())
-
-    # async def parse_users_info(self, response: str) -> List[UserDTO]:
-    #     response_model = ResponseModel.model_validate_json(response)
-    #     users = await asyncio.gather(*(self.convert_to_user_dto(user_data) for user_data in response_model.response.data))
-    #     return list(users) if users else None
-
-
-# class APIUserInformationCollector(UserInformationCollector):
-# async def collect_users_information(self, user_ids: List[int]) -> List['UserDTO']:
-#     # Пример логики для сбора через API
-#     return [UserDTO(user_id=user_id, user_name=f"user_{user_id}") for user_id in user_ids]
-
-if __name__ == '__main__':
-    async def main():
-        async with TelegramUserInformationCollector() as a:
-            info = await a.collect_users_information(user_telegram_ids=[2200096081],
-                                                     client_name="test_008816cb-bb59-4a97-be15-342007189298")
-            print(info)
-
-
-    asyncio.run(main())
