@@ -54,7 +54,6 @@ class ResearchWordStopper(BaseConfig):
 
     @field_validator("stop_words", mode='before')
     def split_str(cls, field_data):
-        print()
         # Проверка, является ли значение строкой; если да, разделяем по запятой
         if isinstance(field_data, str):
             return field_data.split(',')
@@ -62,6 +61,22 @@ class ResearchWordStopper(BaseConfig):
 
 
 class ResearchPingator(BaseConfig):
+    class ResearchPingDelayCalculator(BaseConfig):
+        table: Dict[int, int] = Field(default={1: 1, 2: 6, 3: 24, 4: 48},
+                                      validation_alias='PINGATOR_DELAY_TABLE_HOURS')
+
+        @field_validator("table",
+                         mode='before')
+        def parse_dict(cls, value):
+            if isinstance(value, str):
+                result = {}
+                for pair in value.split(','):
+                    key, value = pair.split(':')
+                    result[int(key)] = int(value)
+                return result
+            return value
+
+    ping_delay: ResearchPingDelayCalculator = Field(default_factory=ResearchPingDelayCalculator)
 
     max_pings_messages: int = Field(default=4,
                                     validation_alias='PINGATOR_MAX_PINGS_MESSAGES')
@@ -71,5 +86,5 @@ class ResearchPingator(BaseConfig):
                                validation_alias='PINGATOR_PING_INTERVAL_CHEKING')
 
 
-a = ResearchWordStopper()
-print(type(a.stop_words))
+a = ResearchPingator()
+print(a.ping_delay.table)
