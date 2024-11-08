@@ -1,14 +1,11 @@
-import os
-from typing import Optional
-
-from dotenv import load_dotenv
-from pydantic import Field, RedisDsn
-from pydantic_settings import BaseSettings
-
+from pydantic import Field
 from configs.base import BaseConfig
 
+from pathlib import Path
+import sys
 
-# load_dotenv()
+sys.path.append(str(Path(__file__).parent.parent))
+
 
 class PostgresDataBaseConfigs(BaseConfig):
     postgres_driver: str = Field(default="postgresql+asyncpg", env="MAIN_POSTGRES_DRIVER")

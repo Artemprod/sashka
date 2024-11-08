@@ -1,11 +1,11 @@
-import os
-from typing import Optional, List, Dict
-
-from dotenv import load_dotenv
-from pydantic import Field, RedisDsn, field_validator
-from pydantic_settings import BaseSettings
-
+from typing import List, Dict
+from pydantic import Field, field_validator
 from configs.base import BaseConfig
+
+from pathlib import Path
+import sys
+
+sys.path.append(str(Path(__file__).parent.parent))
 
 
 class ResearchService(BaseConfig):
@@ -57,5 +57,6 @@ class ResearchPingator(BaseConfig):
                                validation_alias='PINGATOR_PING_INTERVAL_CHEKING')
 
 
-a = ResearchPingator()
-print(a.ping_delay.table)
+research_pingator_settings = ResearchPingator()
+research_overchecker_settings = ResearchOvercChecker()
+research_wordstopper_settings = ResearchWordStopper()

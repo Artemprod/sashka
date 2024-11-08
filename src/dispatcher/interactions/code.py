@@ -1,9 +1,9 @@
-from enum import Enum
 
 import aioredis
 from environs import Env, EnvError
 from loguru import logger
 
+from configs.redis import RedisTelegramGetterConfigs
 from src.dispatcher.models import DataType
 
 
@@ -17,12 +17,11 @@ class TelegramGetter(CodeGetter): pass
 class RedisTelegramGetter:
     BASE_TIMEOUT = 60 * 5  # Базовый тайм-аут ожидания данных в секундах
     BASE_TABLE_NAME = 'telegram'
-    REDIS_URL = f'redis://{"localhost"}:{6379}/{10}'
+    REDIS_URL = f'redis://"localhost":6379/10'
 
-    def __init__(self,
-                 settings=None, ):
-        self._redis_url = self._load_redis_url()
+    def __init__(self, settings: RedisTelegramGetterConfigs = None):
         self.settings = settings
+        self._redis_url = self._load_redis_url()
 
     def _load_redis_url(self) -> str:
         if not self.settings:
@@ -37,6 +36,7 @@ class RedisTelegramGetter:
                 logger.error("Failed to load Redis URL from environment")
                 raise e
         else:
+            print()
             return self.settings.redis_url
 
     async def _wait_for_telegram_data(self, key: str) -> tuple:

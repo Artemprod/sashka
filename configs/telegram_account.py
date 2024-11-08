@@ -1,8 +1,11 @@
 from typing import Optional
-
 from pydantic import Field, field_validator
-
 from configs.base import BaseConfig
+
+from pathlib import Path
+import sys
+
+sys.path.append(str(Path(__file__).parent.parent))
 
 
 class TelegramRestrictedAccounts(BaseConfig):
@@ -18,8 +21,4 @@ class TelegramRestrictedAccounts(BaseConfig):
         return field_data
 
 
-
-
-
-a = TelegramRestrictedAccounts()
-print(a.not_allowed_users_usernames)
+telegram_account_allowance_policy = TelegramRestrictedAccounts()

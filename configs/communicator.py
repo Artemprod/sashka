@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
-
 from pydantic import Field, field_validator
-
 from configs.base import BaseConfig
 
+from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).parent.parent))
 
 class CommunicatorBaseConfigs(BaseConfig):
     ...

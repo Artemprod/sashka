@@ -1,5 +1,5 @@
 from src.dispatcher.communicators.consol import ConsoleCommunicator
-from src.dispatcher.communicators.email import EmailCommunicator
+
 from src.dispatcher.communicators.reggestry import CommunicatorRegistryBase
 from src.dispatcher.communicators.telegram import TelegramCommunicator
 
@@ -32,7 +32,7 @@ class CommunicatorDispatcher:
     COMMUNICATORS = {
         "telegram": TelegramCommunicator,
         "console": ConsoleCommunicator,
-        "email": EmailCommunicator
+
     }
 
     def __init__(self, service_name):

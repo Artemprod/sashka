@@ -2,22 +2,21 @@ import asyncio
 
 from loguru import logger
 
+from configs.redis import telegram_redis_getter_config
 from src.dispatcher import BaseCommunicator
 from src.dispatcher.interactions.code import RedisTelegramGetter
 
 
-
 # TODO Вывнести код геттер в интерфес и подумать над диспетчеразацией
-#TODO Добавить деораторы для отлова ошибок ( написать класс методы которых отлов ошибок )
+# TODO Добавить деораторы для отлова ошибок ( написать класс методы которых отлов ошибок )
 
 class TelegramCommunicator(BaseCommunicator):
     registry_key = "telegram"
 
     def __init__(self, user_id, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.code_getter = RedisTelegramGetter()
+        self.code_getter = RedisTelegramGetter(settings=telegram_redis_getter_config)
         self._user_id = user_id
-
 
     async def get_code(self) -> str:
         return await self.code_getter.get_code(self._user_id)
@@ -46,9 +45,9 @@ class TelegramCommunicator(BaseCommunicator):
 
 
 if __name__ == '__main__':
-    async def main():
-        tg = TelegramCommunicator()
-        print(await tg.get_code(user_id="123"))
+
+    tg = TelegramCommunicator(user_id=123)
 
 
-    asyncio.run(main())
+
+

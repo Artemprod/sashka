@@ -1,6 +1,8 @@
 from pydantic import Field
 from configs.base import BaseConfig
-
+from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).parent.parent))
 
 class RedisConfigs(BaseConfig):
     host: str = Field(default="localhost", validation_alias='REDIS_HOST')
@@ -11,7 +13,7 @@ class RedisConfigs(BaseConfig):
         return f"redis://{self.host}:{self.port}"
 
 
-class RedisCash(RedisConfigs):
+class RedisCashConfigs(RedisConfigs):
     database: int = Field(default=1, validation_alias='REDIS_CASH_DB2')
 
     @property
@@ -19,7 +21,7 @@ class RedisCash(RedisConfigs):
         return f"{super().redis_url}/{self.database}"
 
 
-class RedisTelegramGetter(RedisConfigs):
+class RedisTelegramGetterConfigs(RedisConfigs):
     database: int = Field(default=10, validation_alias='REDIS_TELEGRAM_GETTER_DB')
 
     @property
@@ -28,6 +30,6 @@ class RedisTelegramGetter(RedisConfigs):
 
 
 redis_base_configs = RedisConfigs()
-telegram_redis_getter_config = RedisTelegramGetter()
-redis_cache_config = RedisTelegramGetter()
+telegram_redis_getter_config = RedisTelegramGetterConfigs()
+redis_cache_config = RedisCashConfigs()
 

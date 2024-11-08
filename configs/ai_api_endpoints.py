@@ -1,7 +1,11 @@
+import sys
+
+
 from pydantic import Field, field_validator
 
 from configs.base import BaseConfig
-
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
 
 class AIAPIBaseConfig(BaseConfig):
     https: bool = Field(False, validation_alias='API_HTTPS')

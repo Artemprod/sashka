@@ -1,12 +1,11 @@
-import os
+
 from typing import Optional
-
-from dotenv import load_dotenv
-from pydantic import Field, RedisDsn, field_validator
-from pydantic_settings import BaseSettings
-
+from pydantic import Field, field_validator
 from configs.base import BaseConfig
 
+from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).parent.parent))
 
 class NATS(BaseConfig):
     class RPCConfigs(BaseConfig):
