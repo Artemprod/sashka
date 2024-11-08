@@ -3,7 +3,6 @@ import inspect
 import importlib.util
 
 from loguru import logger
-from telethon import events  # Предположим, что это нужно для хендлеров
 
 
 def is_handler(func):
@@ -51,10 +50,3 @@ def find_handlers_in_directories(directories):
                     handlers = collect_handlers_from_module(module)
                     all_handlers.extend(handlers)
     return all_handlers
-
-
-if __name__ == "__main__":
-    handlers_dirs = [r"D:\projects\AIPO_V2\CUSTDEVER\src\distributor\telegram_client\telethoncl\handlers"]
-    handlers = find_handlers_in_directories(handlers_dirs)
-    for handler in handlers:
-        print(f"Found handler: {handler}")

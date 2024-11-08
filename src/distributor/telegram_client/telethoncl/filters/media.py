@@ -6,6 +6,7 @@ from loguru import logger
 from telethon import events
 from telethon.tl.types import PeerUser, PeerChat, PeerChannel, User, Chat, Channel, DocumentAttributeAudio
 
+from configs.telegram_account import telegram_account_allowance_policy
 from src.distributor.telegram_client.telethoncl.filters.model import SourceType
 from telethon.tl.types import (
     MessageMediaDocument,
@@ -37,32 +38,60 @@ class Filter:
 
     RESTRICTED_USERS: Optional[List[Union[str, int]]] = []
 
-    def __init__(self, settings):
-        self.settings = settings
-
+    def __init__(self):
+        self.settings = telegram_account_allowance_policy
         logger.debug("Initializing Filter...")
-        restricted_from_env = self._load_restricted_users()
+        restricted_users = self._load_restricted_users()
+
         if not Filter.RESTRICTED_USERS:
-            Filter.RESTRICTED_USERS = restricted_from_env
+            Filter.RESTRICTED_USERS = restricted_users
             logger.info("Initialized restricted users from environment.")
         else:
-            new_users = set(restricted_from_env) - set(Filter.RESTRICTED_USERS)
+            new_users = set(restricted_users) - set(Filter.RESTRICTED_USERS)
             if new_users:
                 Filter.RESTRICTED_USERS.extend(new_users)
                 logger.info("Updated restricted users with new entries.")
 
-    @staticmethod
-    def _load_restricted_users() -> List[Union[str, int]]:
-        env = Env()
-        logger.debug("Loading restricted users from .env...")
-        env.read_env('.env')
+        services = self._load_restricted_services()
+        if services:
+            new_services = set(services) - set(Filter.TELEGRAM_SYSTEM_ACCOUNTS)
+            if new_services:
+                Filter.TELEGRAM_SYSTEM_ACCOUNTS.extend(new_services)
+                logger.info("Updated services with new entries.")
+
+    def _load_restricted_users(self) -> List[Union[str, int]]:
         try:
-            users = list(env("NOT_ALLOWED_USERS", "").split(","))
-            logger.debug(f"Loaded restricted users: {users}")
+            logger.debug("Loading restricted users from configs...")
+            users = self.settings.not_allowed_users_id + self.settings.not_allowed_users_usernames
             return users
         except Exception as e:
-            logger.error("Failed to load restricted users from .env: {}", e)
-            raise e
+            logger.debug("Loading restricted users from .env...")
+            env = Env()
+            env.read_env('.env')
+            try:
+                users = list(env("NOT_ALLOWED_USERS_ID", "").split(","))
+                logger.debug(f"Loaded restricted users: {users}")
+                return users
+            except Exception as e:
+                logger.error("Failed to load restricted users from .env: {}", exc_info=e)
+                raise
+
+    def _load_restricted_services(self) -> List[Union[str, int]]:
+        try:
+            logger.debug("Loading restricted services from configs...")
+            new_services = self.settings.not_allowed_services
+            return new_services
+        except Exception as e:
+            logger.debug("Loading restricted services from .env...")
+            env = Env()
+            env.read_env('.env')
+            try:
+                new_services = list(env("NOT_ALLOWED_SERVICES", "").split(","))
+                logger.debug(f"Loaded restricted services: {new_services}")
+                return new_services
+            except Exception as e:
+                logger.error("Failed to load restricted services from .env: {}", exc_info=e)
+                raise
 
     @classmethod
     def _add_restricted_users(cls, users: Union[List[Union[str, int]], str, int]) -> List[Union[str, int]]:
@@ -109,9 +138,9 @@ class MediaFilter(Filter):
         Filter.SourceType.ANY: None
     }
 
-    def __init__(self,settings, source_type: Union[str, Filter.SourceType] = Filter.SourceType.ANY, ):
+    def __init__(self, source_type: Union[str, Filter.SourceType] = Filter.SourceType.ANY, ):
         logger.debug("Initializing MediaFilter...")
-        super().__init__(settings)
+        super().__init__()
         if isinstance(source_type, str):
             source_type = Filter.SourceType(source_type.lower())
 
