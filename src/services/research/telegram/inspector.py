@@ -124,7 +124,6 @@ class ResearchOverChecker:
 
     @staticmethod
     def _load_settings() -> Dict[str, int]:
-        # Объединённые настройки для контроля времени и пользователей
         return {"delay_check_interval": 60}
 
     async def monitor_completion(self, research_id: int):
@@ -424,19 +423,4 @@ class ResearchProcess:
             raise e
 
 
-if __name__ == '__main__':
-    async def main():
-        # Создание необходимых объектов
-        repository = RepoStorage(database_session_manager=DatabaseSessionManager(
-            database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
-        notifier = TelegramNotificator()  # Пример: заменить на реальный экземпляр NatsBroker или другого брокера
-        publisher = NatsPublisher()
-        process = ResearchProcess(repository=repository,
-                                  notifier=notifier,
-                                  publisher=publisher,
-                                  )
-        research_id = 2
-        await process.run(research_id)
 
-
-    asyncio.run(main())

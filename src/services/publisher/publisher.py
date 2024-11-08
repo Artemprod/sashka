@@ -92,18 +92,4 @@ class NatsPublisher:
         return NatsQueueMessageDTOSubject()
 
 
-async def main():
-    # Пример использования
-    publisher = NatsPublisher()
-    message_dto = NatsQueueMessageDTOStreem(
-        message="Пример сообщения",
-        subject="example.subject",
-        stream="example.stream",
-        headers=None
-    )
 
-    await publisher.publish_message_to_stream(message_dto)
-
-
-if __name__ == '__main__':
-    asyncio.run(main())
