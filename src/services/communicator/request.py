@@ -69,15 +69,3 @@ class SingleRequest(AiConnector):
         return SingleResponseDTO(**response)
 
 
-if __name__ == '__main__':
-    async def main():
-        single = SingleRequest()
-        obj = SingleRequestDTO(
-            user_prompt="Wrie top 5 books on Fast api",
-            system_prompt="You are it  book adviser",
-        )
-        res = await single.get_response(single_obj=obj)
-        print(res)
-
-
-    asyncio.run(main())

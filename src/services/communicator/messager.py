@@ -262,23 +262,6 @@ class MessageFirstSend(BaseMessageHandler):
             raise e
 
 
-# class SingelMessage(BaseMessageHandler):
-
-# async def handle(self):
-#
-#     client: TelegramClientDTOGet = await self.get_client_name(research_id)
-#     context = await self.context_former.form_context(telegram_id=message.from_user)
-#     prompt = await self.prompt_generator.research_prompt_generator.generate_prompt(research_id=research_id)
-#
-#     response: ContextResponseDTO = await self.context_request.get_response(
-#         context_obj=ContextRequestDTO(prompt=prompt, context=context))
-#
-#     #TODO убрать этот метод в коммуникатор я думаю это ответсвенность коммуникатора за публикацию
-#     await self._publish_and_save_message(content=response,
-#                                          client=client,
-#                                          user=UserDTOBase(name=message.user_name, tg_user_id=message.from_user),
-#                                          assistant_id=assistant,
-#                                          destination_configs=destination_configs)
 
 
 class MessageAnswer(BaseMessageHandler):

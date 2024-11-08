@@ -196,33 +196,3 @@ class TelegramCommunicator:
         return new_users
 
 
-async def main():
-    repository = RepoStorage(database_session_manager=DatabaseSessionManager(
-        database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
-
-
-    publisher = NatsPublisher()
-    info_collector = TelegramUserInformationCollector(publisher=publisher)
-    single_request = SingleRequest()
-    context_request = ContextRequest()
-    prompt_generator = PromptGenerator(repository=repository)
-    comunicator = TelegramCommunicator(repository=repository,
-                                       info_collector=info_collector,
-                                       publisher=publisher,
-                                       prompt_generator=prompt_generator,
-                                       single_request=single_request,
-                                       context_request=context_request,
-                                       )
-    message_object = IncomeUserMessageDTOQueue(from_user=2200682155,
-                                               chat=2200682155,
-                                               user_name='test_ai',
-                                               media=False,
-                                               voice=False,
-                                               text="Тестовое сообщение ответь как нибудь",
-                                               client_telegram_id=2200145162, )
-
-    await comunicator.reply_message(message_object=message_object)
-
-
-if __name__ == '__main__':
-    asyncio.run(main())

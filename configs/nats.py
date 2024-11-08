@@ -52,9 +52,11 @@ class NATSDistributor(BaseConfig):
         send_message: MessageSend = Field(default_factory=MessageSend)
 
     class Parse(BaseConfig):
-        class TelegramUserBaseInfo:
+        class TelegramUserBaseInfo(BaseConfig):
             subject: str = Field("distribute.client.parse.info.base.many",
                                  validation_alias='DISTRIBUTOR_PARSER_GATHER_INFO')
+
+        base_info: TelegramUserBaseInfo = Field(default_factory=TelegramUserBaseInfo)
 
     class Client(BaseConfig):
         subject: str = Field("distribute.client.create",
@@ -67,5 +69,4 @@ class NATSDistributor(BaseConfig):
     client: Client = Field(default_factory=Client)
 
 
-n = NATSDistributor()
-print(n.message.first_message_message.stream)
+

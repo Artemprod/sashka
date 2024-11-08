@@ -62,20 +62,9 @@ class Checker:
 
     async def _is_has_info(self, user_telegram_id: int = None, username: str = None) -> bool:
         try:
-            result = await self._repository.user_in_research_repo.short.get_users_info_status(user_telegram_id=user_telegram_id,
-                                                                                      username=username)
+            result = await self._repository.user_in_research_repo.short.get_users_info_status(
+                user_telegram_id=user_telegram_id,
+                username=username)
             return result
         except Exception as e:
             raise e
-
-
-if __name__ == '__main__':
-    async def main():
-        storage = RepoStorage(database_session_manager=DatabaseSessionManager(
-            database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
-        c = Checker(repository=storage)
-        result = await c.check_user(1)
-        print(result)
-
-
-    asyncio.run(main())
