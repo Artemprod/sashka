@@ -253,6 +253,14 @@ class StopWordChecker:
 
 
 class PingDelayCalculator:
+
+    def __init__(self, settings=None):
+        self.settings = settings if settings else self._load_settings()
+
+    @staticmethod
+    def _load_settings() -> Dict:
+        return {"table": {1: 1, 2: 6, 3: 24, 4: 48, 5: 72, 6: 100}}
+
     @staticmethod
     def calculate(n: int) -> int:
         """
@@ -276,6 +284,7 @@ class UserPingator:
         ping_attempts_multiplier: int = 2
         ping_interval: int = 10  # в секундах
         command_ping_subject: str = "command.user.ping"
+
     def __init__(self, repo, publisher):
         self.repo = repo
         self.publisher = publisher
@@ -297,7 +306,8 @@ class UserPingator:
             research_status = await self.get_research_current_status(research_id)
 
             # Объединенные проверки завершения
-            if not users or research_status not in [ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.WAIT.value]:
+            if not users or research_status not in [ResearchStatusEnum.IN_PROGRESS.value,
+                                                    ResearchStatusEnum.WAIT.value]:
                 logger.info("Все пользователи завершили задачи либо исследование неактивно. Остановка пинга.")
                 break
 
@@ -330,7 +340,8 @@ class UserPingator:
             current_time_utc = datetime.now(timezone.utc)
 
             if send_time <= current_time_utc:
-                await self.send_command_message_ping_user(user=user, message_number=unresponded_messages, research_id=research_info.research_id)
+                await self.send_command_message_ping_user(user=user, message_number=unresponded_messages,
+                                                          research_id=research_info.research_id)
 
         except Exception as e:
             logger.error(f"Ошибка в обработке пинга для пользователя {user.tg_user_id}: {str(e)}")
@@ -421,6 +432,3 @@ class ResearchProcess:
             # Обработка ошибок на глобальном уровне
             logger.error(f"Ошибка в процессе исследования {research_id}: {str(e)}")
             raise e
-
-
-
