@@ -16,11 +16,13 @@ class ResearchOvercChecker(ResearchService):
     delay_check_interval: int = Field(60, validation_alias='DELAY_BETWEEN_TIME_CHECKING_SECONDS')
 
 
+BASE_WORDS = ["завершено", "исследование завершено", "конец исследования", "окончено", "STOP"]
+
+
 class ResearchWordStopper(BaseConfig):
-    base_words: List[str] = ["завершено", "исследование завершено", "конец исследования", "окончено", "STOP"]
     stop_words: List[str] = Field(
-        default_factory=lambda: ResearchWordStopper.base_words.copy(),
-        validation_alias='STOP_WORD_CHECKER_STOP_WORDS_LIST'
+        default_factory=lambda: BASE_WORDS.copy(),
+        alias='STOP_WORD_CHECKER_STOP_WORDS_LIST'
     )
 
     @field_validator("stop_words", mode='before')

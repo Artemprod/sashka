@@ -1,4 +1,5 @@
 from configs.ai_api_endpoints import open_ai_api_endpoint_settings
+from configs.database import database_postgres_settings
 from src.services.communicator.communicator import TelegramCommunicator
 from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
@@ -11,7 +12,7 @@ from src.database.repository.storage import RepoStorage
 def initialize_communicator() -> TelegramCommunicator:
     """ Инициализирует GPTRequestHandler с помощью настроек из окружения """
     repository = RepoStorage(database_session_manager=DatabaseSessionManager(
-        database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client'))
+        database_url=database_postgres_settings.async_postgres_url))
 
     publisher = NatsPublisher()
     info_collector = TelegramUserInformationCollector(publisher=publisher)

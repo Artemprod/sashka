@@ -14,9 +14,9 @@ router = APIRouter(prefix="/analytic/dialog", tags=["Analytic"])
 
 @router.post("/csv/zip", status_code=200)
 async def get_csv_research_data(
-    research_id: int,
-    db_session: DatabaseSessionManager = Depends(get_db_session),
-    analytic: dict = Depends(get_analytic_instruments),
+        research_id: int,
+        db_session: DatabaseSessionManager = Depends(get_db_session),
+        analytic: dict = Depends(get_analytic_instruments),
 ):
     csv_analytic = analytic['csv'](
         research_id=research_id,
@@ -27,11 +27,12 @@ async def get_csv_research_data(
     file_handler = ZIPFileHandler(data, "csv")
     return file_handler.create_response()
 
+
 @router.post("/excel/zip", status_code=200)
 async def get_excel_research_data(
-    research_id: int,
-    db_session: DatabaseSessionManager = Depends(get_db_session),
-    analytic: dict = Depends(get_analytic_instruments),
+        research_id: int,
+        db_session: DatabaseSessionManager = Depends(get_db_session),
+        analytic: dict = Depends(get_analytic_instruments),
 ):
     excel_analytic = analytic['excel'](
         research_id=research_id,

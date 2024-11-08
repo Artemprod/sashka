@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from telethon import events, TelegramClient
 from telethon.tl.types import  User
 
-
+from configs.nats import nats_subscriber_communicator_settings
 from src.distributor.telegram_client.telethoncl.filters.media import TextFilter
 from src.distributor.telegram_client.telethoncl.filters.model import SourceType
 from src.distributor.telegram_client.telethoncl.models.messages import OutcomeMessageDTOQueue
@@ -48,7 +48,7 @@ async def handle_text_message_user_chat(event):
     try:
         await publisher.publish_message_to_subject(
             subject_message=NatsQueueMessageDTOSubject(message=outcome_message,
-                                                       subject="message.income.new", ))
+                                                       subject=nats_subscriber_communicator_settings.messages.new_message))
         logger.info("Сообщение успешно опубликовано в очередь!")
     except Exception as e:
         logger.error(f"Ошибка при публикации сообщения: {e}")

@@ -1,6 +1,7 @@
 from loguru import logger
 from telethon import TelegramClient
-from src.distributor.app.routers.parse.gather_info import UserDTOBase
+
+from src.distributor.app.schemas.message import UserDTOBase
 from src.distributor.exceptions.atribute import UsernameError
 
 

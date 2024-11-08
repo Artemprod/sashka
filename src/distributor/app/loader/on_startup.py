@@ -31,7 +31,6 @@ def initialize_telethon_container(repository: RepoStorage, dev_mode=False) -> Te
     # Создание и возвращение контейнера TelethonClientsContainer
     container = TelethonClientsContainer(
         repository=repository,
-        dev_mode=dev_mode,
         handlers=handlers,
     )
 

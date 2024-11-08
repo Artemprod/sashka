@@ -1,5 +1,6 @@
 from loguru import logger
 
+from configs.database import database_postgres_settings
 from src.services.analitcs.decorator.collector import AnalyticCollector
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
@@ -20,7 +21,7 @@ from src.database.repository.storage import RepoStorage
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """ Контекстный менеджер для инициализации и закрытия ресурсов приложения """
     session = DatabaseSessionManager(
-        database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
+        database_url=database_postgres_settings.async_postgres_url)
     repository = RepoStorage(database_session_manager=session)
     publisher = NatsPublisher()
 

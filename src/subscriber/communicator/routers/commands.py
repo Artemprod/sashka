@@ -2,7 +2,7 @@ from faststream import Context, Depends
 from faststream.nats import NatsRouter, NatsMessage
 from loguru import logger
 
-
+from configs.nats import nats_subscriber_communicator_settings
 from src.services.communicator.communicator import TelegramCommunicator
 from src.subscriber.communicator.dependency.command import get_command_ping_user, \
     get_command_start_dialog_data_from_headers
@@ -12,7 +12,7 @@ from src.subscriber.communicator.schemas.command import CommandPingUserDTO
 router = NatsRouter()
 
 
-@router.subscriber(subject="command.dialog.start")
+@router.subscriber(subject=nats_subscriber_communicator_settings.commands.start_dialog)
 async def command_dialog_start(
         body: str,
         msg: NatsMessage,
@@ -31,7 +31,7 @@ async def command_dialog_start(
         raise e
 
 
-@router.subscriber(subject="command.user.ping")
+@router.subscriber(subject=nats_subscriber_communicator_settings.commands.ping_user)
 async def command_user_ping(
         body: str,
         msg: NatsMessage,

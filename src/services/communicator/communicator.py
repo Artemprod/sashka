@@ -1,22 +1,11 @@
 import asyncio
-from abc import ABC, abstractmethod
-from datetime import datetime, timedelta, timezone
-from functools import cache
-from random import randint
 from typing import Union, List, Optional, Any, Tuple, Dict
-
 from loguru import logger
-
 from configs.nats import nats_distributor_settings
-from src.schemas.communicator.checker import CheckerDTO
 from src.schemas.communicator.distanation import NatsDestinationDTO
 from src.schemas.communicator.message import IncomeUserMessageDTOQueue
-from src.schemas.communicator.prompt import PromptDTO
-from src.schemas.communicator.request import SingleRequestDTO, ContextRequestDTO
-from src.schemas.communicator.response import SingleResponseDTO, ContextResponseDTO
-from src.schemas.service.assistant import AssistantDTOGet
 from src.schemas.service.client import TelegramClientDTOGet
-from src.schemas.service.message import AssistantMessageDTOPost, UserMessageDTOPost
+
 from src.schemas.service.user import UserDTOFull, UserDTO, UserDTOBase
 from src.services.communicator.checker import Checker
 from src.services.communicator.messager import MessageFirstSend, ResearchMessageAnswer, CommonMessageAnswer, \
@@ -24,15 +13,7 @@ from src.services.communicator.messager import MessageFirstSend, ResearchMessage
 from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
-from src.database.postgres.engine.session import DatabaseSessionManager
-from src.database.postgres.models.enum_types import UserStatusEnum
 from src.database.repository.storage import RepoStorage
-
-from abc import ABC
-from typing import Union
-
-from src.schemas.service.queue import NatsQueueMessageDTOSubject, NatsQueueMessageDTOStreem, TelegramTimeDelaHeadersDTO, \
-    TelegramSimpleHeadersDTO
 from src.services.publisher.publisher import NatsPublisher
 
 
@@ -86,8 +67,8 @@ class TelegramCommunicator:
         return {
             "reply": NatsDestinationDTO(subject=nats_distributor_settings.message.send_message.subject,
                                         stream=nats_distributor_settings.message.send_message.stream),
-            "firs_message": NatsDestinationDTO(subject=nats_distributor_settings.first_message_message.subject,
-                                               stream=nats_distributor_settings.first_message_message.stream),
+            "firs_message": NatsDestinationDTO(subject=nats_distributor_settings.message.first_message_message.subject,
+                                               stream=nats_distributor_settings.message.first_message_message.stream),
         }
 
     async def make_first_message_distribution(self, research_id: int, users: List[UserDTOBase]):

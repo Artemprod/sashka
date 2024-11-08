@@ -1,25 +1,19 @@
-import json
-
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
-
-from src.schemas.service.owner import ResearchOwnerDTO
+from configs.nats import nats_distributor_settings
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
-from src.schemas.service.research import ResearchDTOPost, ResearchDTORel
 from src.services.publisher.publisher import NatsPublisher
-from src.services.research.telegram.manager import TelegramResearchManager
-from src.web.dependencies.researcher.start import get_research_manager, get_publisher
-from src.web.models.client import ClientConfigDTO
+from src.web.dependencies.researcher.start import  get_publisher
 from src.web.models.service import ServiceClientSignupDTO
 
 router = APIRouter(prefix="/account/client", tags=["Account"])
 
 
-
-#TODO какие данные должна содержать модель входящих данных ? нужно ли указвать api id hash и тд
+# TODO какие данные должна содержать модель входящих данных ? нужно ли указвать api id hash и тд
 
 @router.post("/signup", response_model=dict, status_code=200)
-async def signup_client(service_client_dto: ServiceClientSignupDTO, publisher: NatsPublisher = Depends(get_publisher)) -> dict:
+async def signup_client(service_client_dto: ServiceClientSignupDTO,
+                        publisher: NatsPublisher = Depends(get_publisher)) -> dict:
     """
     Запускает новый процесс исследования.
     """
@@ -27,7 +21,7 @@ async def signup_client(service_client_dto: ServiceClientSignupDTO, publisher: N
         # Создание и публикация сообщения о начале исследования
         subject_message = NatsQueueMessageDTOSubject(
             message=service_client_dto.json(),
-            subject="client.telethon.create",
+            subject=nats_distributor_settings.client.create_new_client,
         )
         await publisher.publish_message_to_subject(subject_message=subject_message)
         # Возврат успешного ответа

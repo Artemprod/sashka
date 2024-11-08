@@ -3,6 +3,7 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 
+from configs.nats import nats_subscriber_researcher_settings
 from src.schemas.service.owner import ResearchOwnerDTO
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.schemas.service.research import ResearchDTOPost, ResearchDTORel
@@ -13,8 +14,7 @@ from src.web.dependencies.researcher.start import get_research_manager, get_publ
 router = APIRouter(prefix="/research/telegram", tags=["Research"])
 
 
-
-#TODO входящий контракт должен сожержать в себе все данные овнер ресерч какой клиент ( бота которого выбрали )
+# TODO входящий контракт должен сожержать в себе все данные овнер ресерч какой клиент ( бота которого выбрали )
 
 @router.post("/start", response_model=dict, status_code=200)
 async def start_research(
@@ -31,7 +31,7 @@ async def start_research(
         # Создание и публикация сообщения о начале исследования
         subject_message = NatsQueueMessageDTOSubject(
             message='',
-            subject="research.start",
+            subject=nats_subscriber_researcher_settings.researches.start_telegram_research,
             headers={"research_id": str(created_research.research_id)}
         )
         await publisher.publish_message_to_subject(subject_message=subject_message)

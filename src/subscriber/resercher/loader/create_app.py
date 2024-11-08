@@ -5,11 +5,11 @@ from loguru import logger
 from environs import Env
 from faststream import FastStream, ContextRepo
 from faststream.nats import NatsBroker
+
+from configs.nats import nast_base_settings
 from src.subscriber.resercher.routers.process import router as process_router
 from src.subscriber.resercher.loader.on_startup import initialize_research_processor
 
-env = Env()
-env.read_env('.env')
 sys.path.append(str(Path(__file__).parent.parent))
 
 
@@ -24,7 +24,7 @@ async def lifespan(context: ContextRepo):
 
 def create_app():
     """Запускает faststream и создает корутину для клиента"""
-    broker = NatsBroker(env("NATS_SERVER"))
+    broker = NatsBroker(nast_base_settings.nats_server_url)
     broker.include_router(process_router)
     app = FastStream(broker=broker, lifespan=lifespan, title="COMMUNICATOR")
     return app
