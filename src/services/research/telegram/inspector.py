@@ -282,6 +282,7 @@ class UserPingator:
         self.publisher = publisher
         self.config = research_pingator_settings
         self._attempt_calculator = CyclePingAttemptCalculator
+        self._ping_calculator = PingDelayCalculator()
 
     async def ping_users(self, research_id: int):
         """Пинг пользователей до тех пор, пока есть активные пользователи."""
@@ -326,8 +327,7 @@ class UserPingator:
             if unresponded_messages > self.config.max_pings_messages:
                 logger.info(f"Превышено максимальное количество пингов для пользователя {user.tg_user_id}.")
                 return
-
-            time_delay = PingDelayCalculator.calculate(unresponded_messages)
+            time_delay = self._ping_calculator.calculate(n=unresponded_messages)
             send_time = await self.calculate_send_time(user.tg_user_id, time_delay)
             current_time_utc = datetime.now(timezone.utc)
 

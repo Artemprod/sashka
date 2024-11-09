@@ -10,7 +10,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 class MainAPIBaseConfig(BaseConfig):
     host: str = Field("localhost", validation_alias='API_MAIN_UVICORN_HOST')
     port: int = Field(9194, validation_alias='API_MAIN_UVICORN_PORT')
-    reload: str = Field(True, validation_alias='API_MAIN_RELOAD')
+    reload: bool = Field(True, validation_alias='API_MAIN_RELOAD')
     lifespan: str = Field("on", validation_alias='API_MAIN_LIFESPAN')
     log_level: str = Field("debug", validation_alias='API_MAIN_LOG_LEVEL')
 
@@ -20,3 +20,6 @@ class MainAPIBaseConfig(BaseConfig):
         if isinstance(field_data, str):
             return "true" == field_data.lower()
         return field_data
+
+
+main_api_gateway_configs = MainAPIBaseConfig()
