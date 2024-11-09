@@ -24,16 +24,14 @@ BASE_WORDS = ["завершено", "исследование завершено
 
 class ResearchWordStopper(BaseConfig):
     stop_words: List[str] = Field(
-        default_factory=lambda: BASE_WORDS.copy(),
-        alias='STOP_WORD_CHECKER_STOP_WORDS_LIST'
-    )
+        default_factory=lambda: BASE_WORDS.copy())
 
-    @field_validator("stop_words", mode='before')
-    def split_str(cls, field_data):
-        # Проверка, является ли значение строкой; если да, разделяем по запятой
-        if isinstance(field_data, str):
-            return field_data.split(',')
-        return field_data
+    # @field_validator("stop_words", mode='before')
+    # def split_str(cls, field_data):
+    #     # Проверка, является ли значение строкой; если да, разделяем по запятой
+    #     if isinstance(field_data, str):
+    #         return field_data.split(',')
+    #     return field_data
 
 
 class ResearchPingator(BaseConfig):
