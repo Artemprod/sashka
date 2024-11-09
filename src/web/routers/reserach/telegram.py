@@ -45,4 +45,4 @@ async def start_research(
         }
     except Exception as e:
         logger.error(f"Failed to start research: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to start research: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to start research: {str(e)}") from e

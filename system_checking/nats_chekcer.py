@@ -1,7 +1,7 @@
 from nats.aio.client import Client as NATS
 from nats.js.api import StreamConfig
 from nats.js.errors import NotFoundError
-
+from loguru import logger
 
 class NatsChecker:
     def __init__(self, nats_url, nats_streams: list):
@@ -39,13 +39,13 @@ class NatsChecker:
                 )
 
                 await js.update_stream(name=stream_name, config=stream_config)
-                print(f"Updated stream '{stream_name}' with new subjects: {new_subjects - existing_subjects}")
+                logger.info(f"Updated stream '{stream_name}' with new subjects: {new_subjects - existing_subjects}")
             else:
-                print(f"All subjects for stream '{stream_name}' already exist.")
+                logger.info(f"All subjects for stream '{stream_name}' already exist.")
 
         except NotFoundError:
             # Создание нового стрима, если он не существует
-            print(f"Stream '{stream_name}' is being created.")
+            logger.info(f"Stream '{stream_name}' is being created.")
             stream_config = StreamConfig(
                 name=stream_name,
                 subjects=subjects,
@@ -54,6 +54,6 @@ class NatsChecker:
                 allow_direct=allow_direct
             )
             await js.add_stream(config=stream_config)
-            print(f"Stream '{stream_name}' created successfully with subjects: {subjects}")
+            logger.info(f"Stream '{stream_name}' created successfully with subjects: {subjects}")
 
 
