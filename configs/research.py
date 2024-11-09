@@ -38,19 +38,8 @@ class ResearchWordStopper(BaseConfig):
 
 class ResearchPingator(BaseConfig):
     class ResearchPingDelayCalculator(BaseConfig):
-        table: Dict[int, int] = Field(default={1: 1, 2: 6, 3: 24, 4: 48},
-                                      validation_alias='PINGATOR_DELAY_TABLE_HOURS')
+        table: Dict[int, int] = Field(default={1: 1, 2: 6, 3: 24, 4: 48})
 
-        @field_validator("table",
-                         mode='before')
-        def parse_dict(cls, value):
-            if isinstance(value, str):
-                result = {}
-                for pair in value.split(','):
-                    key, value = pair.split(':')
-                    result[int(key)] = int(value)
-                return result
-            return value
 
     ping_delay: ResearchPingDelayCalculator = Field(default_factory=ResearchPingDelayCalculator)
 
