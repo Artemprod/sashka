@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field
 from pyrogram import Client
 from telethon import TelegramClient
 
-from src.distributor.telegram_client.pyro.client import container
 from src.distributor.telegram_client.pyro.client.container import ClientsManager
 from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
 

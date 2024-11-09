@@ -2,7 +2,6 @@ import asyncio
 from abc import abstractmethod, ABC
 from typing import Optional
 
-import pandas
 from loguru import logger
 
 from src.database.postgres.engine.session import DatabaseSessionManager

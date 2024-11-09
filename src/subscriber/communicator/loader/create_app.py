@@ -1,7 +1,4 @@
-import sys
 from contextlib import asynccontextmanager
-from pathlib import Path
-from environs import Env
 from faststream import FastStream, ContextRepo
 from faststream.nats import NatsBroker
 

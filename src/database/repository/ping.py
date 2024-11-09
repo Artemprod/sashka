@@ -1,8 +1,6 @@
-import datetime
-from typing import Optional, List
 
 from aiocache import cached, Cache
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert
 
 from src.schemas.service.prompt import PingPromptDTO
 from src.database.postgres.models.ping import PingPrompt

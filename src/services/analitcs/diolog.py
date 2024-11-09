@@ -1,6 +1,5 @@
 import asyncio
 import io
-from collections import defaultdict
 
 from typing import Dict, List, Optional
 
@@ -88,7 +87,7 @@ class UserDialog(Dialogs):
             file = self.dialog.to_csv(path_or_buf=path, encoding='utf-8')
             logger.info(f"csv File {file} saved")
         except Exception as e:
-            logger.error(f" Faild to save csv file ")
+            logger.error(" Faild to save csv file ")
             raise e
         else:
             return path
@@ -131,9 +130,9 @@ class UserDialog(Dialogs):
 
         try:
             self.dialog.to_excel(path)
-            logger.info(f"excel File  saved")
+            logger.info("excel File  saved")
         except Exception as e:
-            logger.error(f" Faild to save excel file ")
+            logger.error(" Faild to save excel file ")
             raise e
         else:
             return path

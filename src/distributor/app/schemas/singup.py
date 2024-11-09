@@ -1,11 +1,6 @@
-import sys
-from enum import Enum
-from pathlib import Path
 
-from pydantic import BaseModel, Field, __version__
-from typing import Union, Optional, Dict
+from pydantic import BaseModel
 
-from pyrogram.enums import ParseMode
 
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 

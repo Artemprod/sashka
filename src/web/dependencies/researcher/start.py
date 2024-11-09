@@ -1,5 +1,4 @@
 from src.database.postgres.engine.session import DatabaseSessionManager
-from src.services.analitcs.analitic import AnalyticCSV, AnalyticExcel
 from src.services.analitcs.decorator.collector import AnalyticCollector
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.manager import TelegramResearchManager

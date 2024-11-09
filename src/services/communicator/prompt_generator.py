@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from typing import Union, List, Optional
+from typing import Optional
 
 from aiocache import cached, Cache
 
@@ -11,7 +11,6 @@ from src.schemas.service.prompt import PingPromptDTO
 
 from src.database.repository.storage import RepoStorage
 
-from abc import ABC
 
 
 class BasePromptGenerator(ABC):

@@ -2,7 +2,7 @@ import json
 
 from aiocache import cached, Cache
 import asyncio
-from abc import ABC, abstractmethod
+from abc import ABC
 from datetime import datetime, timedelta, timezone
 from typing import Union, List, Optional, Any, Tuple, Dict
 
@@ -17,17 +17,15 @@ from src.schemas.communicator.response import SingleResponseDTO, ContextResponse
 from src.schemas.service.assistant import AssistantDTOGet
 from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.message import AssistantMessageDTOPost, UserMessageDTOPost
-from src.schemas.service.user import UserDTOFull, UserDTOBase
+from src.schemas.service.user import UserDTOBase
 from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
 from src.database.postgres.models.enum_types import UserStatusEnum
 from src.database.repository.storage import RepoStorage
 
-from abc import ABC
-from typing import Union
 
 from src.schemas.service.queue import NatsQueueMessageDTOSubject, NatsQueueMessageDTOStreem, TelegramTimeDelaHeadersDTO, \
-    TelegramSimpleHeadersDTO, TelegramObjectHeadersDTO
+    TelegramObjectHeadersDTO
 from src.services.publisher.publisher import NatsPublisher
 
 

@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
 
-from pydantic import BaseModel, Field, __version__
-from typing import Union, Optional, Dict
+from pydantic import BaseModel, Field
+from typing import Optional, Dict
 
 from pyrogram.enums import ParseMode
 

@@ -1,6 +1,4 @@
-import asyncio
 
-from loguru import logger
 
 from configs.redis import telegram_redis_getter_config
 from src.dispatcher import BaseCommunicator

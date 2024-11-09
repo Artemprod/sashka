@@ -1,9 +1,7 @@
-import asyncio
 import json
 from abc import ABC, abstractmethod
 from typing import List, Optional, AsyncGenerator
 
-from faststream.nats import NatsBroker
 
 from loguru import logger
 
@@ -37,7 +35,7 @@ class TelegramUserInformationCollector(UserInformationCollector):
             response = await self.publisher.request_reply(nats_message=message)
             print()
             if response:
-                logger.info(f"Ответ от сервера получен")
+                logger.info("Ответ от сервера получен")
                 response_model = ResponseModel.model_validate_json(response)
                 if not isinstance(response_model, ErrorResponse):
                     return await self._parse_users_info(response_model)

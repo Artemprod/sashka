@@ -2,7 +2,6 @@ import datetime
 from typing import Annotated
 
 from sqlalchemy import text, Integer, DateTime, String
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import DeclarativeBase, mapped_column
 
 # ModelBase = declarative_base()

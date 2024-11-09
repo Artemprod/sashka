@@ -1,4 +1,3 @@
-from typing import List, Dict
 
 from pydantic import BaseModel, field_validator
 

@@ -1,13 +1,10 @@
-import asyncio
-from typing import Optional, Union, List
+from typing import Optional
 
 from aiocache import cached, Cache
 
 from src.schemas.communicator.checker import CheckerDTO
 from src.schemas.service.research import ResearchDTOFull
-from src.schemas.service.user import UserDTORel
 from src.database.exceptions.read import ObjectDoesNotExist
-from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
 
 

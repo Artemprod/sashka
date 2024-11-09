@@ -3,7 +3,6 @@ import asyncio
 from faststream import Context, Depends
 from faststream.nats import NatsRouter, NatsMessage
 from loguru import logger
-from pydantic import BaseModel
 
 from configs.nats_queues import nats_subscriber_researcher_settings
 from src.services.research.telegram.inspector import ResearchProcess

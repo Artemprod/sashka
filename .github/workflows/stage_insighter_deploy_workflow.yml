@@ -1,4 +1,4 @@
-name: Insighter deployment
+name: custdever stage workflow
 on:
   workflow_dispatch:
   push:

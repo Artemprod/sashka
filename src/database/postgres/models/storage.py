@@ -1,10 +1,9 @@
-from datetime import datetime
 
-from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean, ForeignKey, BigInteger
+from sqlalchemy import ForeignKey, BigInteger
 from sqlalchemy.orm import relationship
 
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from src.database.postgres.models.base import ModelBase, intpk, str_1024, created_at, str_2048, str_10
+from sqlalchemy.orm import Mapped, mapped_column
+from src.database.postgres.models.base import ModelBase, intpk, str_1024, created_at
 
 
 class S3VoiceStorage(ModelBase):

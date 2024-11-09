@@ -1,12 +1,10 @@
-import asyncio
 import datetime
 from abc import ABC, abstractmethod
 from typing import Optional, List
 
 from loguru import logger
 from telethon import TelegramClient
-from telethon.errors import RPCError, SessionPasswordNeededError, AuthKeyUnregisteredError, FloodWaitError, \
-    PhoneNumberBannedError, PhoneCodeInvalidError
+from telethon.errors import RPCError, SessionPasswordNeededError, AuthKeyUnregisteredError, PhoneNumberBannedError, PhoneCodeInvalidError
 from telethon.sessions import StringSession
 from telethon.tl.types import User
 
@@ -124,7 +122,7 @@ class RunClientStrategy(ClientStrategy):
 
     async def execute(self):
         if not self.client_dto:
-            raise NoClientDataError(message=f'client dto is empty')
+            raise NoClientDataError(message='client dto is empty')
 
 
         self.client = TelegramClient(
@@ -148,7 +146,7 @@ class RunClientStrategy(ClientStrategy):
             logger.error(f"Error during client run: {str(e)}")
             raise
 
-        except UserNotAuthorizedError as e:
+        except UserNotAuthorizedError:
             raise
 
     async def try_to_start_and_run(self):

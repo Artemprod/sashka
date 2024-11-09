@@ -1,7 +1,7 @@
 from configs.ai_api_endpoints import open_ai_api_endpoint_settings
 from configs.database import database_postgres_settings
 from src.services.communicator.communicator import TelegramCommunicator
-from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
+from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher

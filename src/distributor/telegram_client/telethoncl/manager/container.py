@@ -2,14 +2,11 @@ import asyncio
 from asyncio import CancelledError
 from typing import Dict, Optional, List
 
-from environs import Env
 from loguru import logger
 from telethon import TelegramClient
 
 from configs.clients import telethon_container_settings
 from src.database.exceptions.read import EmptyTableError
-from src.database.postgres.engine.session import DatabaseSessionManager
-from src.database.repository.storage import RepoStorage
 from src.dispatcher.communicators.consol import ConsoleCommunicator
 
 from src.distributor.telegram_client.interface.container import InterfaceClientsContainer
@@ -56,7 +53,7 @@ class TelethonClientsContainer(InterfaceClientsContainer):
     async def create_and_start_client(self, client_configs: ClientConfigDTO, communicator=ConsoleCommunicator()):
         try:
             client_name = await self.create_client(client_configs, communicator)
-            logger.info(f'Mangager creaste client')
+            logger.info('Mangager creaste client')
             await self.start_client(name=client_name)
 
         except Exception as e:

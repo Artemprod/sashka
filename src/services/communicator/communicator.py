@@ -1,5 +1,5 @@
 import asyncio
-from typing import Union, List, Optional, Any, Tuple, Dict
+from typing import List, Optional, Dict
 from loguru import logger
 from configs.nats_queues import nats_distributor_settings
 from src.schemas.communicator.distanation import NatsDestinationDTO
@@ -9,8 +9,8 @@ from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.user import UserDTOFull, UserDTO, UserDTOBase
 from src.services.communicator.checker import Checker
 from src.services.communicator.messager import MessageFirstSend, ResearchMessageAnswer, CommonMessageAnswer, \
-    MessageGeneratorTimeDelay, PingMessage
-from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
+    PingMessage
+from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
 from src.services.communicator.request import SingleRequest, ContextRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.database.repository.storage import RepoStorage

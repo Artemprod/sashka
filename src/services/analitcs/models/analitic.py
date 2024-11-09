@@ -3,7 +3,6 @@ from typing import List
 
 from pydantic import BaseModel
 
-from src.services.analitcs.models.metrics import DialogMetrics
 
 class AnalyticDataDTO(BaseModel):
     class Config:

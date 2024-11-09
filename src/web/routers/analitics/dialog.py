@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.services.analitcs.metrics import BasicMetricCalculator
-from src.web.dependencies.researcher.start import (get_research_manager, get_publisher, get_db_session,
+from src.web.dependencies.researcher.start import (get_db_session,
                                                    get_analytic_instruments)
 from src.web.utils.file import ZIPFileHandler
 from src.web.utils.funcs import produce_analytic_data

@@ -6,23 +6,20 @@ import sys
 import os
 from pathlib import Path
 import logging
-from io import StringIO, BytesIO
+from io import StringIO
 from mimetypes import MimeTypes
-from pathlib import Path
 from typing import Union
 
-import pyrogram
 from pyrogram import __version__, __license__, Client
 from pyrogram import enums
 
 from pyrogram.errors import (
     SessionPasswordNeeded,
-    VolumeLocNotFound, ChannelPrivate,
     BadRequest
 )
 
 from pyrogram.mime_types import mime_types
-from pyrogram.session import Auth, Session
+from pyrogram.session import Session
 
 from pyrogram.types import User, TermsOfService
 

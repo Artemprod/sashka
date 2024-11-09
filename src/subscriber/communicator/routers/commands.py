@@ -6,7 +6,6 @@ from configs.nats_queues import nats_subscriber_communicator_settings
 from src.services.communicator.communicator import TelegramCommunicator
 from src.subscriber.communicator.dependency.command import get_command_ping_user, \
     get_command_start_dialog_data_from_headers
-from src.subscriber.communicator.dependency.message import get_data_from_headers as message_former
 from src.subscriber.communicator.schemas.command import CommandPingUserDTO
 
 router = NatsRouter()

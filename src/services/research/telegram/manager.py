@@ -1,8 +1,7 @@
 import datetime
 
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
-from asyncpg import UniqueViolationError
 from loguru import logger
 from sqlalchemy.exc import IntegrityError
 

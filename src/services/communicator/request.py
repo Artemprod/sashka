@@ -1,6 +1,4 @@
-import asyncio
 from abc import ABC, abstractmethod
-from typing import Union
 
 import aiohttp
 from aiohttp import ClientSession

@@ -2,7 +2,7 @@ import datetime
 from typing import Optional, List
 
 from aiocache import cached, Cache
-from sqlalchemy import select, update, insert, values
+from sqlalchemy import select, update, insert
 
 from src.schemas.service.status import UserStatusDTO, ResearchStatusDTO
 from src.database.postgres.engine.session import DatabaseSessionManager

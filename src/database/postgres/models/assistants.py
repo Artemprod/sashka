@@ -1,10 +1,9 @@
-from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean, ForeignKey
+from sqlalchemy import String, Boolean
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from src.database.postgres.models.base import ModelBase, intpk, str_1024, created_at
+from src.database.postgres.models.base import ModelBase, intpk, created_at
 
 
 class Assistant(ModelBase):

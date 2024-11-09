@@ -1,4 +1,3 @@
-from environs import Env
 
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher

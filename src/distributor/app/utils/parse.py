@@ -1,7 +1,5 @@
 import asyncio
 import json
-from datetime import datetime
-from typing import Optional, List, Union
 
 from faststream import Context
 from faststream.nats import NatsRouter, NatsBroker, NatsMessage

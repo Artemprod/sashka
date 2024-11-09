@@ -2,7 +2,6 @@ import asyncio
 import json
 import math
 import re
-from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Optional
 
@@ -14,8 +13,6 @@ from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.schemas.service.research import ResearchDTOFull
 from src.schemas.service.user import UserDTOFull, UserDTOBase, UserDTQueue
 from src.services.publisher.publisher import NatsPublisher
-from src.services.publisher.notification import TelegramNotificator
-from src.database.postgres.engine.session import DatabaseSessionManager
 
 from src.database.postgres.models.enum_types import ResearchStatusEnum, UserStatusEnum
 from src.database.repository.storage import RepoStorage

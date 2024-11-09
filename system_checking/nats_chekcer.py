@@ -1,9 +1,7 @@
 from nats.js.api import StreamConfig
-import asyncio
 
 
 
-from configs.nats_queues import nats_distributor_settings, nast_base_settings
 
 from nats.aio.client import Client as NATS
 from nats.js.errors import NotFoundError

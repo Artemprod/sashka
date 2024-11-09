@@ -1,6 +1,5 @@
-from datetime import datetime
 
-from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean, BigInteger
+from sqlalchemy import BigInteger
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from src.database.postgres.models.base import ModelBase, intpk, str_1024, created_at, str_2048, str_10

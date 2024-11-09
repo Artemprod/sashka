@@ -1,4 +1,3 @@
-from pyrogram.utils import ainput
 
 
 # TODO Сделать проперти с выдачей информации по назначению каждого коммуникатора
@@ -30,28 +29,28 @@ class BaseCommunicator(metaclass=CommunicatorRegistryBase):
         pass
 
     async def get_code(self, *args, **kwargs) -> str:
-        raise NotImplemented
+        raise NotImplementedError
 
     async def recovery_code(self, *args, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
 
     async def enter_phone_number(self, *args, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
 
     async def enter_cloud_password(self, *args, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
 
     async def confirm(self, *args, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
 
     async def first_name(self, *args, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
 
     async def last_name(self, *args, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
 
     async def send_error(self, *args, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class BotCommunicator(BaseCommunicator):

@@ -1,5 +1,4 @@
 import asyncio
-from typing import List
 
 from configs.nats_queues import nats_distributor_settings, nast_base_settings
 from system_checking.nats_chekcer import NatsChecker
