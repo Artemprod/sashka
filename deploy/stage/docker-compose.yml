@@ -39,8 +39,8 @@ services:
     env_file:
       - .env
     ports:
-      - "${NATS_PORT}:${NATS_PORT}"
-      - "8222:8222"
+      - "${4000}:${NATS_PORT}"
+      - "8000:8222"
     restart: always
     volumes:
       - custdever_nats:/DB/nats/data/
