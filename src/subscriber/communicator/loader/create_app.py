@@ -5,7 +5,7 @@ from environs import Env
 from faststream import FastStream, ContextRepo
 from faststream.nats import NatsBroker
 
-from configs.nats import nast_base_settings
+from configs.nats_queues import nast_base_settings
 from src.subscriber.communicator.routers.message import router as message_router
 from src.subscriber.communicator.routers.commands import router as command_router
 

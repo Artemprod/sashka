@@ -1,7 +1,7 @@
 import asyncio
 from typing import Union, List, Optional, Any, Tuple, Dict
 from loguru import logger
-from configs.nats import nats_distributor_settings
+from configs.nats_queues import nats_distributor_settings
 from src.schemas.communicator.distanation import NatsDestinationDTO
 from src.schemas.communicator.message import IncomeUserMessageDTOQueue
 from src.schemas.service.client import TelegramClientDTOGet

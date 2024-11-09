@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
-from configs.nats import nats_distributor_settings
+from configs.nats_queues import nats_distributor_settings
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.services.publisher.publisher import NatsPublisher
 from src.web.dependencies.researcher.start import  get_publisher

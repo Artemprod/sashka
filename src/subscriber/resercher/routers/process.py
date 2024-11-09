@@ -5,7 +5,7 @@ from faststream.nats import NatsRouter, NatsMessage
 from loguru import logger
 from pydantic import BaseModel
 
-from configs.nats import nats_subscriber_researcher_settings
+from configs.nats_queues import nats_subscriber_researcher_settings
 from src.services.research.telegram.inspector import ResearchProcess
 from src.subscriber.resercher.dependency.process import get_data_from_headers
 from src.subscriber.resercher.utils.reserach import run_research, task_completion_callback

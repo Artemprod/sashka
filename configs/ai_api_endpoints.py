@@ -13,7 +13,7 @@ class AIAPIBaseConfig(BaseConfig):
 
     @field_validator("https",
                      mode='before')
-    def split_str(cls, field_data):
+    def is_https(cls, field_data):
         if isinstance(field_data, str):
             return "true" == field_data.lower()
         return field_data

@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from telethon import events, TelegramClient
 from telethon.tl.types import  User
 
-from configs.nats import nats_subscriber_communicator_settings
+from configs.nats_queues import nats_subscriber_communicator_settings
 from src.distributor.telegram_client.telethoncl.filters.media import TextFilter
 from src.distributor.telegram_client.telethoncl.filters.model import SourceType
 from src.distributor.telegram_client.telethoncl.models.messages import OutcomeMessageDTOQueue

@@ -2,7 +2,7 @@ from faststream import Context, Depends
 from faststream.nats import NatsRouter, NatsMessage
 from loguru import logger
 
-from configs.nats import nats_subscriber_communicator_settings
+from configs.nats_queues import nats_subscriber_communicator_settings
 from src.schemas.communicator.message import IncomeUserMessageDTOQueue
 from src.services.communicator.communicator import TelegramCommunicator
 from src.subscriber.communicator.dependency.message import get_data_from_headers as message_former

@@ -6,7 +6,7 @@ from environs import Env
 from faststream import FastStream, ContextRepo
 from faststream.nats import NatsBroker
 
-from configs.nats import nast_base_settings
+from configs.nats_queues import nast_base_settings
 from src.subscriber.resercher.routers.process import router as process_router
 from src.subscriber.resercher.loader.on_startup import initialize_research_processor
 

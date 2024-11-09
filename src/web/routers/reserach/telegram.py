@@ -3,7 +3,7 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 
-from configs.nats import nats_subscriber_researcher_settings
+from configs.nats_queues import nats_subscriber_researcher_settings
 from src.schemas.service.owner import ResearchOwnerDTO
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.schemas.service.research import ResearchDTOPost, ResearchDTORel

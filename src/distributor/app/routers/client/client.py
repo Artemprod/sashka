@@ -4,7 +4,7 @@ import json
 from faststream import Context
 from faststream.nats import NatsRouter
 
-from configs.nats import nats_distributor_settings
+from configs.nats_queues import nats_distributor_settings
 from src.dispatcher.dispatcher import CommunicatorDispatcher
 from src.distributor.app.schemas.singup import TelegramServiceClientSignupDTO
 from src.distributor.telegram_client.pyro.client.container import ClientsManager

@@ -7,7 +7,7 @@ from faststream.nats import NatsBroker
 
 from loguru import logger
 
-from configs.nats import nats_distributor_settings
+from configs.nats_queues import nats_distributor_settings
 from src.distributor.app.schemas.response import ErrorResponse
 from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.queue import NatsReplyRequestQueueMessageDTOStreem, TelegramObjectHeadersDTO

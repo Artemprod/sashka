@@ -2,7 +2,7 @@ from loguru import logger
 from faststream import Context, Depends
 from faststream.nats import NatsRouter, NatsMessage, JStream
 
-from configs.nats import nats_distributor_settings
+from configs.nats_queues import nats_distributor_settings
 from src.distributor.app.dependency.message import _get_data_from_headers
 from src.distributor.app.schemas.message import Datas
 from src.distributor.app.utils.message import send_message

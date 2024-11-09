@@ -4,7 +4,7 @@ from typing import Dict, Union, Optional
 from faststream.nats import NatsBroker
 from loguru import logger
 
-from configs.nats import nast_base_settings
+from configs.nats_queues import nast_base_settings
 from src.schemas.service.queue import NatsQueueMessageDTOStreem, NatsQueueMessageDTOSubject, \
     NatsReplyRequestQueueMessageDTOStreem
 

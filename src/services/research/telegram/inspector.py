@@ -8,7 +8,7 @@ from typing import List, Dict, Optional
 
 from loguru import logger
 
-from configs.nats import nats_subscriber_communicator_settings
+from configs.nats_queues import nats_subscriber_communicator_settings
 from configs.research import research_pingator_settings
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.schemas.service.research import ResearchDTOFull

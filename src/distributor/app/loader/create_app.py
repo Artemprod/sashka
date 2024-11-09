@@ -8,7 +8,7 @@ from faststream.nats import NatsBroker
 from loguru import logger
 
 from configs.database import database_postgres_settings
-from configs.nats import nast_base_settings
+from configs.nats_queues import nast_base_settings
 from src.database.connections.redis_connect import RedisClient
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
