@@ -58,22 +58,22 @@ class NATSResearchSubscriber(BaseConfig):
 class NATSDistributor(BaseConfig):
     class Message(BaseConfig):
         class FirstMessage(BaseConfig):
-            retention_policy:Enum = RetentionPolicy.WORK_QUEUE
-            storage_type:Enum = StorageType.FILE
-            deliver_policy:Enum = DeliverPolicy.ALL
-            allow_direct:bool = True
-            no_ack:bool = True
+            retention_policy: Enum = RetentionPolicy.WORK_QUEUE
+            storage_type: Enum = StorageType.FILE
+            deliver_policy: Enum = DeliverPolicy.ALL
+            allow_direct: bool = True
+            no_ack: bool = True
 
             stream: str = Field("DELAY_MESSAGE_SEND_STREEM", validation_alias='DISTRIBUTOR_FIRST_MESSAGE_STREEM')
             subject: str = Field("distribute.client.message.send.delay",
                                  validation_alias='DISTRIBUTOR_CLIENT_SEND_DELAY_MESSAGE')
 
         class MessageSend(BaseConfig):
-            retention_policy:Enum = RetentionPolicy.WORK_QUEUE
-            storage_type:Enum = StorageType.FILE
-            deliver_policy:Enum = DeliverPolicy.ALL
-            allow_direct:bool = True
-            no_ack:bool = True
+            retention_policy: Enum = RetentionPolicy.WORK_QUEUE
+            storage_type: Enum = StorageType.FILE
+            deliver_policy: Enum = DeliverPolicy.ALL
+            allow_direct: bool = True
+            no_ack: bool = True
 
             stream: str = Field("SEND_MESSAGE_STREEM", validation_alias='DISTRIBUTOR_CONVERSATION_STREEM')
             subject: str = Field("distribute.client.message.send",
