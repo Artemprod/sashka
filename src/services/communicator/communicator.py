@@ -87,7 +87,6 @@ class TelegramCommunicator:
 
         try:
             check = await self._checker.check_user(user_telegram_id=message_object.from_user)
-
             if not check.user_in_db:
                 # Попытка создания нового пользователя
                 new_user = await self._add_new_user(message_object)
@@ -111,6 +110,7 @@ class TelegramCommunicator:
                 # Здесь можно добавить логику уведомления пользователя о необходимости регистрации
 
         except Exception as e:
+            print()
             logger.error(f"An error occurred while processing the message from {message_object.from_user}: {e}")
             # Здесь можно добавить логику уведомления пользователя об ошибке
 
@@ -157,12 +157,14 @@ class TelegramCommunicator:
 
         handler = self._message_research_answer if user_research_id else self._message_common_answer
         try:
+
             await handler.handle(
                 message=message_object,
                 destination_configs=self._destination_configs['reply'],
                 research_id=user_research_id
             )
         except Exception as e:
+            print()
             raise e
 
     async def _add_new_user(self, message_object: "IncomeUserMessageDTOQueue") -> Optional[List["UserDTOFull"]]:

@@ -8,12 +8,12 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 
 class PostgresDataBaseConfigs(BaseConfig):
-    postgres_driver: str = Field(default="postgresql+asyncpg", env="MAIN_POSTGRES_DRIVER")
-    postgres_user: str = Field(default="postgres", env="MAIN_POSTGRES_USER")
-    postgres_password: str = Field(default="1234", env="MAIN_POSTGRES_PASSWORD")
-    postgres_host: str = Field(default="localhost", env="MAIN_POSTGRES_HOST")
-    postgres_port: str = Field(default="5432", env="MAIN_POSTGRES_PORT")
-    postgres_database: str = Field(default="cusdever_client", env="MAIN_POSTGRES_DATABASE")
+    postgres_driver: str = Field(default="postgresql+asyncpg", validation_alias="MAIN_POSTGRES_DRIVER")
+    postgres_user: str = Field(default="postgres", validation_alias="MAIN_POSTGRES_USER")
+    postgres_password: str = Field(default="1234", validation_alias="MAIN_POSTGRES_PASSWORD")
+    postgres_host: str = Field(default="localhost", validation_alias="MAIN_POSTGRES_HOST")
+    postgres_port: str = Field(default="5432", validation_alias="MAIN_POSTGRES_PORT")
+    postgres_database: str = Field(default="cusdever_client", validation_alias="MAIN_POSTGRES_DATABASE")
 
     @property
     def async_postgres_url(self) -> str:

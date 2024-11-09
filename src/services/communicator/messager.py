@@ -83,6 +83,7 @@ class MessageFromContext:
 
             messages = self._combine_and_format_messages(user_messages, assistant_messages)
             sorted_messages = sorted(messages, key=lambda x: x[1])
+
             return [msg[0] for msg in sorted_messages]
         except Exception as e:
             logger.error(f"Error forming context for user {telegram_id}: {str(e)}")
@@ -315,18 +316,22 @@ class ResearchMessageAnswer(MessageAnswer):
 
         assistant = await self.get_assistant(research_id=research_id)
         client: TelegramClientDTOGet = await self.get_client_name(research_id)
+
         context = await self.context_former.form_context(telegram_id=message.from_user)
 
         prompt: PromptDTO = await self.prompt_generator.research_prompt_generator.generate_prompt(
             research_id=research_id)
+
         response: ContextResponseDTO = await self.context_request.get_response(
             context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt,
                                           context=context))
+        print()
         await self._publish_and_save_message(content=response,
                                              client=client,
                                              user=UserDTOBase(username=message.username, tg_user_id=message.from_user),
                                              assistant_id=assistant,
                                              destination_configs=destination_configs)
+        print()
 
 
 class CommonMessageAnswer(MessageAnswer):

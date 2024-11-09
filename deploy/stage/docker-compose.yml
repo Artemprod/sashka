@@ -1,53 +1,41 @@
 services:
 
-  postgres_db:
-    container_name: postgres_container
+  custdever_postgres_db:
+    container_name: custdever_postgres_container
     image: postgres
     env_file:
       - .env
     environment:
-      POSTGRES_DB: "${POSTGRES_DATABASE}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
-      POSTGRES_USER: "${POSTGRES_USER}"
-      PGDATA: "/var/lib/postgresql/data/pgdata"
+      POSTGRES_DB: "${MAIN_POSTGRES_DATABASE}"
+      POSTGRES_PASSWORD: "${MAIN_POSTGRES_PASSWORD}"
+      POSTGRES_USER: "${MAIN_POSTGRES_USER}"
+      PGDATA: "/var/lib/custdever_postgres_db/data/pgdata"
     ports:
-      - "2345:5432"
+      - "5000:5432"
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - custdever_postgres_db:/var/lib/custdever_postgresql/data
     networks:
-      - insighter_worker_stage_new
-
-#  migration:
-#    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
-#    container_name: migration_alembic
-#    depends_on:
-#      - postgres_db
-#    env_file:
-#      - .env
-#    environment:
-#      DATABASE_URL: "${POSTGRES_URL}"
-#    command: ["make", "migrate"]
-#    networks:
-#      - insighter_worker_stage_new
+      - custdever_stage_network
 
 
-  redis_cache:
+
+  custdever_redis:
     image: redis
-    container_name: server_redis_cache
+    container_name: custdever_redis
     env_file:
       - .env
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
     restart: always
     volumes:
-      - redis_cache:/DB/Redis/data/
+      - custdever_redis:/DB/Redis/data/
     command: ["redis-server", "--port", "${REDIS_PORT}"]
     networks:
-      - insighter_worker_stage_new
+      - custdever_stage_network
 
-  nats:
+  custdever_nats:
     image: nats
-    container_name: nats_worker
+    container_name: custdever_nats_worker
     env_file:
       - .env
     ports:
@@ -55,104 +43,90 @@ services:
       - "8222:8222"
     restart: always
     volumes:
-      - nats:/DB/nats/data/
+      - custdever_nats:/DB/nats/data/
     networks:
-      - insighter_worker_stage_new
+      - custdever_stage_network
 
-  rabbitmq_server:
-    image: rabbitmq:management
-    container_name: rabbit_worker
-    ports:
-      - "${RABITMQ_PORT}:${RABITMQ_PORT}"
-      - "15672:15672"
-    restart: always
-    volumes:
-      - rabbitmq_server:/Rabit/data/
-    networks:
-      - insighter_worker_stage_new
 
-  insighter_worker_1:
+  custdever_api_getaway_main:
     depends_on:
-      - nats
-      - rabbitmq_server
-      - redis_cache
-      - postgres_db
+      - custdever_postgres_db
+      - custdever_redis
+      - custdever_nats
 
-    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
-    container_name: insighter_worker_1
+
+    image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
+    container_name: custdever_api_getaway_main_worker
     volumes:
-      - worker_volume:/var/lib/worker
+      - custdever_main_api:/var/lib/custdever
     restart: always
     env_file:
       - .env
-    command: ["make", "run_worker"]
+    command: ["make", "run_main_api"]
     networks:
-      - insighter_worker_stage_new
+       - custdever_stage_network
 
-  insighter_worker_2:
+  custdever_subscriber_researcher:
     depends_on:
-      - nats
-      - rabbitmq_server
-      - redis_cache
-      - postgres_db
+      - custdever_postgres_db
+      - custdever_redis
+      - custdever_nats
 
-    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
-    container_name: insighter_worker_2
+
+    image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
+    container_name: custdever_subscriber_researcher_worker
     volumes:
-      - worker_volume:/var/lib/worker
+      - custdever_subscriber_researcher:/var/lib/researcher
     restart: always
     env_file:
       - .env
-    command: ["make", "run_worker"]
+    command: ["make", "run_researcher"]
     networks:
-      - insighter_worker_stage_new
+       - custdever_stage_network
 
-
-  insighter_worker_3:
+  custdever_subscriber_communicator:
     depends_on:
-      - nats
-      - rabbitmq_server
-      - redis_cache
-      - postgres_db
+      - custdever_postgres_db
+      - custdever_redis
+      - custdever_nats
 
-    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
-    container_name: insighter_worker_3
+
+    image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
+    container_name: custdever_subscriber_communicator_worker
     volumes:
-      - worker_volume:/var/lib/worker
+      - custdever_subscriber_communicator:/var/lib/communicator
     restart: always
     env_file:
       - .env
-    command: ["make", "run_worker"]
+    command: ["make", "run_communicator"]
     networks:
-      - insighter_worker_stage_new
+       - custdever_stage_network
 
-  insighter_api_server:
+  custdever_distributor:
     depends_on:
-      - nats
-      - rabbitmq_server
-      - redis_cache
-      - postgres_db
+      - custdever_postgres_db
+      - custdever_redis
+      - custdever_nats
 
-    container_name: insighter_api_server
-    image: docker.io/artemprod/insighter_worker:${IMAGE_TAG:-latest}
+
+    image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
+    container_name: custdever_distributor
     volumes:
-      - worker_volume:/var/lib/worker
+      - distributor:/var/lib/distributor
     restart: always
     env_file:
       - .env
-    command: ["make", "run_server"]
-    ports:
-      - "9192:9192"
+    command: ["make", "run_distributor"]
     networks:
-      - insighter_worker_stage_new
+       - custdever_stage_network
 
 volumes:
-  redis_cache:
-  postgres:
-  nats:
-  rabbitmq_server:
-  worker_volume:
+  distributor:
+  custdever_main_api:
+  custdever_postgres_db:
+  custdever_redis:
+  custdever_nats:
 
 networks:
-  insighter_worker_stage_new:
+  custdever_stage_network:
     external: true

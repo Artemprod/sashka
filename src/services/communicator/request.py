@@ -25,7 +25,7 @@ class AiConnector(ABC):
 
     async def send_request(self, url: str, session: ClientSession, send_object):
         try:
-
+            print()
             async with session.post(
                     url=url,
                     json=send_object.dict(),
@@ -43,6 +43,7 @@ class AiConnector(ABC):
             raise
 
     async def perform_request(self, send_object, url):
+        print()
         async with aiohttp.ClientSession() as session:
             return await self.send_request(url=url, session=session, send_object=send_object)
 
