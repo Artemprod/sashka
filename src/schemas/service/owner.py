@@ -1,4 +1,5 @@
 from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -13,14 +14,14 @@ class ResearchOwnerDTO(BaseModel):
     service_id: int
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class ResearchOwnerFullDTO(ResearchOwnerDTO):
     owner_id: int
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class ResearchOwnerRelDTO(ResearchOwnerFullDTO):
@@ -28,4 +29,4 @@ class ResearchOwnerRelDTO(ResearchOwnerFullDTO):
     service: Optional["ServicesDTO"]
 
     class Config:
-        from_attributes = True 
+        from_attributes = True

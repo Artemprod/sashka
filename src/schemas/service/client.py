@@ -1,10 +1,12 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import List
+from typing import Optional
+
 from pydantic import BaseModel
 
 
 class TelegramClientDTOPost(BaseModel):
-    
+
     telegram_client_id:int
     name: str
     api_id: str
@@ -26,14 +28,14 @@ class TelegramClientDTOPost(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
-        from_attributes = True 
+        from_attributes = True
 
 
 class TelegramClientDTOGet(TelegramClientDTOPost):
     client_id: int
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class TelegramClientRelDTO(TelegramClientDTOGet):
@@ -42,4 +44,4 @@ class TelegramClientRelDTO(TelegramClientDTOGet):
     researches: List["ResearchDTO"] = []
 
     class Config:
-        from_attributes = True 
+        from_attributes = True

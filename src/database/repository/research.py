@@ -1,19 +1,23 @@
-from aiocache import cached, Cache
-from sqlalchemy.orm import selectinload, joinedload
+from aiocache import Cache
+from aiocache import cached
+from sqlalchemy import insert
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 
-from src.schemas.service.research import ResearchDTOFull, ResearchDTORel
 from src.database.exceptions.read import ObjectDoesNotExist
 from src.database.postgres.engine.session import DatabaseSessionManager
-from sqlalchemy import insert, select
-
-from src.database.postgres.models.enum_types import ResearchStatusEnum
-from src.database.postgres.models.research import Research
 from src.database.postgres.models.assistants import Assistant
-from src.database.postgres.models.message import UserMessage, VoiceMessage
+from src.database.postgres.models.enum_types import ResearchStatusEnum
+from src.database.postgres.models.message import UserMessage
+from src.database.postgres.models.message import VoiceMessage
+from src.database.postgres.models.research import Research
 from src.database.postgres.models.research_owner import ResearchOwner
 from src.database.postgres.models.status import ResearchStatus
 from src.database.postgres.models.user import User
 from src.database.repository.base import BaseRepository
+from src.schemas.service.research import ResearchDTOFull
+from src.schemas.service.research import ResearchDTORel
 
 
 class ResearchRepository(BaseRepository):

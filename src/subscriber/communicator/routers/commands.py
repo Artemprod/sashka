@@ -1,11 +1,13 @@
-from faststream import Context, Depends
-from faststream.nats import NatsRouter, NatsMessage
+from faststream import Context
+from faststream import Depends
+from faststream.nats import NatsMessage
+from faststream.nats import NatsRouter
 from loguru import logger
 
 from configs.nats_queues import nats_subscriber_communicator_settings
 from src.services.communicator.communicator import TelegramCommunicator
-from src.subscriber.communicator.dependency.command import get_command_ping_user, \
-    get_command_start_dialog_data_from_headers
+from src.subscriber.communicator.dependency.command import get_command_ping_user
+from src.subscriber.communicator.dependency.command import get_command_start_dialog_data_from_headers
 from src.subscriber.communicator.schemas.command import CommandPingUserDTO
 
 router = NatsRouter()

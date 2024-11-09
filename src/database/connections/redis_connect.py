@@ -2,7 +2,6 @@ import pickle
 
 import redis.asyncio as redis
 
-
 # TODO разделить на разные классы
 
 # TODO Загружать сюда url из env

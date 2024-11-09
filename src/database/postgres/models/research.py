@@ -1,11 +1,16 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import ForeignKey, BigInteger
+from sqlalchemy import BigInteger
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 
-from sqlalchemy.orm import Mapped, mapped_column
-from src.database.postgres.models.base import ModelBase, intpk, created_at, updated_at
+from src.database.postgres.models.base import ModelBase
+from src.database.postgres.models.base import created_at
+from src.database.postgres.models.base import intpk
+from src.database.postgres.models.base import updated_at
 
 
 class Research(ModelBase):

@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -14,7 +15,7 @@ class UserMessageDTOPost(BaseModel):
     text: str
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class UserMessageDTOGet(BaseModel):
@@ -30,7 +31,7 @@ class UserMessageDTOGet(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class AssistantMessageDTOPost(BaseModel):
@@ -43,7 +44,7 @@ class AssistantMessageDTOPost(BaseModel):
 
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class AssistantMessageDTOGet(BaseModel):
@@ -57,7 +58,7 @@ class AssistantMessageDTOGet(BaseModel):
     telegram_client_id: int
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class VoiceMessageDTOPost(BaseModel):
@@ -68,7 +69,7 @@ class VoiceMessageDTOPost(BaseModel):
     file_size: Optional[float] = None
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class VoiceMessageDTOGet(BaseModel):
@@ -81,4 +82,4 @@ class VoiceMessageDTOGet(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True 
+        from_attributes = True

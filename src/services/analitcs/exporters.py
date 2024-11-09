@@ -1,13 +1,16 @@
-from abc import ABC, abstractmethod
-
-from src.services.analitcs.models.metrics import DialogMetrics
 import csv
 import io
+from abc import ABC
+from abc import abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import List, Union
+from typing import List
+from typing import Union
 
 import pandas as pd
+
+from src.services.analitcs.models.metrics import DialogMetrics
+
 
 class Exporter(ABC):
     @abstractmethod

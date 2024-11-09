@@ -1,16 +1,14 @@
-from abc import ABC, abstractmethod
-
+from abc import ABC
+from abc import abstractmethod
 from typing import Optional
 
-from aiocache import cached, Cache
-
-from src.schemas.communicator.prompt import PromptDTO
-
-from src.schemas.service.assistant import AssistantDTOGet
-from src.schemas.service.prompt import PingPromptDTO
+from aiocache import Cache
+from aiocache import cached
 
 from src.database.repository.storage import RepoStorage
-
+from src.schemas.communicator.prompt import PromptDTO
+from src.schemas.service.assistant import AssistantDTOGet
+from src.schemas.service.prompt import PingPromptDTO
 
 
 class BasePromptGenerator(ABC):

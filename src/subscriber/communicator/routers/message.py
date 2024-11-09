@@ -1,5 +1,7 @@
-from faststream import Context, Depends
-from faststream.nats import NatsRouter, NatsMessage
+from faststream import Context
+from faststream import Depends
+from faststream.nats import NatsMessage
+from faststream.nats import NatsRouter
 from loguru import logger
 
 from configs.nats_queues import nats_subscriber_communicator_settings

@@ -1,20 +1,26 @@
 import datetime
-
-from typing import Any, List, Optional
+from typing import Any
+from typing import List
+from typing import Optional
 
 from loguru import logger
 from sqlalchemy.exc import IntegrityError
 
+from src.database.postgres.models.enum_types import ResearchStatusEnum
+from src.database.postgres.models.enum_types import UserStatusEnum
+from src.database.repository.storage import RepoStorage
 from src.schemas.service.client import TelegramClientDTOGet
-from src.schemas.service.owner import ResearchOwnerDTO, ResearchOwnerFullDTO
-from src.schemas.service.research import ResearchDTOPost, ResearchDTOFull, ResearchDTORel, ResearchDTOBeDb
-from src.schemas.service.user import UserDTOFull, UserDTOBase, UserDTO
+from src.schemas.service.owner import ResearchOwnerDTO
+from src.schemas.service.owner import ResearchOwnerFullDTO
+from src.schemas.service.research import ResearchDTOBeDb
+from src.schemas.service.research import ResearchDTOFull
+from src.schemas.service.research import ResearchDTOPost
+from src.schemas.service.research import ResearchDTORel
+from src.schemas.service.user import UserDTO
+from src.schemas.service.user import UserDTOBase
+from src.schemas.service.user import UserDTOFull
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.research.base import BaseResearchManager
-
-from src.database.postgres.models.enum_types import UserStatusEnum, ResearchStatusEnum
-
-from src.database.repository.storage import RepoStorage
 
 
 # TODO переделать класс вынести в отдельные классы сущности ресерч создатель иследования и тд разные стратегии
@@ -39,7 +45,7 @@ class TelegramResearchManager(BaseResearchManager):
     async def create_research(self, research: ResearchDTOPost, owner: ResearchOwnerDTO, ) -> ResearchDTORel:
         """Создает исследование в базе данных и назначает необходимые данные."""
         try:
-            # TODO Испарвить овнера понять че хотел сервис айди 
+            # TODO Испарвить овнера понять че хотел сервис айди
             # Создаем овнера в базще еси нет
             owner = await self._create_new_owner(owner_dto=owner)
             telegram_client: TelegramClientDTOGet = await self._get_telegram_client()

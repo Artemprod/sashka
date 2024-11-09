@@ -8,7 +8,6 @@ from configs.nats_queues import nats_distributor_settings
 from src.dispatcher.dispatcher import CommunicatorDispatcher
 from src.distributor.app.schemas.singup import TelegramServiceClientSignupDTO
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
-
 from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
 
 router = NatsRouter()

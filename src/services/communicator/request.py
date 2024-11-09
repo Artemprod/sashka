@@ -1,12 +1,15 @@
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 
 import aiohttp
 from aiohttp import ClientSession
 from loguru import logger
 
 from configs.ai_api_endpoints import ai_api_endpoint_base_settings
-from src.schemas.communicator.request import ContextRequestDTO, SingleRequestDTO
-from src.schemas.communicator.response import ContextResponseDTO, SingleResponseDTO
+from src.schemas.communicator.request import ContextRequestDTO
+from src.schemas.communicator.request import SingleRequestDTO
+from src.schemas.communicator.response import ContextResponseDTO
+from src.schemas.communicator.response import SingleResponseDTO
 
 
 class AiConnector(ABC):

@@ -1,8 +1,14 @@
-from sqlalchemy import ForeignKey, BigInteger
+from sqlalchemy import BigInteger
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from src.database.postgres.models.base import ModelBase, created_at, updated_at
-from src.database.postgres.models.enum_types import UserStatusEnum, ResearchStatusEnum
+from src.database.postgres.models.base import ModelBase
+from src.database.postgres.models.base import created_at
+from src.database.postgres.models.base import updated_at
+from src.database.postgres.models.enum_types import ResearchStatusEnum
+from src.database.postgres.models.enum_types import UserStatusEnum
 
 
 class UserStatus(ModelBase):

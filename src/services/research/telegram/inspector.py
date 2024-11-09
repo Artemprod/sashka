@@ -2,20 +2,26 @@ import asyncio
 import json
 import math
 import re
-from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Optional
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
+from typing import Dict
+from typing import List
+from typing import Optional
 
 from loguru import logger
 
 from configs.nats_queues import nats_subscriber_communicator_settings
 from configs.research import research_pingator_settings
+from src.database.postgres.models.enum_types import ResearchStatusEnum
+from src.database.postgres.models.enum_types import UserStatusEnum
+from src.database.repository.storage import RepoStorage
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.schemas.service.research import ResearchDTOFull
-from src.schemas.service.user import UserDTOFull, UserDTOBase, UserDTQueue
+from src.schemas.service.user import UserDTOBase
+from src.schemas.service.user import UserDTOFull
+from src.schemas.service.user import UserDTQueue
 from src.services.publisher.publisher import NatsPublisher
-
-from src.database.postgres.models.enum_types import ResearchStatusEnum, UserStatusEnum
-from src.database.repository.storage import RepoStorage
 from src.services.research.models import PingDataQueueDTO
 from src.services.research.utils import CyclePingAttemptCalculator
 

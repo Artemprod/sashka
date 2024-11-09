@@ -1,18 +1,23 @@
 import asyncio
 import uuid
-from abc import abstractmethod, ABC
+from abc import ABC
+from abc import abstractmethod
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
+from typing import Union
 
 from loguru import logger
 
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.services.analitcs.decorator.collector import AnalyticCollector
 from src.services.analitcs.diolog import ResearchDialogs
-from src.services.analitcs.exporters import CsvExporter, ExcelExporter
-from src.services.analitcs.metrics import MetricCalculator, BasicMetricCalculator
-from src.services.analitcs.models.analitic import AnalyticDataBufferDTO, AnalyticFileDTO
+from src.services.analitcs.exporters import CsvExporter
+from src.services.analitcs.exporters import ExcelExporter
+from src.services.analitcs.metrics import BasicMetricCalculator
+from src.services.analitcs.metrics import MetricCalculator
+from src.services.analitcs.models.analitic import AnalyticDataBufferDTO
+from src.services.analitcs.models.analitic import AnalyticFileDTO
 
 
 class Analytic(ABC):

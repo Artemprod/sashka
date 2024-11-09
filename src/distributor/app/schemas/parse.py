@@ -1,7 +1,10 @@
 from datetime import datetime
-from typing import Optional, List, Union
+from typing import List
+from typing import Optional
+from typing import Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from pydantic import Field
 from pyrogram import Client
 from telethon import TelegramClient
 

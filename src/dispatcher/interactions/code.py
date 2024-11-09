@@ -1,6 +1,7 @@
 
 import aioredis
-from environs import Env, EnvError
+from environs import Env
+from environs import EnvError
 from loguru import logger
 
 from configs.redis import RedisTelegramGetterConfigs

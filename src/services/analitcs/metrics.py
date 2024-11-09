@@ -1,11 +1,13 @@
 import asyncio
-from abc import abstractmethod, ABC
+from abc import ABC
+from abc import abstractmethod
 from typing import Optional
 
 from loguru import logger
 
 from src.database.postgres.engine.session import DatabaseSessionManager
-from src.services.analitcs.diolog import ResearchDialogs, UserDialog
+from src.services.analitcs.diolog import ResearchDialogs
+from src.services.analitcs.diolog import UserDialog
 from src.services.analitcs.models.metrics import DialogMetrics
 
 

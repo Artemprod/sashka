@@ -4,8 +4,8 @@ from zipfile import ZipFile
 
 from starlette.responses import StreamingResponse
 
-
-from src.services.analitcs.models.analitic import AnalyticDataBufferDTO, AnalyticFileDTO
+from src.services.analitcs.models.analitic import AnalyticDataBufferDTO
+from src.services.analitcs.models.analitic import AnalyticFileDTO
 
 
 class ZIPFileHandler:

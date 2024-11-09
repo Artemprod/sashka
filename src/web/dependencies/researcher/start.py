@@ -1,8 +1,9 @@
+from starlette.requests import Request
+
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.services.analitcs.decorator.collector import AnalyticCollector
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.manager import TelegramResearchManager
-from starlette.requests import Request
 
 
 async def get_research_manager(request: Request) -> TelegramResearchManager:

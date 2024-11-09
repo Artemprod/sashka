@@ -1,14 +1,18 @@
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
 from loguru import logger
 
 from configs.nats_queues import nats_subscriber_researcher_settings
 from src.schemas.service.owner import ResearchOwnerDTO
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
-from src.schemas.service.research import ResearchDTOPost, ResearchDTORel
+from src.schemas.service.research import ResearchDTOPost
+from src.schemas.service.research import ResearchDTORel
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.manager import TelegramResearchManager
-from src.web.dependencies.researcher.start import get_research_manager, get_publisher
+from src.web.dependencies.researcher.start import get_publisher
+from src.web.dependencies.researcher.start import get_research_manager
 
 router = APIRouter(prefix="/research/telegram", tags=["Research"])
 

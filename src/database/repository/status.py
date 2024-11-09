@@ -1,15 +1,22 @@
 import datetime
-from typing import Optional, List
+from typing import List
+from typing import Optional
 
-from aiocache import cached, Cache
-from sqlalchemy import select, update, insert
+from aiocache import Cache
+from aiocache import cached
+from sqlalchemy import insert
+from sqlalchemy import select
+from sqlalchemy import update
 
-from src.schemas.service.status import UserStatusDTO, ResearchStatusDTO
 from src.database.postgres.engine.session import DatabaseSessionManager
-from src.database.postgres.models.enum_types import UserStatusEnum, ResearchStatusEnum
-from src.database.postgres.models.status import UserStatus, ResearchStatus
+from src.database.postgres.models.enum_types import ResearchStatusEnum
+from src.database.postgres.models.enum_types import UserStatusEnum
+from src.database.postgres.models.status import ResearchStatus
+from src.database.postgres.models.status import UserStatus
 from src.database.postgres.models.user import User
 from src.database.repository.base import BaseRepository
+from src.schemas.service.status import ResearchStatusDTO
+from src.schemas.service.status import UserStatusDTO
 
 
 class UserStatusRepository(BaseRepository):

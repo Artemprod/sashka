@@ -1,19 +1,27 @@
 import asyncio
-from typing import List, Optional, Dict
+from typing import Dict
+from typing import List
+from typing import Optional
+
 from loguru import logger
+
 from configs.nats_queues import nats_distributor_settings
+from src.database.repository.storage import RepoStorage
 from src.schemas.communicator.distanation import NatsDestinationDTO
 from src.schemas.communicator.message import IncomeUserMessageDTOQueue
 from src.schemas.service.client import TelegramClientDTOGet
-
-from src.schemas.service.user import UserDTOFull, UserDTO, UserDTOBase
+from src.schemas.service.user import UserDTO
+from src.schemas.service.user import UserDTOBase
+from src.schemas.service.user import UserDTOFull
 from src.services.communicator.checker import Checker
-from src.services.communicator.messager import MessageFirstSend, ResearchMessageAnswer, CommonMessageAnswer, \
-    PingMessage
+from src.services.communicator.messager import CommonMessageAnswer
+from src.services.communicator.messager import MessageFirstSend
+from src.services.communicator.messager import PingMessage
+from src.services.communicator.messager import ResearchMessageAnswer
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
-from src.services.communicator.request import SingleRequest, ContextRequest
+from src.services.communicator.request import ContextRequest
+from src.services.communicator.request import SingleRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
-from src.database.repository.storage import RepoStorage
 from src.services.publisher.publisher import NatsPublisher
 
 

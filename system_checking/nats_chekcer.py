@@ -1,9 +1,5 @@
-from nats.js.api import StreamConfig
-
-
-
-
 from nats.aio.client import Client as NATS
+from nats.js.api import StreamConfig
 from nats.js.errors import NotFoundError
 
 

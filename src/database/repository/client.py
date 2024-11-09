@@ -1,14 +1,20 @@
-from typing import Optional, List
+from typing import List
+from typing import Optional
 
-from aiocache import cached, Cache
-from sqlalchemy import select, insert, update, delete
+from aiocache import Cache
+from aiocache import cached
+from sqlalchemy import delete
+from sqlalchemy import insert
+from sqlalchemy import select
+from sqlalchemy import update
 
-from src.schemas.service.client import TelegramClientDTOGet
 from src.database.exceptions.create import ObjectWasNotCreated
-from src.database.exceptions.read import ObjectDoesNotExist, EmptyTableError
+from src.database.exceptions.read import EmptyTableError
+from src.database.exceptions.read import ObjectDoesNotExist
 from src.database.postgres.models.client import TelegramClient as ClientModel
 from src.database.postgres.models.research import Research
 from src.database.repository.base import BaseRepository
+from src.schemas.service.client import TelegramClientDTOGet
 
 
 # TODO Добавить обработчик try excrpt

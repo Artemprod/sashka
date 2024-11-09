@@ -1,12 +1,15 @@
 import asyncio
-from typing import Dict, Union, Optional
+from typing import Dict
+from typing import Optional
+from typing import Union
 
 from faststream.nats import NatsBroker
 from loguru import logger
 
 from configs.nats_queues import nast_base_settings
-from src.schemas.service.queue import NatsQueueMessageDTOStreem, NatsQueueMessageDTOSubject, \
-    NatsReplyRequestQueueMessageDTOStreem
+from src.schemas.service.queue import NatsQueueMessageDTOStreem
+from src.schemas.service.queue import NatsQueueMessageDTOSubject
+from src.schemas.service.queue import NatsReplyRequestQueueMessageDTOStreem
 
 
 class NatsPublisher:

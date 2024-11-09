@@ -1,9 +1,14 @@
 from typing import Optional
 
-from sqlalchemy import String, Boolean
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy import Boolean
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
-from src.database.postgres.models.base import ModelBase, intpk, created_at
+from src.database.postgres.models.base import ModelBase
+from src.database.postgres.models.base import created_at
+from src.database.postgres.models.base import intpk
 
 
 class Assistant(ModelBase):

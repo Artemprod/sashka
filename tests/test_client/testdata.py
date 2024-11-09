@@ -1,9 +1,12 @@
-from dataclasses import dataclass
-from typing import Union, Any
 from contextlib import nullcontext as does_not_raise
+from dataclasses import dataclass
+from typing import Any
+from typing import Union
 
 import pytest
-from pyrogram.errors import PhoneNumberInvalid, ApiIdInvalid, PasswordHashInvalid
+from pyrogram.errors import ApiIdInvalid
+from pyrogram.errors import PasswordHashInvalid
+from pyrogram.errors import PhoneNumberInvalid
 
 from src.distributor.telegram_client.exceptions import MaxAttemptsExceededError
 

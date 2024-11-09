@@ -2,8 +2,9 @@
 from environs import Env
 from loguru import logger
 from pydantic import ValidationError
-from telethon import events, TelegramClient
-from telethon.tl.types import  User
+from telethon import TelegramClient
+from telethon import events
+from telethon.tl.types import User
 
 from configs.nats_queues import nats_subscriber_communicator_settings
 from src.distributor.telegram_client.telethoncl.filters.media import TextFilter

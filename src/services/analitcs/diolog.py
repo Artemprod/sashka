@@ -1,13 +1,14 @@
 import asyncio
 import io
-
-from typing import Dict, List, Optional
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import pandas
 import pandas as pd
 from loguru import logger
-
 from sqlalchemy import text
+
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.services.analitcs.querys import SQLQueryBuilder
 

@@ -43,3 +43,57 @@ ruff = "^0.7.3"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+
+[tool.ruff]
+# Основные проверки, которые помогут поддерживать стандартный стиль PEP 8 и качество кода.
+select = [
+    "E",  # Ошибки PEP 8
+    "F",  # PyFlakes
+    "W",  # Предупреждения PEP 8
+    "C",  # Сложность кода
+    "N",  # Наименования
+    "S",  # Безопасность
+    "B",  # Bugbear
+    "T",  # Типизация
+    "I",  # isort
+]
+
+# Игнорируем некоторые строгие правила, которые могут не подойти всем проектам
+ignore = [
+    "E501",  # Длина строки
+]
+
+# Основные настройки
+line-length = 120
+target-version = "py39"
+fix = true
+unfixable = ["F401"]  # Неисправляемые автоматически импорты
+
+# Исключаем системные директории и кэши
+exclude = [
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".git",
+    "__pycache__",
+    ".mypy_cache",
+]
+
+# Настройки сортировки импортов
+[tool.ruff.isort]
+combine-as-imports = true
+force-single-line = true
+relative-imports-order = "closest-to-furthest"
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
+
+# Игнорирование некоторых проверок в специальных файлах
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]  # Разрешаем неиспользуемые импорты в __init__.py

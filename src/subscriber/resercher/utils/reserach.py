@@ -2,7 +2,6 @@ import asyncio
 
 from loguru import logger
 
-
 from src.services.research.telegram.inspector import ResearchProcess
 
 

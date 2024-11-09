@@ -1,23 +1,30 @@
-from typing import Optional, List, Union, Tuple
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 from environs import Env
 from loguru import logger
 from telethon import events
-from telethon.tl.types import PeerUser, PeerChat, PeerChannel, User, Chat, Channel, DocumentAttributeAudio
+from telethon.tl.types import Channel
+from telethon.tl.types import Chat
+from telethon.tl.types import DocumentAttributeAnimated
+from telethon.tl.types import DocumentAttributeAudio
+from telethon.tl.types import DocumentAttributeSticker
+from telethon.tl.types import DocumentAttributeVideo
+from telethon.tl.types import MessageMediaContact
+from telethon.tl.types import MessageMediaDocument
+from telethon.tl.types import MessageMediaGeo
+from telethon.tl.types import MessageMediaPhoto
+from telethon.tl.types import MessageMediaPoll
+from telethon.tl.types import MessageMediaVenue
+from telethon.tl.types import PeerChannel
+from telethon.tl.types import PeerChat
+from telethon.tl.types import PeerUser
+from telethon.tl.types import User
 
 from configs.telegram_account import telegram_account_allowance_policy
 from src.distributor.telegram_client.telethoncl.filters.model import SourceType
-from telethon.tl.types import (
-    MessageMediaDocument,
-    MessageMediaPhoto,
-    DocumentAttributeVideo,
-    DocumentAttributeSticker,
-    DocumentAttributeAnimated,
-    MessageMediaContact,
-    MessageMediaGeo,
-    MessageMediaVenue,
-    MessageMediaPoll
-)
 
 
 class Filter:

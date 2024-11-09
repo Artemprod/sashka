@@ -1,9 +1,10 @@
 import sys
 from pathlib import Path
+from typing import Dict
+from typing import Optional
 
-from pydantic import BaseModel, Field
-from typing import Optional, Dict
-
+from pydantic import BaseModel
+from pydantic import Field
 from pyrogram.enums import ParseMode
 
 

@@ -1,8 +1,9 @@
 
+from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import relationship
 
-from sqlalchemy.orm import Mapped
-from src.database.postgres.models.base import ModelBase, intpk
+from src.database.postgres.models.base import ModelBase
+from src.database.postgres.models.base import intpk
 
 
 class Services(ModelBase):

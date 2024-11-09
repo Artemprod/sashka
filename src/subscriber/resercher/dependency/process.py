@@ -3,7 +3,6 @@ from faststream.nats import NatsMessage
 from loguru import logger
 
 
-
 async def get_data_from_headers(body: str, msg: NatsMessage, context=Context()) -> int:
     # Проверка наличия заголовков
     headers = msg.headers

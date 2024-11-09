@@ -3,8 +3,12 @@ from environs import Env
 from loguru import logger
 from telethon import events
 
-from src.distributor.telegram_client.telethoncl.filters.media import VoiceFilter, AudioFilter, \
-    VideoFilter, PhotoFilter, StickerFilter, GifFilter
+from src.distributor.telegram_client.telethoncl.filters.media import AudioFilter
+from src.distributor.telegram_client.telethoncl.filters.media import GifFilter
+from src.distributor.telegram_client.telethoncl.filters.media import PhotoFilter
+from src.distributor.telegram_client.telethoncl.filters.media import StickerFilter
+from src.distributor.telegram_client.telethoncl.filters.media import VideoFilter
+from src.distributor.telegram_client.telethoncl.filters.media import VoiceFilter
 from src.distributor.telegram_client.telethoncl.filters.model import SourceType
 from src.services.publisher.publisher import NatsPublisher
 

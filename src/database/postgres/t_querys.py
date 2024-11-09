@@ -3,25 +3,34 @@ import datetime
 import math
 
 import asyncpg
-from sqlalchemy import select, func, cast, Integer, and_
-from sqlalchemy.orm import aliased, selectinload, joinedload
+from sqlalchemy import Integer
+from sqlalchemy import and_
+from sqlalchemy import cast
+from sqlalchemy import func
+from sqlalchemy import select
+from sqlalchemy.orm import aliased
+from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 
+from src.database.postgres.engine.session import DatabaseSessionManager
+from src.database.postgres.models.assistants import Assistant
+from src.database.postgres.models.base import ModelBase
+from src.database.postgres.models.enum_types import ResearchStatusEnum
+from src.database.postgres.models.enum_types import UserStatusEnum
+from src.database.postgres.models.many_to_many import UserResearch
+from src.database.postgres.models.research import Research
+from src.database.postgres.models.status import ResearchStatus
+from src.database.postgres.models.status import UserStatus
+from src.database.postgres.models.user import User
+from src.database.postgres.t_data_objects import assistant_list
+from src.database.postgres.t_data_objects import service
+from src.database.repository.owner import ResearchOwnerRepositoryFullModel
+from src.database.repository.storage import RepoStorage
 from src.schemas.service.owner import ResearchOwnerDTO
 from src.schemas.service.research import ResearchDTOPost
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.research.telegram.manager import TelegramResearchManager
-from src.database.postgres.engine.session import DatabaseSessionManager
-from src.database.postgres.models.assistants import Assistant
-from src.database.postgres.models.base import ModelBase
-from src.database.postgres.models.enum_types import ResearchStatusEnum, UserStatusEnum
-from src.database.postgres.models.many_to_many import UserResearch
-from src.database.postgres.models.research import Research
-from src.database.postgres.models.status import ResearchStatus, UserStatus
 
-from src.database.postgres.models.user import User
-from src.database.postgres.t_data_objects import assistant_list, service
-from src.database.repository.owner import ResearchOwnerRepositoryFullModel
-from src.database.repository.storage import RepoStorage
 # from src.resrcher.resercher import TelegramResearcher
 
 

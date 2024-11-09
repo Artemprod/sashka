@@ -1,10 +1,8 @@
+from datasourse_for_test.resercch_imirtation import UserResearch
 from pyrogram import filters
 from pyrogram.types import Message
 
-from datasourse_for_test.resercch_imirtation import UserResearch
 from src.database.database_t import comon_database
-
-
 
 
 def in_research(_, __, message: Message):

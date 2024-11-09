@@ -3,7 +3,8 @@ from typing import Union
 from fastapi import HTTPException
 from loguru import logger
 
-from src.services.analitcs.models.analitic import AnalyticDataBufferDTO, AnalyticFileDTO
+from src.services.analitcs.models.analitic import AnalyticDataBufferDTO
+from src.services.analitcs.models.analitic import AnalyticFileDTO
 
 
 async def produce_analytic_data(analytic_instance) -> Union[AnalyticDataBufferDTO, AnalyticFileDTO]:

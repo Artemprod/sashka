@@ -1,6 +1,8 @@
 import asyncio
 from contextlib import asynccontextmanager
-from faststream import FastStream, ContextRepo
+
+from faststream import ContextRepo
+from faststream import FastStream
 from faststream.nats import NatsBroker
 from loguru import logger
 
@@ -9,7 +11,8 @@ from configs.nats_queues import nast_base_settings
 from src.database.connections.redis_connect import RedisClient
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
-from src.distributor.app.loader.on_startup import initialize_telethon_container, initialize_pyrogram_container
+from src.distributor.app.loader.on_startup import initialize_pyrogram_container
+from src.distributor.app.loader.on_startup import initialize_telethon_container
 from src.distributor.app.routers.client.client import router as client_router
 from src.distributor.app.routers.message.send_message import router as message_router
 from src.distributor.app.routers.parse.gather_info import router as parse_router

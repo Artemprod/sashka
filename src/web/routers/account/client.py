@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
 from loguru import logger
+
 from configs.nats_queues import nats_distributor_settings
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.services.publisher.publisher import NatsPublisher
-from src.web.dependencies.researcher.start import  get_publisher
+from src.web.dependencies.researcher.start import get_publisher
 from src.web.models.service import ServiceClientSignupDTO
 
 router = APIRouter(prefix="/account/client", tags=["Account"])

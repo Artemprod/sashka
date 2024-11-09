@@ -2,11 +2,11 @@ import os.path
 
 import pytest
 from pyrogram import Client
+from testdata import TEST_CASES
+from testdata import TestDataCases
 
 from src.dispatcher.communicators.reggestry import BaseCommunicator
 from src.distributor.telegram_client.pyro.client import Manager
-
-from testdata import TEST_CASES, TestDataCases
 
 
 class TestCommunicator(BaseCommunicator):

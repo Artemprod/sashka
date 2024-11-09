@@ -1,8 +1,8 @@
 
+from src.database.repository.storage import RepoStorage
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.manager import TelegramResearchManager
-from src.database.repository.storage import RepoStorage
 
 
 def initialize_research_manager(repository: RepoStorage,

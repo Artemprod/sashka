@@ -1,9 +1,11 @@
-from datetime import  timedelta
+import sys
+from datetime import timedelta
+from pathlib import Path
+
 from pydantic import Field
+
 from configs.base import BaseConfig
 
-from pathlib import Path
-import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
 class CommunicatorBaseConfigs(BaseConfig):

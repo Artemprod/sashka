@@ -1,7 +1,6 @@
 
 from pydantic import BaseModel
 
-
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 
 

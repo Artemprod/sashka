@@ -1,15 +1,16 @@
-from aiocache import cached, Cache
+from aiocache import Cache
+from aiocache import cached
+from sqlalchemy import delete
+from sqlalchemy import insert
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from sqlalchemy import delete, insert, select
-
-from src.schemas.service.owner import ResearchOwnerRelDTO, ResearchOwnerFullDTO
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.postgres.models.research import Research
-
 from src.database.postgres.models.research_owner import ResearchOwner
-
 from src.database.repository.base import BaseRepository
+from src.schemas.service.owner import ResearchOwnerFullDTO
+from src.schemas.service.owner import ResearchOwnerRelDTO
 
 
 class ResearchOwnerRepository(BaseRepository):
