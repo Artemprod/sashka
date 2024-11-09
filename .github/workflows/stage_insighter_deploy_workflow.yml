@@ -118,6 +118,7 @@
 #        - name: Load SSH aws key
 #          uses: webfactory/ssh-agent@v0.9.0
 #          with:
+
 #            ssh-private-key: ${{secrets.STAGE_PRIVATE_KEY}}
 #
 #        - name: Add SSH key to known_hosts
