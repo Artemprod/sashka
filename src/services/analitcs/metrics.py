@@ -105,13 +105,3 @@ class BasicMetricCalculator(MetricCalculator):
         ...
 
 
-if __name__ == "__main__":
-    async def main():
-        session = DatabaseSessionManager(
-            database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
-        m = BasicMetricCalculator(research_id=80, session_manager=session)
-        r = await m.analyze()
-        print(r)
-
-
-    asyncio.run(main())

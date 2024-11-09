@@ -118,7 +118,6 @@ class TelegramCommunicator:
                 # Здесь можно добавить логику уведомления пользователя о необходимости регистрации
 
         except Exception as e:
-            print()
             logger.error(f"An error occurred while processing the message from {message_object.from_user}: {e}")
             # Здесь можно добавить логику уведомления пользователя об ошибке
 
@@ -172,7 +171,6 @@ class TelegramCommunicator:
                 research_id=user_research_id
             )
         except Exception as e:
-            print()
             raise e
 
     async def _add_new_user(self, message_object: "IncomeUserMessageDTOQueue") -> Optional[List["UserDTOFull"]]:

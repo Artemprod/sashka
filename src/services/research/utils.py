@@ -19,8 +19,8 @@ class CyclePingAttemptCalculator:
             try:
                 parsed_date = datetime.strptime(date_input, '%Y-%m-%d %H:%M:%S')
                 return parsed_date
-            except ValueError:
-                raise ValueError(f"Invalid date format: {date_input}. Expected format: YYYY-MM-DD HH:MM:SS.")
+            except ValueError as e:
+                raise ValueError(f"Invalid date format: {date_input}. Expected format: YYYY-MM-DD HH:MM:SS.") from e
         else:
             raise TypeError("Date input must be a string or a datetime object.")
 

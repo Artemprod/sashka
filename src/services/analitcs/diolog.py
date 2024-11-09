@@ -184,17 +184,3 @@ class ResearchDialogs(Dialogs):
         return self.dialogs[user_telegram_id].dialog
 
 
-if __name__ == "__main__":
-    async def main():
-        session = DatabaseSessionManager(
-            database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
-        # diologs = ResearchDialogs(research_id=80, session_manager=session)
-        # result = await diologs.get_dialogs()
-        # print(result)
-        # print()
-        diolog = UserDialog(telegram_id=301213126, session_manager=session)
-        r = await diolog.get_csv_buffer()
-        print(r)
-
-
-    asyncio.run(main())

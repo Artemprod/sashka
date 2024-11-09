@@ -28,7 +28,7 @@ class SQLQueryBuilder:
     @staticmethod
     def user_messages(telegram_user_id):
         query = """
-        SELECT 
+        SELECT
             um.from_user,
             um.text,
             um.created_at

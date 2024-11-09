@@ -23,7 +23,7 @@ async def handle_voice_message(event):
 
 
 @events.register(events.NewMessage(incoming=True, func=AudioFilter(source_type=SourceType.SUPERGROUP)))
-async def handle_audio_message_SUPERGROUP(event):
+async def handle_audio_message_supergroup(event):
     logger.info("Audio message received from  SUPERGROUP.")
 
 
@@ -31,20 +31,20 @@ async def handle_audio_message_SUPERGROUP(event):
 
 
 @events.register(events.NewMessage(incoming=True, func=VideoFilter(source_type=SourceType.SUPERGROUP)))
-async def handle_video_message_SUPERGROUP(event):
+async def handle_video_message_supergroup(event):
     logger.info("Video message received from  SUPERGROUP.")
 
 
 @events.register(events.NewMessage(incoming=True, func=PhotoFilter(source_type=SourceType.SUPERGROUP)))
-async def handle_photo_message_SUPERGROUP(event):
+async def handle_photo_message_supergroup(event):
     logger.info("Photo message received from  SUPERGROUP.")
 
 
 @events.register(events.NewMessage(incoming=True, func=StickerFilter(source_type=SourceType.SUPERGROUP)))
-async def handle_sticker_message_SUPERGROUP(event):
+async def handle_sticker_message_supergroup(event):
     logger.info("Sticker received from  SUPERGROUP.")
 
 
 @events.register(events.NewMessage(incoming=True, func=GifFilter(source_type=SourceType.SUPERGROUP)))
-async def handle_gif_message_SUPERGROUP(event):
+async def handle_gif_message_supergroup(event):
     logger.info("Animated GIF received from  SUPERGROUP.")

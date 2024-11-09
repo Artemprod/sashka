@@ -111,7 +111,7 @@ class MessageFromContext:
         return [({"role": role, "content": msg.text}, msg.created_at) for msg in messages]
 
 
-class BaseMessageHandler(ABC):
+class BaseMessageHandler:
     def __init__(self, publisher: 'NatsPublisher', repository: 'RepoStorage',
                  prompt_generator: "ExtendedPingPromptGenerator"):
         self.repository = repository
@@ -335,13 +335,12 @@ class ResearchMessageAnswer(MessageAnswer):
         response: ContextResponseDTO = await self.context_request.get_response(
             context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt,
                                           context=context))
-        print()
         await self._publish_and_save_message(content=response,
                                              client=client,
                                              user=UserDTOBase(username=message.username, tg_user_id=message.from_user),
                                              assistant_id=assistant,
                                              destination_configs=destination_configs)
-        print()
+
 
 
 class CommonMessageAnswer(MessageAnswer):

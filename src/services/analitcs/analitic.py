@@ -105,21 +105,3 @@ class AnalyticExcel(Analytic):
         dialogs_objects = await self.dialogs
         return await self._process_dialogs(dialogs_objects.dialogs, folder_path, ExcelExporter, 'excel')
 
-
-if __name__ == "__main__":
-    async def main():
-        session = DatabaseSessionManager(
-            database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
-        csv_class: AnalyticCSV = AnalyticCollector.instruments['csv'](research_id=80,
-                                                                      session_manager=session,
-                                                                      metric_calculator=BasicMetricCalculator)
-        excel_class = AnalyticCollector.instruments['excel'](research_id=80,
-                                                             session_manager=session,
-                                                             metric_calculator=BasicMetricCalculator)
-        print(csv_class)  # Должно напечатать класс AnalyticCSV
-        print(excel_class)  # Должно напечатать класс AnalyticExcel
-        r = await excel_class.provide_data(path=r'D:\projects\AIPO_V2\CUSTDEVER\src\services\analitcs\test.xlsx')
-        print(r)
-
-
-    asyncio.run(main())

@@ -106,7 +106,6 @@ class TelethonClientsContainer(InterfaceClientsContainer):
         logger.info("Loading managers from database...")
         try:
             db_managers = await self.repository.client_repo.get_all()
-            print()
             for client_model in db_managers:
                 if client_model.name not in self.managers:
                     dto = ClientConfigDTO.model_validate(client_model, from_attributes=True)
@@ -123,7 +122,6 @@ class TelethonClientsContainer(InterfaceClientsContainer):
 
     async def start_all_clients(self):
         await self._load_managers_from_db()
-        print()
         tasks = [self.start_client(name) for name in self.managers]
         try:
             await asyncio.gather(*tasks)
