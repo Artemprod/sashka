@@ -127,6 +127,7 @@ volumes:
   custdever_redis:
   custdever_nats:
   custdever_subscriber_researcher:
+  custdever_subscriber_communicator:
 
 networks:
   custdever_stage_network:
