@@ -39,7 +39,7 @@ jobs:
           with:
             # list of Docker images to use as base name for tags
             images: |
-              artemprod/insighter_worker
+              artemprod/sashka
             # generate Docker tags based on the following events/attributes
             tags: |
               type=ref,event=branch
@@ -74,12 +74,12 @@ jobs:
           run: ssh-keyscan -H "${{vars.STAGE_HOST_ADDRESS}}" >> ~/.ssh/known_hosts
 
         - name: Create Docker Context
-          run: docker context create stage_worker_context --docker "host=ssh://${{ vars.STAGE_SSH_ADDRESS }}" || true
+          run: docker context create custdever_stage_context --docker "host=ssh://${{ vars.STAGE_SSH_ADDRESS }}" || true
 
         - name: Check if services exist
           id: check_services
           run: |
-            SERVICES_EXIST=$(docker --context stage_worker_context ps -q --filter "name=postgres_container" --filter "name=migration_alembic" --filter "name=server_redis_cache" --filter "name=nats_worker" --filter "name=rabbit_worker" --filter "name=insighter_worker" --filter "name=insighter_api_server")
+            SERVICES_EXIST=$(docker --context custdever_stage_context ps -q --filter "name=custdever_postgres_container" --filter "name=custdever_redis_container" --filter "name=custdever_nats_worker" --filter "name=custdever_api_getaway_main_worker" --filter "name=custdever_subscriber_researcher_worker" --filter "name=custdever_subscriber_communicator_worker" --filter "name=custdever_distributor")
             echo "Services Exist: $SERVICES_EXIST"
             if [ -n "$SERVICES_EXIST" ]; then
               echo "true"
@@ -92,12 +92,12 @@ jobs:
           if: steps.check_services.outputs.services_exist == 'true'
           run: |
             echo "${{ vars.STAGE_ENV_FILE }}" >> ./deploy/stage/.env
-            docker --context stage_worker_context compose -f deploy/stage/docker-compose.yml down
-            docker --context stage_worker_context system prune -af
-            if ! docker --context stage_worker_context network ls --filter name=insighter_worker_stage_new --format '{{.Name}}' | grep -w insighter_worker_stage_new; then
-            docker --context stage_worker_context network create insighter_worker_stage_new
+            docker --context custdever_stage_context compose -f deploy/stage/docker-compose.yml down
+            docker --context custdever_stage_context system prune -af
+            if ! docker --context custdever_stage_context network ls --filter name=custdever_stage_network --format '{{.Name}}' | grep -w custdever_stage_network; then
+            docker --context custdever_stage_context network create custdever_stage_network
             fi
-            
+#
 
     deploy:
       needs: cleanup
@@ -124,13 +124,13 @@ jobs:
           run: ssh-keyscan -H "${{vars.STAGE_HOST_ADDRESS}}" >> ~/.ssh/known_hosts
 
         - name: Create Docker Context
-          run: docker context create stage_worker_context --docker "host=ssh://${{ vars.STAGE_SSH_ADDRESS }}" || true
+          run: docker context create custdever_stage_context --docker "host=ssh://${{ vars.STAGE_SSH_ADDRESS }}" || true
 
         - name: Deploy
           run: |
             echo "${{ vars.STAGE_ENV_FILE }}" >> ./deploy/stage/.env
             export IMAGE_TAG=sha-${{ steps.set_sha.outputs.sha_short }}
-            docker --context stage_worker_context compose -f deploy/stage/docker-compose.yml up -d --wait --wait-timeout 60
+            docker --context custdever_stage_context compose -f deploy/stage/docker-compose.yml up -d --wait --wait-timeout 60
           
           
           

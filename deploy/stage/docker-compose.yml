@@ -21,7 +21,7 @@ services:
 
   custdever_redis:
     image: redis
-    container_name: custdever_redis
+    container_name: custdever_redis_container
     env_file:
       - .env
     ports:
