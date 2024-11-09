@@ -17,7 +17,6 @@ pytest-asyncio = "^0.23.8"
 loguru = "^0.7.2"
 fastapi-websocket-rpc = "^0.1.25"
 faststream = {extras = ["nats"], version = "^0.5.18"}
-aioredis = "^2.0.1"
 setuptools = "^73.0.1"
 wheel = "^0.44.0"
 redis = "^5.0.8"
