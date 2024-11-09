@@ -1,10 +1,12 @@
 import platform
 import sys
 from pathlib import Path
+from typing import Dict
+from typing import Optional
 
-from pydantic import BaseModel, Field, __version__
-from typing import Union, Optional, Dict
-
+from pydantic import BaseModel
+from pydantic import Field
+from pydantic import __version__
 from pyrogram.enums import ParseMode
 
 APP_VERSION = f"Pyrogram {__version__}"

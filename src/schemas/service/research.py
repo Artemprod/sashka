@@ -1,7 +1,11 @@
 import uuid
-from datetime import datetime, timedelta
-from typing import Optional, List
-from pydantic import BaseModel, Field
+from datetime import datetime
+from datetime import timedelta
+from typing import List
+from typing import Optional
+
+from pydantic import BaseModel
+from pydantic import Field
 
 from src.schemas.service.assistant import AssistantDTOGet
 from src.schemas.service.client import TelegramClientDTOGet

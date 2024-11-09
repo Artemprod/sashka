@@ -1,8 +1,9 @@
 
 
-from typing import List, Dict, Optional, Union
+from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from pydantic import Field
 
 
 class CheckerDTO(BaseModel):

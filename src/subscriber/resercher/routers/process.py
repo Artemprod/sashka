@@ -1,14 +1,16 @@
 import asyncio
 
-from faststream import Context, Depends
-from faststream.nats import NatsRouter, NatsMessage
+from faststream import Context
+from faststream import Depends
+from faststream.nats import NatsMessage
+from faststream.nats import NatsRouter
 from loguru import logger
-from pydantic import BaseModel
 
 from configs.nats_queues import nats_subscriber_researcher_settings
 from src.services.research.telegram.inspector import ResearchProcess
 from src.subscriber.resercher.dependency.process import get_data_from_headers
-from src.subscriber.resercher.utils.reserach import run_research, task_completion_callback
+from src.subscriber.resercher.utils.reserach import run_research
+from src.subscriber.resercher.utils.reserach import task_completion_callback
 
 router = NatsRouter()
 

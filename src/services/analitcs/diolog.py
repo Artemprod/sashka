@@ -1,14 +1,14 @@
 import asyncio
 import io
-from collections import defaultdict
-
-from typing import Dict, List, Optional
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import pandas
 import pandas as pd
 from loguru import logger
-
 from sqlalchemy import text
+
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.services.analitcs.querys import SQLQueryBuilder
 
@@ -88,7 +88,7 @@ class UserDialog(Dialogs):
             file = self.dialog.to_csv(path_or_buf=path, encoding='utf-8')
             logger.info(f"csv File {file} saved")
         except Exception as e:
-            logger.error(f" Faild to save csv file ")
+            logger.error(" Faild to save csv file ")
             raise e
         else:
             return path
@@ -131,9 +131,9 @@ class UserDialog(Dialogs):
 
         try:
             self.dialog.to_excel(path)
-            logger.info(f"excel File  saved")
+            logger.info("excel File  saved")
         except Exception as e:
-            logger.error(f" Faild to save excel file ")
+            logger.error(" Faild to save excel file ")
             raise e
         else:
             return path
@@ -184,17 +184,3 @@ class ResearchDialogs(Dialogs):
         return self.dialogs[user_telegram_id].dialog
 
 
-if __name__ == "__main__":
-    async def main():
-        session = DatabaseSessionManager(
-            database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
-        # diologs = ResearchDialogs(research_id=80, session_manager=session)
-        # result = await diologs.get_dialogs()
-        # print(result)
-        # print()
-        diolog = UserDialog(telegram_id=301213126, session_manager=session)
-        r = await diolog.get_csv_buffer()
-        print(r)
-
-
-    asyncio.run(main())

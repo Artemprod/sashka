@@ -1,18 +1,21 @@
-import asyncio
 import json
-from abc import ABC, abstractmethod
-from typing import List, Optional, AsyncGenerator
-
-from faststream.nats import NatsBroker
+from abc import ABC
+from abc import abstractmethod
+from typing import AsyncGenerator
+from typing import List
+from typing import Optional
 
 from loguru import logger
 
 from configs.nats_queues import nats_distributor_settings
 from src.distributor.app.schemas.response import ErrorResponse
 from src.schemas.service.client import TelegramClientDTOGet
-from src.schemas.service.queue import NatsReplyRequestQueueMessageDTOStreem, TelegramObjectHeadersDTO
+from src.schemas.service.queue import NatsReplyRequestQueueMessageDTOStreem
+from src.schemas.service.queue import TelegramObjectHeadersDTO
 from src.schemas.service.response import ResponseModel
-from src.schemas.service.user import UserDTOQueue, UserDTO, UserDTOBase
+from src.schemas.service.user import UserDTO
+from src.schemas.service.user import UserDTOBase
+from src.schemas.service.user import UserDTOQueue
 from src.services.publisher.publisher import NatsPublisher
 
 
@@ -32,12 +35,11 @@ class TelegramUserInformationCollector(UserInformationCollector):
     async def collect_users_information(self, users: List[UserDTOBase], client: TelegramClientDTOGet) -> Optional[
         List[UserDTO]]:
         message = self._create_nats_message(users, client)
-        print("NATS MESSAGE", message)
         try:
             response = await self.publisher.request_reply(nats_message=message)
             print()
             if response:
-                logger.info(f"Ответ от сервера получен")
+                logger.info("Ответ от сервера получен")
                 response_model = ResponseModel.model_validate_json(response)
                 if not isinstance(response_model, ErrorResponse):
                     return await self._parse_users_info(response_model)

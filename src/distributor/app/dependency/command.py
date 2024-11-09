@@ -1,11 +1,14 @@
 import json
-from typing import List, Dict
+from typing import Dict
+from typing import List
 
 from faststream import Context
 from faststream.nats import NatsMessage
 from loguru import logger
 
-from src.subscriber.communicator.schemas.command import UserDTOBase, CommandStartDiologDTO, CommandPingUserDTO
+from src.subscriber.communicator.schemas.command import CommandPingUserDTO
+from src.subscriber.communicator.schemas.command import CommandStartDiologDTO
+from src.subscriber.communicator.schemas.command import UserDTOBase
 
 
 def form_user_info(users: str) -> List[UserDTOBase]:

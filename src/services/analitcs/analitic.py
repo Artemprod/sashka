@@ -1,18 +1,23 @@
 import asyncio
 import uuid
-from abc import abstractmethod, ABC
+from abc import ABC
+from abc import abstractmethod
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
+from typing import Union
 
 from loguru import logger
 
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.services.analitcs.decorator.collector import AnalyticCollector
 from src.services.analitcs.diolog import ResearchDialogs
-from src.services.analitcs.exporters import CsvExporter, ExcelExporter
-from src.services.analitcs.metrics import MetricCalculator, BasicMetricCalculator
-from src.services.analitcs.models.analitic import AnalyticDataBufferDTO, AnalyticFileDTO
+from src.services.analitcs.exporters import CsvExporter
+from src.services.analitcs.exporters import ExcelExporter
+from src.services.analitcs.metrics import BasicMetricCalculator
+from src.services.analitcs.metrics import MetricCalculator
+from src.services.analitcs.models.analitic import AnalyticDataBufferDTO
+from src.services.analitcs.models.analitic import AnalyticFileDTO
 
 
 class Analytic(ABC):
@@ -100,21 +105,3 @@ class AnalyticExcel(Analytic):
         dialogs_objects = await self.dialogs
         return await self._process_dialogs(dialogs_objects.dialogs, folder_path, ExcelExporter, 'excel')
 
-
-if __name__ == "__main__":
-    async def main():
-        session = DatabaseSessionManager(
-            database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
-        csv_class: AnalyticCSV = AnalyticCollector.instruments['csv'](research_id=80,
-                                                                      session_manager=session,
-                                                                      metric_calculator=BasicMetricCalculator)
-        excel_class = AnalyticCollector.instruments['excel'](research_id=80,
-                                                             session_manager=session,
-                                                             metric_calculator=BasicMetricCalculator)
-        print(csv_class)  # Должно напечатать класс AnalyticCSV
-        print(excel_class)  # Должно напечатать класс AnalyticExcel
-        r = await excel_class.provide_data(path=r'D:\projects\AIPO_V2\CUSTDEVER\src\services\analitcs\test.xlsx')
-        print(r)
-
-
-    asyncio.run(main())

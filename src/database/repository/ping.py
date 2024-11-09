@@ -1,12 +1,12 @@
-import datetime
-from typing import Optional, List
 
-from aiocache import cached, Cache
-from sqlalchemy import select, insert, update, delete
+from aiocache import Cache
+from aiocache import cached
+from sqlalchemy import insert
+from sqlalchemy import select
 
-from src.schemas.service.prompt import PingPromptDTO
 from src.database.postgres.models.ping import PingPrompt
 from src.database.repository.base import BaseRepository
+from src.schemas.service.prompt import PingPromptDTO
 
 
 # TODO Добавить обработчик try excrpt

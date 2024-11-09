@@ -1,13 +1,17 @@
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
-from aiocache import cached, Cache
-from sqlalchemy import insert, select, update
+from aiocache import Cache
+from aiocache import cached
+from sqlalchemy import insert
+from sqlalchemy import select
+from sqlalchemy import update
 
-from src.schemas.service.assistant import AssistantDTOGet
 from src.database.postgres.models.assistants import Assistant
 from src.database.postgres.models.research import Research
 from src.database.postgres.models.user import User
 from src.database.repository.base import BaseRepository
+from src.schemas.service.assistant import AssistantDTOGet
 
 
 class AssistantRepository(BaseRepository):

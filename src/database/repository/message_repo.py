@@ -1,11 +1,16 @@
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
-from sqlalchemy import insert, select, desc
+from sqlalchemy import desc
+from sqlalchemy import insert
+from sqlalchemy import select
 
-from src.schemas.service.message import AssistantMessageDTOGet, UserMessageDTOGet
 from src.database.postgres.engine.session import DatabaseSessionManager
-from src.database.postgres.models.message import UserMessage, AssistantMessage
+from src.database.postgres.models.message import AssistantMessage
+from src.database.postgres.models.message import UserMessage
 from src.database.repository.base import BaseRepository
+from src.schemas.service.message import AssistantMessageDTOGet
+from src.schemas.service.message import UserMessageDTOGet
 
 
 class AssistantMessageRepository(BaseRepository):

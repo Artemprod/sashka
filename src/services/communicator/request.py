@@ -1,14 +1,15 @@
-import asyncio
-from abc import ABC, abstractmethod
-from typing import Union
+from abc import ABC
+from abc import abstractmethod
 
 import aiohttp
 from aiohttp import ClientSession
 from loguru import logger
 
 from configs.ai_api_endpoints import ai_api_endpoint_base_settings
-from src.schemas.communicator.request import ContextRequestDTO, SingleRequestDTO
-from src.schemas.communicator.response import ContextResponseDTO, SingleResponseDTO
+from src.schemas.communicator.request import ContextRequestDTO
+from src.schemas.communicator.request import SingleRequestDTO
+from src.schemas.communicator.response import ContextResponseDTO
+from src.schemas.communicator.response import SingleResponseDTO
 
 
 class AiConnector(ABC):
@@ -25,7 +26,6 @@ class AiConnector(ABC):
 
     async def send_request(self, url: str, session: ClientSession, send_object):
         try:
-            print()
             async with session.post(
                     url=url,
                     json=send_object.dict(),
@@ -43,7 +43,6 @@ class AiConnector(ABC):
             raise
 
     async def perform_request(self, send_object, url):
-        print()
         async with aiohttp.ClientSession() as session:
             return await self.send_request(url=url, session=session, send_object=send_object)
 

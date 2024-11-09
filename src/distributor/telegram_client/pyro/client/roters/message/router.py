@@ -2,7 +2,8 @@ from environs import Env
 from faststream.nats import NatsBroker
 from loguru import logger
 from pydantic import ValidationError
-from pyrogram import Client, filters
+from pyrogram import Client
+from pyrogram import filters
 from pyrogram.types import Message
 
 from src.distributor.telegram_client.pyro.client.roters.message.models import HeaderUserMessageDTOQueue

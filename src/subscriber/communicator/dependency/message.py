@@ -1,7 +1,5 @@
 import json
 
-from faststream import Context
-from faststream.nats import NatsMessage
 from loguru import logger
 
 from src.schemas.communicator.message import IncomeUserMessageDTOQueue

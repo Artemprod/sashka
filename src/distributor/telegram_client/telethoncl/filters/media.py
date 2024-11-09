@@ -1,25 +1,30 @@
-from enum import Enum
-from typing import Optional, List, Union, Tuple
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 from environs import Env
 from loguru import logger
 from telethon import events
-from telethon.tl.types import PeerUser, PeerChat, PeerChannel, User, Chat, Channel, DocumentAttributeAudio
+from telethon.tl.types import Channel
+from telethon.tl.types import Chat
+from telethon.tl.types import DocumentAttributeAnimated
+from telethon.tl.types import DocumentAttributeAudio
+from telethon.tl.types import DocumentAttributeSticker
+from telethon.tl.types import DocumentAttributeVideo
+from telethon.tl.types import MessageMediaContact
+from telethon.tl.types import MessageMediaDocument
+from telethon.tl.types import MessageMediaGeo
+from telethon.tl.types import MessageMediaPhoto
+from telethon.tl.types import MessageMediaPoll
+from telethon.tl.types import MessageMediaVenue
+from telethon.tl.types import PeerChannel
+from telethon.tl.types import PeerChat
+from telethon.tl.types import PeerUser
+from telethon.tl.types import User
 
 from configs.telegram_account import telegram_account_allowance_policy
 from src.distributor.telegram_client.telethoncl.filters.model import SourceType
-from telethon.tl.types import (
-    MessageMediaDocument,
-    MessageMediaPhoto,
-    DocumentAttributeAudio,
-    DocumentAttributeVideo,
-    DocumentAttributeSticker,
-    DocumentAttributeAnimated,
-    MessageMediaContact,
-    MessageMediaGeo,
-    MessageMediaVenue,
-    MessageMediaPoll
-)
 
 
 class Filter:
@@ -64,7 +69,7 @@ class Filter:
             logger.debug("Loading restricted users from configs...")
             users = self.settings.not_allowed_users_id + self.settings.not_allowed_users_usernames
             return users
-        except Exception as e:
+        except Exception:
             logger.debug("Loading restricted users from .env...")
             env = Env()
             env.read_env('.env')
@@ -81,7 +86,7 @@ class Filter:
             logger.debug("Loading restricted services from configs...")
             new_services = self.settings.not_allowed_services
             return new_services
-        except Exception as e:
+        except Exception:
             logger.debug("Loading restricted services from .env...")
             env = Env()
             env.read_env('.env')

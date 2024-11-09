@@ -1,5 +1,5 @@
-from abc import ABC, abstractmethod
-from typing import Dict
+from abc import ABC
+from abc import abstractmethod
 
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 

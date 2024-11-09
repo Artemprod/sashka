@@ -1,12 +1,16 @@
+from faststream import Context
+from faststream import Depends
+from faststream.nats import JStream
+from faststream.nats import NatsMessage
+from faststream.nats import NatsRouter
 from loguru import logger
-from faststream import Context, Depends
-from faststream.nats import NatsRouter, NatsMessage, JStream
+from nats.js.api import DeliverPolicy
+from nats.js.api import RetentionPolicy
 
 from configs.nats_queues import nats_distributor_settings
 from src.distributor.app.dependency.message import _get_data_from_headers
 from src.distributor.app.schemas.message import Datas
 from src.distributor.app.utils.message import send_message
-from nats.js.api import DeliverPolicy, RetentionPolicy
 
 # Создаем маршрутизатор NATS и две очереди JStream
 router = NatsRouter()

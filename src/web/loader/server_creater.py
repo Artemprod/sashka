@@ -1,20 +1,18 @@
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
+
+from fastapi import FastAPI
 from loguru import logger
 
 from configs.database import database_postgres_settings
-from src.services.analitcs.decorator.collector import AnalyticCollector
-from src.services.parser.user.gather_info import TelegramUserInformationCollector
-from src.services.publisher.publisher import NatsPublisher
-from src.services.research.telegram.manager import TelegramResearchManager
-from src.web.loader.on_startup import initialize_research_manager
-from src.web.routers.reserach.telegram import router as research_router
-from src.web.routers.account.client import router as client_router
-from src.web.routers.analitics.dialog import router as dialog_router
-from contextlib import asynccontextmanager
-from typing import AsyncIterator
-from fastapi import FastAPI
-
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
+from src.services.analitcs.decorator.collector import AnalyticCollector
+from src.services.publisher.publisher import NatsPublisher
+from src.web.loader.on_startup import initialize_research_manager
+from src.web.routers.account.client import router as client_router
+from src.web.routers.analitics.dialog import router as dialog_router
+from src.web.routers.reserach.telegram import router as research_router
 
 
 @asynccontextmanager

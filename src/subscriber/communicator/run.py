@@ -1,5 +1,6 @@
 
 import asyncio
+
 from src.subscriber.communicator.loader.create_app import create_app
 
 

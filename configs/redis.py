@@ -1,7 +1,10 @@
-from pydantic import Field
-from configs.base import BaseConfig
-from pathlib import Path
 import sys
+from pathlib import Path
+
+from pydantic import Field
+
+from configs.base import BaseConfig
+
 sys.path.append(str(Path(__file__).parent.parent))
 
 class RedisConfigs(BaseConfig):

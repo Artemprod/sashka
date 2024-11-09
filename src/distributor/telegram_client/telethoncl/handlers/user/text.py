@@ -1,14 +1,10 @@
-import json
-import logging
-import os
 
 from environs import Env
-from faststream.nats import NatsBroker
 from loguru import logger
-from numpy.compat import unicode
 from pydantic import ValidationError
-from telethon import events, TelegramClient
-from telethon.tl.types import  User
+from telethon import TelegramClient
+from telethon import events
+from telethon.tl.types import User
 
 from configs.nats_queues import nats_subscriber_communicator_settings
 from src.distributor.telegram_client.telethoncl.filters.media import TextFilter
@@ -24,7 +20,7 @@ publisher = NatsPublisher()
 
 @events.register(events.NewMessage(incoming=True, func=TextFilter(source_type=SourceType.USER)))
 async def handle_text_message_user_chat(event):
-    logger.info(f"New message from USER CHAT")
+    logger.info("New message from USER CHAT")
     client: TelegramClient = event.client
     client_info = await client.get_me()
     # Создаем объект заголовка сообщения

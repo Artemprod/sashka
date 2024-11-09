@@ -1,6 +1,6 @@
-from typing import List, Dict
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
+from pydantic import field_validator
 
 
 class IncomeUserMessageDTOQueue(BaseModel):

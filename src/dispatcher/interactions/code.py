@@ -1,6 +1,7 @@
 
 import aioredis
-from environs import Env, EnvError
+from environs import Env
+from environs import EnvError
 from loguru import logger
 
 from configs.redis import RedisTelegramGetterConfigs
@@ -17,7 +18,7 @@ class TelegramGetter(CodeGetter): pass
 class RedisTelegramGetter:
     BASE_TIMEOUT = 60 * 5  # Базовый тайм-аут ожидания данных в секундах
     BASE_TABLE_NAME = 'telegram'
-    REDIS_URL = f'redis://"localhost":6379/10'
+    REDIS_URL = 'redis://"localhost":6379/10'
 
     def __init__(self, settings: RedisTelegramGetterConfigs = None):
         self.settings = settings

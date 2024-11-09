@@ -1,6 +1,4 @@
 from src.dispatcher.communicators.consol import ConsoleCommunicator
-
-from src.dispatcher.communicators.reggestry import CommunicatorRegistryBase
 from src.dispatcher.communicators.telegram import TelegramCommunicator
 
 #TODO передаелать этот контенер под диспетчера

@@ -1,8 +1,10 @@
-from typing import Callable
-from logging import getLogger
 import inspect
 from functools import wraps
-from pyrogram import handlers, Client
+from logging import getLogger
+from typing import Callable
+
+from pyrogram import Client
+from pyrogram import handlers
 from pyrogram.types import Update
 
 

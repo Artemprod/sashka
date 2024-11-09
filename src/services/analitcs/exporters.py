@@ -1,13 +1,16 @@
-from abc import ABC, abstractmethod
-
-from src.services.analitcs.models.metrics import DialogMetrics
 import csv
 import io
+from abc import ABC
+from abc import abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import List, Union
+from typing import List
+from typing import Union
 
 import pandas as pd
+
+from src.services.analitcs.models.metrics import DialogMetrics
+
 
 class Exporter(ABC):
     @abstractmethod
@@ -40,7 +43,7 @@ class CsvExporter(Exporter):
                     writer.writerow(row_dict)
 
         except OSError as e:
-            raise OSError(f"Ошибка при записи CSV файла: {e}")
+            raise OSError(f"Ошибка при записи CSV файла: {e}") from e
 
     @staticmethod
     def export_buffer(data: List['DialogMetrics'], encoding: str = 'utf-8') -> io.BytesIO:
@@ -68,7 +71,7 @@ class CsvExporter(Exporter):
             return byte_buffer
 
         except Exception as e:
-            raise RuntimeError(f"Ошибка при записи CSV в буфер: {e}")
+            raise RuntimeError(f"Ошибка при записи CSV в буфер: {e}") from e
 
 
 class ExcelExporter(Exporter):
@@ -87,7 +90,7 @@ class ExcelExporter(Exporter):
                 df.to_excel(writer, index=False)
 
         except OSError as e:
-            raise OSError(f"Ошибка при записи Excel файла: {e}")
+            raise OSError(f"Ошибка при записи Excel файла: {e}") from e
 
     @staticmethod
     def export_buffer(data: List['DialogMetrics']) -> io.BytesIO:
@@ -110,9 +113,4 @@ class ExcelExporter(Exporter):
             raise RuntimeError(f"Ошибка при записи Excel в буфер: {e}")
 
 
-if __name__ == "__main__":
-    metrics_list = [
-        DialogMetrics(total_dialogs=100, answered_first=60, conversion_rate=60.0),
-        DialogMetrics(total_dialogs=150, answered_first=90, conversion_rate=60.0),
-    ]
-    print(ExcelExporter.export_to_excel_buffer(metrics_list))
+

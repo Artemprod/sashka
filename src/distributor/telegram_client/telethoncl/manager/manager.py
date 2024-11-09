@@ -1,12 +1,16 @@
-import asyncio
 import datetime
-from abc import ABC, abstractmethod
-from typing import Optional, List
+from abc import ABC
+from abc import abstractmethod
+from typing import List
+from typing import Optional
 
 from loguru import logger
 from telethon import TelegramClient
-from telethon.errors import RPCError, SessionPasswordNeededError, AuthKeyUnregisteredError, FloodWaitError, \
-    PhoneNumberBannedError, PhoneCodeInvalidError
+from telethon.errors import AuthKeyUnregisteredError
+from telethon.errors import PhoneCodeInvalidError
+from telethon.errors import PhoneNumberBannedError
+from telethon.errors import RPCError
+from telethon.errors import SessionPasswordNeededError
 from telethon.sessions import StringSession
 from telethon.tl.types import User
 
@@ -15,7 +19,8 @@ from src.dispatcher.communicators.reggestry import BaseCommunicator
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 from src.distributor.telegram_client.telethoncl.exceptions.autrization import UserNotAuthorizedError
 from src.distributor.telegram_client.telethoncl.exceptions.data import NoClientDataError
-from src.schemas.service.client import TelegramClientDTOPost, TelegramClientDTOGet
+from src.schemas.service.client import TelegramClientDTOGet
+from src.schemas.service.client import TelegramClientDTOPost
 
 
 class ClientStrategy(ABC):
@@ -124,7 +129,7 @@ class RunClientStrategy(ClientStrategy):
 
     async def execute(self):
         if not self.client_dto:
-            raise NoClientDataError(message=f'client dto is empty')
+            raise NoClientDataError(message='client dto is empty')
 
 
         self.client = TelegramClient(
@@ -148,7 +153,7 @@ class RunClientStrategy(ClientStrategy):
             logger.error(f"Error during client run: {str(e)}")
             raise
 
-        except UserNotAuthorizedError as e:
+        except UserNotAuthorizedError:
             raise
 
     async def try_to_start_and_run(self):

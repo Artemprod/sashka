@@ -1,12 +1,13 @@
 import asyncio
-from abc import abstractmethod, ABC
+from abc import ABC
+from abc import abstractmethod
 from typing import Optional
 
-import pandas
 from loguru import logger
 
 from src.database.postgres.engine.session import DatabaseSessionManager
-from src.services.analitcs.diolog import ResearchDialogs, UserDialog
+from src.services.analitcs.diolog import ResearchDialogs
+from src.services.analitcs.diolog import UserDialog
 from src.services.analitcs.models.metrics import DialogMetrics
 
 
@@ -104,13 +105,3 @@ class BasicMetricCalculator(MetricCalculator):
         ...
 
 
-if __name__ == "__main__":
-    async def main():
-        session = DatabaseSessionManager(
-            database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
-        m = BasicMetricCalculator(research_id=80, session_manager=session)
-        r = await m.analyze()
-        print(r)
-
-
-    asyncio.run(main())

@@ -1,9 +1,15 @@
-from datetime import datetime
 
-from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean, BigInteger
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy import BigInteger
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
-from src.database.postgres.models.base import ModelBase, intpk, str_1024, created_at, str_2048, str_10
+from src.database.postgres.models.base import ModelBase
+from src.database.postgres.models.base import created_at
+from src.database.postgres.models.base import intpk
+from src.database.postgres.models.base import str_10
+from src.database.postgres.models.base import str_1024
+from src.database.postgres.models.base import str_2048
 
 
 class TelegramClient(ModelBase):

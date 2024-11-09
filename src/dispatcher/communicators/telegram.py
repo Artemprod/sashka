@@ -1,11 +1,8 @@
-import asyncio
 
-from loguru import logger
 
 from configs.redis import telegram_redis_getter_config
 from src.dispatcher import BaseCommunicator
 from src.dispatcher.interactions.code import RedisTelegramGetter
-
 
 # TODO Вывнести код геттер в интерфес и подумать над диспетчеразацией
 # TODO Добавить деораторы для отлова ошибок ( написать класс методы которых отлов ошибок )

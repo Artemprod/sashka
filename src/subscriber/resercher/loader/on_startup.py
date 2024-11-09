@@ -1,8 +1,8 @@
 from configs.database import database_postgres_settings
-from src.services.publisher.publisher import NatsPublisher
-from src.services.research.telegram.inspector import ResearchProcess
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
+from src.services.publisher.publisher import NatsPublisher
+from src.services.research.telegram.inspector import ResearchProcess
 
 
 def initialize_research_processor() -> ResearchProcess:

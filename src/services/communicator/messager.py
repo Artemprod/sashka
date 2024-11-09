@@ -1,33 +1,43 @@
-import json
-
-from aiocache import cached, Cache
 import asyncio
-from abc import ABC, abstractmethod
-from datetime import datetime, timedelta, timezone
-from typing import Union, List, Optional, Any, Tuple, Dict
+import json
+from abc import ABC
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
+from aiocache import Cache
+from aiocache import cached
 from loguru import logger
 
 from configs.communicator import communicator_first_message_policy
+from src.database.postgres.models.enum_types import UserStatusEnum
+from src.database.repository.storage import RepoStorage
 from src.schemas.communicator.distanation import NatsDestinationDTO
 from src.schemas.communicator.message import IncomeUserMessageDTOQueue
 from src.schemas.communicator.prompt import PromptDTO
-from src.schemas.communicator.request import SingleRequestDTO, ContextRequestDTO
-from src.schemas.communicator.response import SingleResponseDTO, ContextResponseDTO
+from src.schemas.communicator.request import ContextRequestDTO
+from src.schemas.communicator.request import SingleRequestDTO
+from src.schemas.communicator.response import ContextResponseDTO
+from src.schemas.communicator.response import SingleResponseDTO
 from src.schemas.service.assistant import AssistantDTOGet
 from src.schemas.service.client import TelegramClientDTOGet
-from src.schemas.service.message import AssistantMessageDTOPost, UserMessageDTOPost
-from src.schemas.service.user import UserDTOFull, UserDTOBase
-from src.services.communicator.prompt_generator import PromptGenerator, ExtendedPingPromptGenerator
-from src.services.communicator.request import SingleRequest, ContextRequest
-from src.database.postgres.models.enum_types import UserStatusEnum
-from src.database.repository.storage import RepoStorage
-
-from abc import ABC
-from typing import Union
-
-from src.schemas.service.queue import NatsQueueMessageDTOSubject, NatsQueueMessageDTOStreem, TelegramTimeDelaHeadersDTO, \
-    TelegramSimpleHeadersDTO, TelegramObjectHeadersDTO
+from src.schemas.service.message import AssistantMessageDTOPost
+from src.schemas.service.message import UserMessageDTOPost
+from src.schemas.service.queue import NatsQueueMessageDTOStreem
+from src.schemas.service.queue import NatsQueueMessageDTOSubject
+from src.schemas.service.queue import TelegramObjectHeadersDTO
+from src.schemas.service.queue import TelegramTimeDelaHeadersDTO
+from src.schemas.service.user import UserDTOBase
+from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
+from src.services.communicator.prompt_generator import PromptGenerator
+from src.services.communicator.request import ContextRequest
+from src.services.communicator.request import SingleRequest
 from src.services.publisher.publisher import NatsPublisher
 
 
@@ -101,7 +111,7 @@ class MessageFromContext:
         return [({"role": role, "content": msg.text}, msg.created_at) for msg in messages]
 
 
-class BaseMessageHandler(ABC):
+class BaseMessageHandler:
     def __init__(self, publisher: 'NatsPublisher', repository: 'RepoStorage',
                  prompt_generator: "ExtendedPingPromptGenerator"):
         self.repository = repository
@@ -325,13 +335,12 @@ class ResearchMessageAnswer(MessageAnswer):
         response: ContextResponseDTO = await self.context_request.get_response(
             context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt,
                                           context=context))
-        print()
         await self._publish_and_save_message(content=response,
                                              client=client,
                                              user=UserDTOBase(username=message.username, tg_user_id=message.from_user),
                                              assistant_id=assistant,
                                              destination_configs=destination_configs)
-        print()
+
 
 
 class CommonMessageAnswer(MessageAnswer):

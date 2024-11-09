@@ -1,15 +1,11 @@
 from io import BytesIO
-from typing import Union, Type
+from typing import Union
 from zipfile import ZipFile
 
-from fastapi import APIRouter, Depends, HTTPException
-from loguru import logger
 from starlette.responses import StreamingResponse
 
-from src.database.postgres.engine.session import DatabaseSessionManager
-
-from src.services.analitcs.metrics import BasicMetricCalculator
-from src.services.analitcs.models.analitic import AnalyticDataBufferDTO, AnalyticFileDTO
+from src.services.analitcs.models.analitic import AnalyticDataBufferDTO
+from src.services.analitcs.models.analitic import AnalyticFileDTO
 
 
 class ZIPFileHandler:
@@ -24,7 +20,7 @@ class ZIPFileHandler:
         return StreamingResponse(
             zip_file,
             media_type="application/zip",
-            headers={"Content-Disposition": f"attachment; filename=research_data.zip"}
+            headers={"Content-Disposition": "attachment; filename=research_data.zip"}
         )
 
     def _create_zip_file(self) -> BytesIO:

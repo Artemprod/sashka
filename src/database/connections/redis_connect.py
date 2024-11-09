@@ -1,8 +1,6 @@
-import os
 import pickle
 
 import redis.asyncio as redis
-
 
 # TODO разделить на разные классы
 

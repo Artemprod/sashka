@@ -1,9 +1,12 @@
-from typing import List, Dict
-from pydantic import Field, field_validator
-from configs.base import BaseConfig
-
-from pathlib import Path
 import sys
+from pathlib import Path
+from typing import Dict
+from typing import List
+
+from pydantic import Field
+from pydantic import field_validator
+
+from configs.base import BaseConfig
 
 sys.path.append(str(Path(__file__).parent.parent))
 

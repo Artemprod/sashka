@@ -1,25 +1,29 @@
 import datetime
 from operator import and_
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
-from aiocache import cached, Cache
+from aiocache import Cache
+from aiocache import cached
 from loguru import logger
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy import delete
+from sqlalchemy import insert
+from sqlalchemy import select
+from sqlalchemy import update
+from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 
-from sqlalchemy import delete, insert, select, update
-
-from src.schemas.service.user import UserDTOFull, UserDTORel
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.postgres.models.enum_types import UserStatusEnum
 from src.database.postgres.models.many_to_many import UserResearch
+from src.database.postgres.models.message import AssistantMessage
+from src.database.postgres.models.message import UserMessage
 from src.database.postgres.models.research import Research
-
-from src.database.postgres.models.message import UserMessage, AssistantMessage
-
 from src.database.postgres.models.status import UserStatus
-
 from src.database.postgres.models.user import User
 from src.database.repository.base import BaseRepository
+from src.schemas.service.user import UserDTOFull
+from src.schemas.service.user import UserDTORel
 
 
 class UserRepository(BaseRepository):
