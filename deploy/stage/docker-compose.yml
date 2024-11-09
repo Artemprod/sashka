@@ -126,6 +126,7 @@ volumes:
   custdever_postgres_db:
   custdever_redis:
   custdever_nats:
+  custdever_subscriber_researcher:
 
 networks:
   custdever_stage_network:
