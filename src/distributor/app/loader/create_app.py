@@ -40,6 +40,7 @@ async def lifespan(context: ContextRepo):
 
 def create_app():
     """Запускает faststream и создает корутину для клиента"""
+    print(nast_base_settings.nats_server_url)
     broker = NatsBroker(nast_base_settings.nats_server_url)
     print()
     broker.include_router(client_router)
