@@ -1,4 +1,7 @@
+import asyncio
+
 from nats.aio.client import Client as NATS
+from nats.aio.errors import ErrNoServers, ErrConnectionClosed, ErrTimeout
 from nats.js.api import StreamConfig
 from nats.js.errors import NotFoundError
 from loguru import logger
@@ -56,4 +59,35 @@ class NatsChecker:
             await js.add_stream(config=stream_config)
             logger.info(f"Stream '{stream_name}' created successfully with subjects: {subjects}")
 
+    async def check_connection(self):
+        nc = NATS()
+        max_retries = 3
+        retry_count = 0
+        connected = False
 
+        while not connected and retry_count < max_retries:
+            try:
+                logger.debug(f"Attempting to connect to NATS at {self.nats_url} (Attempt {retry_count + 1})")
+                await nc.connect(self.nats_url, connect_timeout=5)
+                logger.info(f"Successfully connected to NATS at {self.nats_url}")
+                connected = True
+            except ErrNoServers as e:
+                logger.error(f"No servers available to connect to: {e}")
+            except ErrConnectionClosed as e:
+                logger.error(f"Connection was closed unexpectedly: {e}")
+            except ErrTimeout as e:
+                logger.error(f"Connection attempt timed out: {e}")
+            except Exception as e:
+                logger.error(f"An unexpected error occurred while trying to connect: {e}")
+
+            if not connected:
+                retry_count += 1
+                logger.debug("Retrying connection...")
+                await asyncio.sleep(2)  # Wait before retrying
+            else:
+                break
+
+        if not connected:
+            logger.error(f"Failed to connect to NATS after {max_retries} attempts")
+
+        await nc.close()
