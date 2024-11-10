@@ -42,7 +42,7 @@ services:
       - "8001:8222"
       - "6555:6222"
     restart: always
-    command: "-c nats_data/config/server.conf"
+    command: "-c /config/server.conf"
     volumes:
       - custdever_nats:/DB/nats/data/
       - ./nats_data/config/server.conf:/config/server.conf
