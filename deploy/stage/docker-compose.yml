@@ -76,6 +76,8 @@ services:
     volumes:
       - custdever_main_api:/var/lib/custdever
     restart: always
+    ports:
+      - "${API_MAIN_UVICORN_PORT}:${API_MAIN_UVICORN_PORT}"
     env_file:
       - .env
     command: ["make", "run_main_api"]
