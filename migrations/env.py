@@ -44,8 +44,7 @@ def run_migrations_offline() -> None:
 
     """
     print(database_postgres_settings.async_postgres_url)
-    print()
-    url = config.get_main_option(database_postgres_settings.async_postgres_url)
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -93,4 +92,3 @@ if context.is_offline_mode():
 else:
     run_migrations_online()
 
-run_migrations_offline()
