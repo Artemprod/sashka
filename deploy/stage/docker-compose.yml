@@ -44,6 +44,21 @@ services:
     restart: always
     volumes:
       - custdever_nats:/DB/nats/data/
+      - ./nats_data/config/server.conf:/config/server.conf
+    networks:
+      - custdever_stage_network
+
+
+
+  nats-nui:
+    image: ghcr.io/nats-nui/nui:latest
+    container_name: nats-nui
+    ports:
+      - "31311:31311"  # Порт для доступа к NATS NUI
+    volumes:
+      - .nats_data/nui/db:/db
+    depends_on:
+      - custdever_nats
     networks:
       - custdever_stage_network
 
@@ -53,6 +68,7 @@ services:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
+      - nats-nui
 
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
@@ -71,6 +87,7 @@ services:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
+      - nats-nui
 
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
@@ -89,6 +106,7 @@ services:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
+      - nats-nui
 
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
@@ -107,6 +125,7 @@ services:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
+      - nats-nui
 
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
