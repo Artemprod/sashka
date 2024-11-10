@@ -42,9 +42,9 @@ services:
       - "8001:8222"
       - "6555:6222"
     restart: always
-    command: "-c /config/server.conf"
+    command: ["-c", "/config/server.conf"]
     volumes:
-      - custdever_nats:/DB/nats/data/
+      - custdever_nats:/data
       - ./nats_data/config/server.conf:/config/server.conf
     networks:
       - custdever_stage_network
@@ -57,7 +57,7 @@ services:
     ports:
       - "31311:31311"  # Порт для доступа к NATS NUI
     volumes:
-      - .nats_data/nui/db:/db
+      - nats_nui:/db
     depends_on:
       - custdever_nats
     networks:
@@ -150,6 +150,7 @@ volumes:
   custdever_nats:
   custdever_subscriber_researcher:
   custdever_subscriber_communicator:
+  nats_nui:
 
 networks:
   custdever_stage_network:
