@@ -18,7 +18,6 @@ services:
       - custdever_stage_network
 
 
-
   custdever_redis:
     image: redis
     container_name: custdever_redis_container
