@@ -10,6 +10,5 @@ async def streams_checking():
     url = nast_base_settings.nats_server_url
     nats_checker = NatsChecker(nats_url=url, nats_streams=streams)
     await nats_checker.check()
-
 asyncio.run(streams_checking())
 
