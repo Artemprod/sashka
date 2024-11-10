@@ -13,10 +13,11 @@ class NatsChecker:
 
     async def check(self):
         nc = NATS()
-        await nc.connect(self.nats_url)
+        await nc.connect(self.nats_url,connect_timeout=100)
 
         for stream in self.nats_streams:
-            await self.create_or_update_stream(nc, stream_name=stream.stream,
+            await self.create_or_update_stream(nc,
+                                               stream_name=stream.stream,
                                                subjects=[stream.subject],
                                                retention_policy=stream.retention_policy,
                                                storage_type=stream.storage_type,
@@ -68,7 +69,7 @@ class NatsChecker:
         while not connected and retry_count < max_retries:
             try:
                 logger.debug(f"Attempting to connect to NATS at {self.nats_url} (Attempt {retry_count + 1})")
-                await nc.connect(self.nats_url, connect_timeout=5)
+                await nc.connect(self.nats_url, connect_timeout=10)
                 logger.info(f"Successfully connected to NATS at {self.nats_url}")
                 connected = True
             except ErrNoServers as e:
