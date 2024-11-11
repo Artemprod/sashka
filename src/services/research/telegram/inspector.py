@@ -381,7 +381,7 @@ class UserPingator:
             # TODO поменять потом на часасы секунды
             last_message_time = last_user_message.created_at.replace(
                 tzinfo=timezone.utc) if last_user_message.created_at.tzinfo is None else last_user_message.created_at
-            return last_message_time + timedelta(seconds=time_delay)
+            return last_message_time + timedelta(hours=time_delay)
         except Exception as e:
             logger.error("Error with calculation time send time")
             raise e
