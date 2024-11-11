@@ -22,17 +22,23 @@ class FirstMessagePolicy(CommunicatorBaseConfigs):
 
     @field_validator('delay_between_bunch', mode='before')
     def validate_delay_between_bunch(cls, value):
-        if isinstance(value, str) or isinstance(value, int):
-            return timedelta(hours=int(value))
-        raise ValueError('delay_between_bunch must be an int or string representing hours')
+        if not isinstance(value, timedelta):
+            if isinstance(value, str) or isinstance(value, int):
+                return timedelta(hours=int(value))
+            print()
+            raise ValueError('delay_between_bunch must be an int or string representing hours')
+        else:
+            return value
 
     @field_validator('delay_between_messages', mode='before')
     def validate_delay_between_messages(cls, value):
-        if isinstance(value, str) or isinstance(value, int):
-            return timedelta(minutes=int(value))
-        raise ValueError('delay_between_messages must be an int or string representing minutes')
+        if not isinstance(value, timedelta):
+            if isinstance(value, str) or isinstance(value, int):
+                return timedelta(minutes=int(value))
+            print()
+            raise ValueError('delay_between_messages must be an int or string representing minutes')
+        else:
+            return value
 
 
 communicator_first_message_policy = FirstMessagePolicy()
-
-

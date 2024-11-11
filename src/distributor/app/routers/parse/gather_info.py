@@ -26,7 +26,6 @@ async def parse_user_information(msg: 'NatsMessage', data: Datas = Depends(deriv
     try:
         user_data = await make_request(data=data)
         user_info = await gather_information(user_data)
-        print()
         response_data: ResponseModel = ResponseModel(response=SuccessResponse(data=user_info))
 
     except Exception as e:

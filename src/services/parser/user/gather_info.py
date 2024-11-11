@@ -74,9 +74,9 @@ class TelegramUserInformationCollector(UserInformationCollector):
 
     @staticmethod
     async def _user_generator(response: ResponseModel) -> AsyncGenerator[UserDTOQueue, None]:
-
-        for user_data in response.response.data:
-            yield user_data
+        if not isinstance(response, ErrorResponse):
+            for user_data in response.response.data:
+                yield user_data
 
     @staticmethod
     async def convert_to_user_dto(user_data: UserDTOQueue) -> UserDTO:
