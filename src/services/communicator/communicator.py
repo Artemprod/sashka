@@ -179,7 +179,7 @@ class TelegramCommunicator:
             telegram_id=message_object.client_telegram_id
         )
         user_info: List[UserDTO] = await self._info_collector.collect_users_information(
-            users=[UserDTOBase(name=message_object.user_name,
+            users=[UserDTOBase(name=message_object.username,
                                tg_user_id=message_object.from_user)],
             client=telegram_client)
         new_users: list = []

@@ -73,7 +73,6 @@ async def make_request(data: Datas):
     user_names = [user.username for user in data.users]
     user_ids = [user.tg_user_id for user in data.users]
     try:
-        print()
         # Определяем, используем ли имена или идентификаторы
         if user_names:
             return [await data.client.get_entity(name) for name in user_names]
