@@ -129,11 +129,11 @@ jobs:
 
         - name: Ensure remote directory exists
           run: |
-            ssh -o StrictHostKeyChecking=no ${{ secrets.STAGE_SSH_USER }}@${{ vars.STAGE_HOST_ADDRESS }} "mkdir -p /remote/nats/config/"
+            ssh -o StrictHostKeyChecking=no ${{ vars.STAGE_SSH_ADDRESS }} "mkdir -p /remote/nats/config/"
 
         - name: Copy nats config to remote server
           run: |
-            scp -o StrictHostKeyChecking=no deploy/stage/nats/config/server.conf ${{ secrets.STAGE_SSH_USER }}@${{ vars.STAGE_HOST_ADDRESS }}:/remote/nats/config/
+            scp -o StrictHostKeyChecking=no deploy/stage/nats/config/server.conf ${{ vars.STAGE_SSH_ADDRESS }}:/remote/nats/config/
 
         - name: Deploy
           run: |
