@@ -108,7 +108,7 @@ jobs:
           uses: actions/checkout@v2
           with:
             sparse-checkout: |
-              deploy/stage/docker-compose.yml
+              deploy
             sparse-checkout-cone-mode: false
 
 
@@ -126,6 +126,14 @@ jobs:
 
         - name: Create Docker Context
           run: docker context create custdever_stage_context --docker "host=ssh://${{ vars.STAGE_SSH_ADDRESS }}" || true
+
+        - name: Ensure remote directory exists
+          run: |
+            ssh -o StrictHostKeyChecking=no ${{ secrets.STAGE_SSH_USER }}@${{ vars.STAGE_HOST_ADDRESS }} "mkdir -p /remote/nats/config/"
+
+        - name: Copy nats config to remote server
+          run: |
+            scp -o StrictHostKeyChecking=no deploy/stage/nats/config/server.conf ${{ secrets.STAGE_SSH_USER }}@${{ vars.STAGE_HOST_ADDRESS }}:/remote/nats/config/
 
         - name: Deploy
           run: |

@@ -42,9 +42,10 @@ services:
       - "8001:8222"
       - "6555:6222"
     restart: always
+    command: ["-c", "/config/server.conf"]
     volumes:
       - custdever_nats:/data
-      - custdever_nats:/config/
+      - /remote/nats/config/server.conf:/config/server.conf
     networks:
       - custdever_stage_network
 

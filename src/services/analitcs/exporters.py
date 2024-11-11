@@ -18,8 +18,10 @@ class Exporter(ABC):
         pass
 
     @abstractmethod
-    def export_buffer(self,*args, **kwargs):
+    def export_buffer(self, *args, **kwargs):
         pass
+
+
 class CsvExporter(Exporter):
     @staticmethod
     def export(data: List['DialogMetrics'], filepath: Union[str, Path], encoding: str = 'utf-8') -> None:
@@ -111,6 +113,3 @@ class ExcelExporter(Exporter):
 
         except Exception as e:
             raise RuntimeError(f"Ошибка при записи Excel в буфер: {e}")
-
-
-
