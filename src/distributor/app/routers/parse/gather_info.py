@@ -5,7 +5,7 @@ from faststream.nats import NatsMessage
 from faststream.nats import NatsRouter
 from loguru import logger
 
-from configs.nats_queues import nats_distributor_settings
+from configs.nats_queues import nats_distributor_settings, nast_base_settings
 from src.distributor.app.schemas.parse import Datas
 from src.distributor.app.schemas.response import ErrorResponse
 from src.distributor.app.schemas.response import ResponseModel
@@ -15,7 +15,7 @@ from src.distributor.app.utils.parse import gather_information
 from src.distributor.app.utils.parse import make_request
 
 router = NatsRouter()
-broker = NatsBroker()
+broker = NatsBroker(nast_base_settings.nats_server_url)
 
 
 @router.subscriber(subject=nats_distributor_settings.parser.base_info.subject)
