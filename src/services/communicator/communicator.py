@@ -92,7 +92,7 @@ class TelegramCommunicator:
     #TODO тогда уберуться ненужные методы в реплаер тут будет апи только для взаимодействия с ИИ и ответ
     async def reply_message(self, message_object: "IncomeUserMessageDTOQueue"):
         """Обрабатывает и отвечает на входящее сообщение."""
-
+        print()
         try:
             check = await self._checker.check_user(user_telegram_id=message_object.from_user)
             if not check.user_in_db:
@@ -123,7 +123,7 @@ class TelegramCommunicator:
 
 
     async def _collect_user_information(self, message_object: "IncomeUserMessageDTOQueue"):
-
+        print()
         try:
             # Получаем информацию о Telegram-клиенте
             telegram_client: TelegramClientDTOGet = await self._repository.client_repo.get_client_by_telegram_id(
@@ -178,8 +178,9 @@ class TelegramCommunicator:
         telegram_client: TelegramClientDTOGet = await self._repository.client_repo.get_client_by_telegram_id(
             telegram_id=message_object.client_telegram_id
         )
+
         user_info: List[UserDTO] = await self._info_collector.collect_users_information(
-            users=[UserDTOBase(name=message_object.user_name,
+            users=[UserDTOBase(username=message_object.username,
                                tg_user_id=message_object.from_user)],
             client=telegram_client)
         new_users: list = []

@@ -246,8 +246,8 @@ class UserRepository(BaseRepository):
                 user = execution.scalar_one_or_none()
 
                 if user is None:
-                    logger.error("User not found")
-                    raise ValueError("User not found")
+                    logger.warning("User not found")
+                    return False
 
                 return user.is_info
 

@@ -80,7 +80,7 @@ jobs:
         - name: Check if services exist
           id: check_services
           run: |
-            SERVICES_EXIST=$(docker --context custdever_stage_context ps -q --filter "name=custdever_postgres_container" --filter "name=custdever_redis_container" --filter "name=custdever_nats_worker" --filter "name=custdever_api_getaway_main_worker" --filter "name=custdever_subscriber_researcher_worker" --filter "name=custdever_subscriber_communicator_worker" --filter "name=custdever_distributor")
+            SERVICES_EXIST=$(docker --context custdever_stage_context ps -q --filter "name=custdever_api_getaway_main_worker" --filter "name=custdever_subscriber_researcher_worker" --filter "name=custdever_subscriber_communicator_worker" --filter "name=custdever_distributor")
             echo "Services Exist: $SERVICES_EXIST"
             if [ -n "$SERVICES_EXIST" ]; then
               echo "true"
@@ -108,7 +108,7 @@ jobs:
           uses: actions/checkout@v2
           with:
             sparse-checkout: |
-              deploy/stage/docker-compose.yml
+              deploy
             sparse-checkout-cone-mode: false
 
 
@@ -126,6 +126,14 @@ jobs:
 
         - name: Create Docker Context
           run: docker context create custdever_stage_context --docker "host=ssh://${{ vars.STAGE_SSH_ADDRESS }}" || true
+
+        - name: Ensure remote directory exists
+          run: |
+            ssh -o StrictHostKeyChecking=no ${{ vars.STAGE_SSH_ADDRESS }} "mkdir -p /remote/nats/config/"
+
+        - name: Copy nats config to remote server
+          run: |
+            scp -o StrictHostKeyChecking=no deploy/stage/nats/config/server.conf ${{ vars.STAGE_SSH_ADDRESS }}:/remote/nats/config/
 
         - name: Deploy
           run: |

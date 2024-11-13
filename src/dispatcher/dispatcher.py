@@ -3,6 +3,7 @@ from src.dispatcher.communicators.telegram import TelegramCommunicator
 
 #TODO передаелать этот контенер под диспетчера
 
+
 # class CommunicatorDispatcher:
 #     instruments = {}
 #

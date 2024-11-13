@@ -65,7 +65,7 @@ class NatsPublisher:
                 except Exception as e:
                     logger.error(f"Произошла ошибка: {e}. Попытка {attempt}")
 
-            logger.error(f"Не удалось получить ответ после {self.settings["MAX_RETRIES"]} попыток.")
+            logger.error(f"Не удалось получить ответ после {self.settings['MAX_RETRIES']} попыток.")
             return None
 
     async def _send_request(self, broker: NatsBroker,

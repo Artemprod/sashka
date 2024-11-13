@@ -1,5 +1,4 @@
-
-import aioredis
+from redis.asyncio import Redis
 from environs import Env
 from environs import EnvError
 from loguru import logger
@@ -37,12 +36,11 @@ class RedisTelegramGetter:
                 logger.error("Failed to load Redis URL from environment")
                 raise e
         else:
-            print()
             return self.settings.redis_url
 
     async def _wait_for_telegram_data(self, key: str) -> tuple:
         """Ожидает данные от Redis по указанному ключу."""
-        async with aioredis.from_url(self._redis_url) as redis:
+        async with Redis.from_url(self._redis_url) as redis:
             logger.info(f"Waiting for data on key '{key}' with timeout {self.BASE_TIMEOUT} seconds...")
             data = await redis.blpop(key, timeout=self.BASE_TIMEOUT)
 

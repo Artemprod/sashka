@@ -24,33 +24,20 @@ BASE_WORDS = ["завершено", "исследование завершено
 
 class ResearchWordStopper(BaseConfig):
     stop_words: List[str] = Field(
-        default_factory=lambda: BASE_WORDS.copy(),
-        alias='STOP_WORD_CHECKER_STOP_WORDS_LIST'
-    )
+        default_factory=lambda: BASE_WORDS.copy())
 
-    @field_validator("stop_words", mode='before')
-    def split_str(cls, field_data):
-        # Проверка, является ли значение строкой; если да, разделяем по запятой
-        if isinstance(field_data, str):
-            return field_data.split(',')
-        return field_data
+    # @field_validator("stop_words", mode='before')
+    # def split_str(cls, field_data):
+    #     # Проверка, является ли значение строкой; если да, разделяем по запятой
+    #     if isinstance(field_data, str):
+    #         return field_data.split(',')
+    #     return field_data
 
 
 class ResearchPingator(BaseConfig):
     class ResearchPingDelayCalculator(BaseConfig):
-        table: Dict[int, int] = Field(default={1: 1, 2: 6, 3: 24, 4: 48},
-                                      validation_alias='PINGATOR_DELAY_TABLE_HOURS')
+        table: Dict[int, int] = Field(default={1: 1, 2: 6, 3: 24, 4: 48})
 
-        @field_validator("table",
-                         mode='before')
-        def parse_dict(cls, value):
-            if isinstance(value, str):
-                result = {}
-                for pair in value.split(','):
-                    key, value = pair.split(':')
-                    result[int(key)] = int(value)
-                return result
-            return value
 
     ping_delay: ResearchPingDelayCalculator = Field(default_factory=ResearchPingDelayCalculator)
 
