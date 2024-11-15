@@ -29,6 +29,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.analytic_collector = AnalyticCollector
     app.state.publisher = publisher
     app.state.db_session = session
+    app.state.repository = repository
     logger.info("Initialized classes")
     yield
 

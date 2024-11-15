@@ -30,28 +30,21 @@ class TelegramResearchManager(BaseResearchManager):
                  information_collector: TelegramUserInformationCollector):
         self._database_repository = repository
         self._information_collector = information_collector
-        self.settings = self._load_settings()
 
-    @staticmethod
-    def _load_settings():
-        # TODO: Загрузить или установить настройки
-        return {
-            "delay_is_research_time_over": 60,
-            "delay_is_users_over": 10
-        }
 
     # TODO оптимизировать метод
     # TODO Вытащить создание овнера наружу из класса
     async def create_research(self, research: ResearchDTOPost, owner: ResearchOwnerDTO, ) -> ResearchDTORel:
         """Создает исследование в базе данных и назначает необходимые данные."""
         try:
-            # TODO Испарвить овнера понять че хотел сервис айди
             # Создаем овнера в базще еси нет
             owner = await self._create_new_owner(owner_dto=owner)
-            telegram_client: TelegramClientDTOGet = await self._get_telegram_client()
+            #FIXME делаю костыль чтоыб не переписыать кучу кода потом вынести все по разным классам
+
+            telegram_client: TelegramClientDTOGet = await self._get_telegram_client(client_id=research.telegram_client_id)
 
             # Создать и сохранить исследование
-            research_dto: ResearchDTOBeDb = self._create_research_dto(research, owner, telegram_client)
+            research_dto: ResearchDTOBeDb = self._create_research_dto(research, owner)
             db_research: ResearchDTOFull = await self._save_new_research(research_dto)
 
             # Ставим статус для исследования
@@ -142,17 +135,15 @@ class TelegramResearchManager(BaseResearchManager):
         return owner
 
     # TODO Выдвать клиента только в случае если нет данных от пользователя какого клиента выдовать
-    async def _get_telegram_client(self) -> TelegramClientDTOGet:
-        clients = [client for client in await self._database_repository.client_repo.get_all() if client.session_string]
-        return clients[-1] if clients else None
+    async def _get_telegram_client(self, client_id) -> TelegramClientDTOGet:
+        client:TelegramClientDTOGet = await self._database_repository.client_repo.get_client_by_id(client_id=client_id)
+        return client
 
     @staticmethod
-    def _create_research_dto(research: ResearchDTOPost, owner: Any,
-                             telegram_client: TelegramClientDTOGet) -> ResearchDTOBeDb:
+    def _create_research_dto(research: ResearchDTOPost, owner: Any) -> ResearchDTOBeDb:
         return ResearchDTOBeDb(
 
             owner_id=owner.owner_id,
-            telegram_client_id=telegram_client.client_id,
             **research.dict()
         )
 
