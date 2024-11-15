@@ -50,85 +50,85 @@ services:
       - custdever_local_network
 
 
-  custdever_api_getaway_main:
-    depends_on:
-      - custdever_postgres_db
-      - custdever_redis
-      - custdever_nats
-
-
-    build:
-      context: ../../.
-      dockerfile: Dockerfile
-    container_name: custdever_api_getaway_main_worker
-    volumes:
-      - custdever_main_api:/var/lib/custdever
-    restart: always
-    env_file:
-      - .env
-    command: ["make", "run_main_api"]
-    networks:
-       - custdever_local_network
-
-  custdever_subscriber_researcher:
-    depends_on:
-      - custdever_postgres_db
-      - custdever_redis
-      - custdever_nats
-
-
-    build:
-      context: ../../.
-      dockerfile: Dockerfile
-    container_name: custdever_subscriber_researcher_worker
-    volumes:
-      - custdever_subscriber_researcher:/var/lib/researcher
-    restart: always
-    env_file:
-      - .env
-    command: ["make", "run_researcher"]
-    networks:
-       - custdever_local_network
-
-  custdever_subscriber_communicator:
-    depends_on:
-      - custdever_postgres_db
-      - custdever_redis
-      - custdever_nats
-
-
-    build:
-      context: ../../.
-      dockerfile: Dockerfile
-    container_name: custdever_subscriber_communicator_worker
-    volumes:
-      - custdever_subscriber_communicator:/var/lib/communicator
-    restart: always
-    env_file:
-      - .env
-    command: ["make", "run_communicator"]
-    networks:
-       - custdever_local_network
-
-  custdever_distributor:
-    depends_on:
-      - custdever_postgres_db
-      - custdever_redis
-      - custdever_nats
-
-
-    build:
-      context: ../../.
-      dockerfile: Dockerfile
-    container_name: custdever_distributor
-    volumes:
-      - distributor:/var/lib/distributor
-    restart: always
-    env_file:
-      - .env
-    command: ["make", "run_distributor"]
-    networks:
-       - custdever_local_network
+#  custdever_api_getaway_main:
+#    depends_on:
+#      - custdever_postgres_db
+#      - custdever_redis
+#      - custdever_nats
+#
+#
+#    build:
+#      context: ../../.
+#      dockerfile: Dockerfile
+#    container_name: custdever_api_getaway_main_worker
+#    volumes:
+#      - custdever_main_api:/var/lib/custdever
+#    restart: always
+#    env_file:
+#      - .env
+#    command: ["make", "run_main_api"]
+#    networks:
+#       - custdever_local_network
+#
+#  custdever_subscriber_researcher:
+#    depends_on:
+#      - custdever_postgres_db
+#      - custdever_redis
+#      - custdever_nats
+#
+#
+#    build:
+#      context: ../../.
+#      dockerfile: Dockerfile
+#    container_name: custdever_subscriber_researcher_worker
+#    volumes:
+#      - custdever_subscriber_researcher:/var/lib/researcher
+#    restart: always
+#    env_file:
+#      - .env
+#    command: ["make", "run_researcher"]
+#    networks:
+#       - custdever_local_network
+#
+#  custdever_subscriber_communicator:
+#    depends_on:
+#      - custdever_postgres_db
+#      - custdever_redis
+#      - custdever_nats
+#
+#
+#    build:
+#      context: ../../.
+#      dockerfile: Dockerfile
+#    container_name: custdever_subscriber_communicator_worker
+#    volumes:
+#      - custdever_subscriber_communicator:/var/lib/communicator
+#    restart: always
+#    env_file:
+#      - .env
+#    command: ["make", "run_communicator"]
+#    networks:
+#       - custdever_local_network
+#
+#  custdever_distributor:
+#    depends_on:
+#      - custdever_postgres_db
+#      - custdever_redis
+#      - custdever_nats
+#
+#
+#    build:
+#      context: ../../.
+#      dockerfile: Dockerfile
+#    container_name: custdever_distributor
+#    volumes:
+#      - distributor:/var/lib/distributor
+#    restart: always
+#    env_file:
+#      - .env
+#    command: ["make", "run_distributor"]
+#    networks:
+#       - custdever_local_network
 
 volumes:
   distributor:
