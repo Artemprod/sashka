@@ -14,7 +14,7 @@ from src.schemas.service.user import UserDTO
 from src.schemas.service.user import UserDTOBase
 from src.schemas.service.user import UserDTOFull
 from src.services.communicator.checker import Checker
-from src.services.communicator.messager import CommonMessageAnswer
+
 from src.services.communicator.messager import MessageFirstSend
 from src.services.communicator.messager import PingMessage
 from src.services.communicator.messager import ResearchMessageAnswer
@@ -55,12 +55,6 @@ class TelegramCommunicator:
             prompt_generator=prompt_generator,
             context_request=context_request
         )
-        self._message_common_answer = CommonMessageAnswer(
-            publisher=publisher,
-            repository=repository,
-            prompt_generator=prompt_generator,
-            context_request=context_request
-        )
 
         self.ping_message = PingMessage(
             publisher=publisher,
@@ -90,11 +84,11 @@ class TelegramCommunicator:
     #TODO Вынести ответчик в отдельные классы например ответ на текстовое сообщение ответ на аудио ответ на картинку
     #TODO Возмодно вынести проверку пользвателя в базе данных их класса принциа единой отвесвтенности
     #TODO тогда уберуться ненужные методы в реплаер тут будет апи только для взаимодействия с ИИ и ответ
+    #FIXME Как то можно вынести проврку ? Это можно сделать декоратором над функцией
     async def reply_message(self, message_object: "IncomeUserMessageDTOQueue"):
         """Обрабатывает и отвечает на входящее сообщение."""
-        print()
         try:
-            check = await self._checker.check_user(user_telegram_id=message_object.from_user)
+            check = await self._checker.check_user(user_telegram_id=message_object.from_user, client_telegram_id=message_object.client_telegram_id)
             if not check.user_in_db:
                 # Попытка создания нового пользователя
                 new_user = await self._add_new_user(message_object)
@@ -110,9 +104,12 @@ class TelegramCommunicator:
                 if not check.is_has_info:
                     # Собираем информацию о пользователе
                     asyncio.create_task(self._collect_user_information(message_object))
-
-                # Обрабатываем сообщение независимо от того, есть ли информация о пользователе или нет
+                if not check.user_research_id:
+                    logger.warning(f"User {message_object.from_user} not in reseserch ")
+                    return
+                # Обрабатываем сообщение
                 await self._handle_message(message_object, check.user_research_id)
+                logger.info(f"User {message_object.from_user} in reseserch {check.user_research_id}")
             else:
                 logger.warning(f"User not in database: {message_object.from_user}")
                 # Здесь можно добавить логику уведомления пользователя о необходимости регистрации
@@ -159,17 +156,18 @@ class TelegramCommunicator:
         except Exception as e:
             raise e
 
-    async def _handle_message(self, message_object: "IncomeUserMessageDTOQueue",
-                              user_research_id: Optional[str]):
+    async def _handle_message(self,
+                              message_object: "IncomeUserMessageDTOQueue",
+                              user_research_id:int):
 
-        handler = self._message_research_answer if user_research_id else self._message_common_answer
         try:
 
-            await handler.handle(
-                message=message_object,
+            await self._message_research_answer.handle(
+                message_object=message_object,
                 destination_configs=self._destination_configs['reply'],
                 research_id=user_research_id
             )
+
         except Exception as e:
             raise e
 

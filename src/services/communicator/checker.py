@@ -1,7 +1,7 @@
 from typing import Optional
 
-from aiocache import Cache
-from aiocache import cached
+
+
 
 from src.database.exceptions.read import ObjectDoesNotExist
 from src.database.repository.storage import RepoStorage
@@ -13,7 +13,7 @@ class Checker:
     def __init__(self, repository: 'RepoStorage'):
         self._repository = repository
 
-    async def check_user(self, user_telegram_id: int) -> CheckerDTO:
+    async def check_user(self, user_telegram_id: int, client_telegram_id:int) -> CheckerDTO:
         """
         1. Пвроерить в базе даннх пользователь ?
         2. Проверить он в иследовании?
@@ -28,7 +28,7 @@ class Checker:
             if not user_in_db:
                 return CheckerDTO(user_telegram_id=user_telegram_id, user_in_db=False)
 
-            user_research: Optional[int] = await self._get_user_research_id(user_telegram_id)
+            user_research: Optional[int] = await self._get_user_research_id(user_telegram_id,client_telegram_id=client_telegram_id)
             is_has_info = await self._is_has_info(user_telegram_id=user_telegram_id)
             return CheckerDTO(
                 user_telegram_id=user_telegram_id,
@@ -47,13 +47,14 @@ class Checker:
         )
 
 
-    async def _get_user_research_id(self, user_telegram_id: int) -> Optional[int]:
+    async def _get_user_research_id(self, user_telegram_id: int,client_telegram_id:int) -> Optional[int]:
         try:
             research: Optional[
-                ResearchDTOFull] = await self._repository.research_repo.short.get_research_by_participant_telegram_id(
-                telegram_id=user_telegram_id
+                ResearchDTOFull] = await self._repository.research_repo.short.get_research_by_participant(
+                user_telegram_id=user_telegram_id,client_telegram_id=client_telegram_id
             )
             return research.research_id
+
         except ObjectDoesNotExist:
             return None
 
