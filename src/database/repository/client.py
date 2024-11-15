@@ -1,13 +1,12 @@
 from typing import List
 from typing import Optional
 
-from aiocache import Cache
-from aiocache import cached
+
 from sqlalchemy import delete
 from sqlalchemy import insert
 from sqlalchemy import select
 from sqlalchemy import update
-from sqlalchemy.orm import selectinload
+
 
 from src.database.exceptions.create import ObjectWasNotCreated
 from src.database.exceptions.read import EmptyTableError, NoFreeClientsError

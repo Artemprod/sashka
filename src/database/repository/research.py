@@ -1,11 +1,12 @@
 from aiocache import Cache
 from aiocache import cached
-from sqlalchemy import insert
+from sqlalchemy import insert, and_
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import selectinload
 
 from src.database.exceptions.read import ObjectDoesNotExist
+from src.database.postgres import TelegramClient
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.postgres.models.assistants import Assistant
 from src.database.postgres.models.enum_types import ResearchStatusEnum
@@ -34,7 +35,7 @@ class ResearchRepository(BaseRepository):
                 result = new_research.scalar_one()
                 return ResearchDTOFull.model_validate(result, from_attributes=True)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def get_research_by_id(self, research_id) -> ResearchDTOFull:
         """
         Достает иследование по его id со всеми вложенными в него данными
@@ -54,7 +55,7 @@ class ResearchRepository(BaseRepository):
                     raise ObjectDoesNotExist(orm_object=Research.__name__,
                                              msg=f" research with id {research_id} not found")
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def get_research_by_owner(self, owner_id) -> ResearchDTOFull:
         """
 
@@ -70,37 +71,50 @@ class ResearchRepository(BaseRepository):
                     raise ObjectDoesNotExist(orm_object=Research.__name__,
                                              msg=f" research with owner id {owner_id} not found")
 
-    @cached(ttl=300, cache=Cache.MEMORY)
-    async def get_research_by_participant_telegram_id(self, telegram_id: int) -> ResearchDTOFull:
+    async def get_research_by_participant(
+            self, user_telegram_id: int, client_telegram_id: int
+    ) -> ResearchDTOFull:
         """
-        Fetches a research object by a participant's Telegram ID and validates it into a DTO.
+        Получает объект исследования по Telegram ID участника
+        и преобразует его в DTO.
 
-        Args:
-            telegram_id (int): The Telegram ID of the participant.
+        Аргументы:
+            user_telegram_id (int): Telegram ID участника.
+            client_telegram_id (int): Telegram ID клиента.
 
-        Returns:
-            ResearchDTOFull: The DTO of the research object.
+        Возвращает:
+            ResearchDTOFull: DTO объекта исследования.
 
-        Raises:
-            ObjectDoesNotExist: If no research is found for the provided Telegram ID.
+        Исключения:
+            ObjectDoesNotExist: Если исследование не найдено по указанному Telegram ID.
         """
-        async with self.db_session_manager.async_session_factory() as session:  # Proper context management
-            async with session.begin():
+        async with self.db_session_manager.async_session_factory() as session:
+            try:
                 query = (
                     select(Research)
-                    .where(Research.users.any(User.tg_user_id == telegram_id))
-                # Correct use of filters with relationships
+                    .where(
+                        and_(
+                            Research.users.any(User.tg_user_id == user_telegram_id),
+                            Research.telegram_client.has(
+                                TelegramClient.telegram_client_id == client_telegram_id
+                            ),
+                        )
+                    )
                 )
                 result = await session.execute(query)
                 research = result.scalars().first()
 
                 if research:
                     return ResearchDTOFull.model_validate(research, from_attributes=True)
-                else:
-                    raise ObjectDoesNotExist(
-                        orm_object=Research.__name__,
-                        msg=f"Research with participant ID {telegram_id} not found"
-                    )
+
+                raise ObjectDoesNotExist(
+                    orm_object=Research.__name__,
+                    msg=f"Research с ID участника {user_telegram_id} не найдено",
+                )
+
+            except Exception as e:
+                # Опционально: можно добавить логирование или дополнительную обработку
+                raise e
 
     async def update_research(self):
         ...
@@ -114,7 +128,7 @@ class ResearchRepositoryFullModel(BaseRepository):
         Когда мне нужны сложные джонины со всей инофрмацие я использую этот класс
         """
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def get_research_by_id(self, research_id) -> ResearchDTORel:
         """
         Достает иследование по его id со всеми вложенными в него данными
@@ -133,7 +147,7 @@ class ResearchRepositoryFullModel(BaseRepository):
                     raise ObjectDoesNotExist(orm_object=Research.__name__,
                                              msg=f" research with id: {research_id} not found")
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def get_research_by_status(self, status_name: ResearchStatusEnum):
         """
         Достает иследование по его id со всеми вложенными в него данными

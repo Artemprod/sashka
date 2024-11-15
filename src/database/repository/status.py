@@ -2,8 +2,7 @@ import datetime
 from typing import List
 from typing import Optional
 
-from aiocache import Cache
-from aiocache import cached
+
 from sqlalchemy import insert
 from sqlalchemy import select
 from sqlalchemy import update
@@ -28,7 +27,7 @@ class UserStatusRepository(BaseRepository):
                 await session.commit()
                 return UserStatusDTO.model_validate(new_user.scalar(), from_attributes=True)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def get_status(self, status_name: UserStatusEnum) -> Optional[UserStatusDTO]:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
@@ -106,7 +105,7 @@ class ResearchStatusRepository(BaseRepository):
                 await session.commit()
                 return ResearchStatusDTO.model_validate(new_user.scalar_one(), from_attributes=True)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def get_status(self, status_name: ResearchStatusEnum) -> ResearchStatusDTO:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
@@ -116,7 +115,6 @@ class ResearchStatusRepository(BaseRepository):
                 research_status = research_status_exec.scalars().first()
                 return ResearchStatusDTO.model_validate(research_status, from_attributes=True)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_research_status(self, research_id) -> ResearchStatusDTO:
         async with (self.db_session_manager.async_session_factory() as session):
             research_status_exec = await session.execute(
