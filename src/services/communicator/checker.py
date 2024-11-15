@@ -40,13 +40,13 @@ class Checker:
             # TODO Логирование ошибки
             raise e
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def _is_user_in_database(self, user_telegram_id: int) -> bool:
         return await self._repository.user_in_research_repo.short.check_user(
             telegram_id=user_telegram_id
         )
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def _get_user_research_id(self, user_telegram_id: int) -> Optional[int]:
         try:
             research: Optional[
