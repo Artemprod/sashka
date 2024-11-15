@@ -17,6 +17,8 @@ from src.schemas.service.user import UserDTO
 class ResearchDTOPost(BaseModel):
 
     research_uuid: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
+    telegram_client_id:int
+
     name: Optional[str] = None
     title: Optional[str] = None
     theme: Optional[str] = None

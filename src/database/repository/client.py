@@ -7,10 +7,12 @@ from sqlalchemy import delete
 from sqlalchemy import insert
 from sqlalchemy import select
 from sqlalchemy import update
+from sqlalchemy.orm import selectinload
 
 from src.database.exceptions.create import ObjectWasNotCreated
-from src.database.exceptions.read import EmptyTableError
+from src.database.exceptions.read import EmptyTableError, NoFreeClientsError
 from src.database.exceptions.read import ObjectDoesNotExist
+from src.database.postgres import ResearchStatus, ResearchStatusEnum
 from src.database.postgres.models.client import TelegramClient as ClientModel
 from src.database.postgres.models.research import Research
 from src.database.repository.base import BaseRepository
@@ -33,10 +35,10 @@ class ClientRepository(BaseRepository):
                 raise ObjectWasNotCreated(orm_object=ClientModel.__name__,
                                           msg=f"object with this values {values} was not created")
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def get_client_by_id(self, client_id: int) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
-            query = select(ClientModel).where(ClientModel.telegram_client_id == client_id)
+            query = select(ClientModel).where(ClientModel.client_id == client_id)
             results = await session.execute(query)
             result = results.scalars().first()
             # DONE конвертация в модель
@@ -45,7 +47,7 @@ class ClientRepository(BaseRepository):
             else:
                 raise ObjectDoesNotExist(orm_object=ClientModel.__name__, msg=f"client with id {client_id} not found")
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def get_client_by_research_id(self, research_id: str) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(ClientModel).where(ClientModel.researches.any(Research.research_id == research_id))
@@ -57,7 +59,6 @@ class ClientRepository(BaseRepository):
                 raise ObjectDoesNotExist(orm_object=ClientModel.__name__,
                                          msg=f"client with research_id {research_id} not found")
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_client_by_name(self, name: str) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(ClientModel).where(ClientModel.name == name)
@@ -68,7 +69,7 @@ class ClientRepository(BaseRepository):
             else:
                 raise ObjectDoesNotExist(orm_object=ClientModel.__name__, msg=f"client with name {name} not found")
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def get_client_by_telegram_id(self, telegram_id: int) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(ClientModel).where(ClientModel.telegram_client_id == telegram_id)
@@ -89,6 +90,42 @@ class ClientRepository(BaseRepository):
                 raise EmptyTableError()
             else:
                 return [TelegramClientDTOGet.model_validate(client, from_attributes=True) for client in all_results]
+
+    async def get_clients_ready_for_research(self) -> List[TelegramClientDTOGet]:
+        async with self.db_session_manager.async_session_factory() as session:
+            # Запрос клиентов, участвующих в исследованиях
+            client_in_research_query = (
+                select(Research.telegram_client_id)
+                .join(Research.status)
+                .where(ResearchStatus.status_name == ResearchStatusEnum.IN_PROGRESS)
+                .distinct()
+            )
+
+            # Выполняем запрос клиентов в исследованиях
+            in_research_result = await session.execute(client_in_research_query)
+            clients_in_research = set(in_research_result.scalars().all())
+
+            # Запрос клиентов, не участвующих в исследованиях
+            clients_query = (
+                select(ClientModel)
+                .where(ClientModel.client_id.notin_(clients_in_research))
+            )
+
+            # Выполняем запрос всех клиентов, не участвующих в исследованиях
+            all_clients_result = await session.execute(clients_query)
+            ready_clients = [
+                TelegramClientDTOGet.model_validate(client)
+                for client in all_clients_result.scalars().all()
+            ]
+
+            if not ready_clients:
+                raise NoFreeClientsError()
+
+            return ready_clients
+
+
+
+
 
     async def update(self, telegram_client_id, values: dict) -> TelegramClientDTOGet:
         async with self.db_session_manager.async_session_factory() as session:

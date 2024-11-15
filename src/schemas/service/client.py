@@ -45,3 +45,18 @@ class TelegramClientRelDTO(TelegramClientDTOGet):
 
     class Config:
         from_attributes = True
+
+
+
+class TelegramClientDTOResponse(BaseModel):
+
+    client_id: int
+    name:str
+    app_version:str
+    device_model:str
+    system_version:str
+    lang_code:str
+
+
+    class Config:
+        from_attributes = True
