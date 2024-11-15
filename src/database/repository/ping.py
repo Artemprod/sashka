@@ -20,7 +20,7 @@ class PingPromptRepository(BaseRepository):
             new_ping_prompt = execution.scalars().first()
             return  PingPromptDTO.model_validate(new_ping_prompt,from_attributes=True)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
+
     async def get_ping_prompt_by_order_number(self, ping_order_number: int) -> PingPromptDTO:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
