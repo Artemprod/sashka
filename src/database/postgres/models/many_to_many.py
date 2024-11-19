@@ -15,7 +15,30 @@ class UserResearch(ModelBase):
         BigInteger,
         ForeignKey('users.user_id',
                    ondelete="CASCADE"),
-        primary_key=True
+        primary_key=True,
+        unique=True,
+    )
+
+    research_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey('researches.research_id',
+                   ondelete="CASCADE"),
+        primary_key=True,
+
+    )
+
+    created_at: Mapped[created_at]
+
+
+class ArchivedUserResearch(ModelBase):
+    __tablename__ = 'archived_user_research'
+
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey('users.user_id',
+                   ondelete="CASCADE"),
+        primary_key=True,
+        unique=False,
     )
 
     research_id: Mapped[int] = mapped_column(

@@ -1,5 +1,6 @@
 import datetime
-from typing import Any
+from functools import wraps
+from typing import Any, Callable
 from typing import List
 from typing import Optional
 
@@ -21,6 +22,7 @@ from src.schemas.service.user import UserDTOBase
 from src.schemas.service.user import UserDTOFull
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.research.base import BaseResearchManager
+from src.services.research.telegram.decorators.reserach_creatoe import unique_users_in_research
 
 
 # TODO переделать класс вынести в отдельные классы сущности ресерч создатель иследования и тд разные стратегии
@@ -32,37 +34,30 @@ class TelegramResearchManager(BaseResearchManager):
         self._information_collector = information_collector
 
 
+
     # TODO оптимизировать метод
     # TODO Вытащить создание овнера наружу из класса
-    async def create_research(self, research: ResearchDTOPost, owner: ResearchOwnerDTO, ) -> ResearchDTORel:
+    @unique_users_in_research
+    async def create_research(self, research: ResearchDTOPost, owner: ResearchOwnerDTO) -> ResearchDTORel:
         """Создает исследование в базе данных и назначает необходимые данные."""
         try:
-            # Создаем овнера в базще еси нет
+            # Создаем овнера в базе, если нет
             owner = await self._create_new_owner(owner_dto=owner)
-            #FIXME делаю костыль чтоыб не переписыать кучу кода потом вынести все по разным классам
-
+            # Получаем telegram клиента
             telegram_client: TelegramClientDTOGet = await self._get_telegram_client(client_id=research.telegram_client_id)
-
             # Создать и сохранить исследование
             research_dto: ResearchDTOBeDb = self._create_research_dto(research, owner)
             db_research: ResearchDTOFull = await self._save_new_research(research_dto)
-
-            # Ставим статус для исследования
+            # Установить статус для исследования
             await self._set_research_status(db_research)
-
             await self._add_users_to_research(research, telegram_client=telegram_client)
-
-            # Ставим статусы для пользователей
+            # Установить статусы для пользователей
             await self._set_user_status(research=research)
-
             # Связать пользователей с исследованием
-            await self._bind_users_to_research(research_id=db_research.research_id,
-                                               research=research)
-
+            await self._bind_users_to_research(research_id=db_research.research_id, research=research)
             # Возврат DTO с сохраненным исследованием
             saved_research: ResearchDTORel = await self._get_saved_research(db_research.research_id)
             return saved_research
-
         except Exception as e:
             logger.error(f"Error during research creation: {e} \n {e.args}")
             raise

@@ -17,8 +17,8 @@ class TelegramClient(ModelBase):
 
     client_id: Mapped[intpk]
 
-    telegram_client_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    name: Mapped[str] = mapped_column(nullable=False)
+    telegram_client_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(nullable=False, unique=True)
     api_id: Mapped[str] = mapped_column(nullable=False)
     api_hash: Mapped[str] = mapped_column(nullable=False)
     app_version: Mapped[str] = mapped_column(nullable=False)
@@ -39,6 +39,11 @@ class TelegramClient(ModelBase):
     researches:Mapped[list["Research"]] = relationship(
         back_populates="telegram_client"
     )
+
+    user_messages:Mapped[list["UserMessage"]] = relationship(
+        back_populates="telegram_client")
+
+
 
 
     def __repr__(self):
