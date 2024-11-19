@@ -38,6 +38,8 @@ class User(ModelBase):
     messages: Mapped[list["UserMessage"]] = relationship(
         back_populates="user")
 
+
+
     assistant_messages: Mapped[list["AssistantMessage"]] = relationship(
         back_populates="to_user"
     )

@@ -23,6 +23,7 @@ from src.schemas.service.user import UserDTOFull
 from src.schemas.service.user import UserDTQueue
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.models import PingDataQueueDTO
+from src.services.research.telegram.decorators.finish_reserch import move_users_to_archive
 from src.services.research.utils import CyclePingAttemptCalculator
 
 
@@ -77,32 +78,35 @@ class ResearchStarter:
 
 
 class ResearchStopper:
-    def __init__(self,
-                 repository: RepoStorage,
-                 notifier):
+    def __init__(self, repository: RepoStorage, notifier):
         self.repository = repository
         self.notifier = notifier
 
+    @move_users_to_archive
     async def complete_research(self, research_id) -> None:
         """ Останавливает исследование и переводит его статус на завершённый """
         user_group = await self._get_users_in_research(research_id)
         logger.info('Начал завершение исследования')
 
         await self.repository.status_repo.research_status.change_research_status(
-            research_id=research_id, status=ResearchStatusEnum.DONE
+            research_id=research_id,
+            status=ResearchStatusEnum.DONE
         )
 
         await self.repository.status_repo.user_status.update_status_group_of_user(
-            user_group=user_group, status=UserStatusEnum.DONE
+            user_group=user_group,
+            status=UserStatusEnum.DONE
         )
 
-        research_status = await self.repository.status_repo.research_status.get_research_status(research_id=research_id)
+        research_status = await self.repository.status_repo.research_status.get_research_status(
+            research_id=research_id
+        )
+
         user_in_progress = await self._get_users_in_progress(research_id=research_id)
 
         if research_status.status_name != ResearchStatusEnum.IN_PROGRESS and not user_in_progress:
             logger.info("Исследование завершено")
             # await self.notifier.notify_completion()
-
         else:
             logger.info("Исследование не завершено")
             logger.info(
@@ -117,7 +121,8 @@ class ResearchStopper:
 
     async def _get_users_in_progress(self, research_id):
         return await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
-            research_id=research_id, status=UserStatusEnum.IN_PROGRESS
+            research_id=research_id,
+            status=UserStatusEnum.IN_PROGRESS
         )
 
 
@@ -335,7 +340,8 @@ class UserPingator:
             current_time_utc = datetime.now(timezone.utc)
 
             if send_time <= current_time_utc:
-                await self.send_command_message_ping_user(user=user, message_number=unresponded_messages,
+                await self.send_command_message_ping_user(user=user,
+                                                          message_number=unresponded_messages,
                                                           research_id=research_info.research_id)
 
         except Exception as e:
@@ -421,6 +427,8 @@ class ResearchProcess:
             # Отмена всех оставшихся задач (например, пингатор может продолжать дольше нужного)
             for task in pending:
                 task.cancel()
+            # Наверняка отменям все
+            await self.research_stopper.complete_research(research_id)
 
             logger.info(f'Все задачи исследования {research_id} завершены.')
         except Exception as e:

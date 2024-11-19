@@ -102,14 +102,15 @@ class UserRepository(BaseRepository):
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
 
 
-    async def get_users_by_username(self, username: str) -> Optional[List[UserDTOFull]]:
-        async with self.db_session_manager.async_session_factory() as session:  # Тип: AsyncSession
+    async def get_user_by_username(self, username: str) -> Optional[UserDTOFull]:
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
                 # Создаем запрос, который фильтрует пользователей по имени
                 stmt = select(User).filter(User.username == username)
                 result = await session.execute(stmt)
-                users = result.scalars().all()
-                return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
+                user = result.scalar_one()
+                return UserDTOFull.model_validate(user, from_attributes=True)
+
 
 
     async def check_user(self, telegram_id: int) -> Optional[UserDTOFull]:
@@ -229,6 +230,8 @@ class UserRepository(BaseRepository):
                 stmt = select(User.user_id).where(User.username.in_(usernames))
                 result = await session.execute(stmt)
                 return [row[0] for row in result.fetchall()]
+
+
     async def get_users_info_status(self, user_telegram_id: int = None, username: str = None) -> bool:
         if not user_telegram_id and not username:
             logger.error("No parameter provided")
@@ -250,6 +253,23 @@ class UserRepository(BaseRepository):
                     return False
 
                 return user.is_info
+
+    async def get_usernames_in_research(self) -> Optional[List[str]]:
+        async with self.db_session_manager.async_session_factory() as session:
+            async with session.begin():
+                # Подзапрос для получения всех user_id из UserResearch
+                subquery = select(UserResearch.user_id)
+
+                # Основной запрос для получения username из User, используя подзапрос
+                stmt = select(User.username).where(User.user_id.in_(subquery))
+
+                # Выполнение запроса и получение результатов
+                result = await session.execute(stmt)
+
+                # Получение всех значений из скаляров как список
+                usernames = result.scalars().all()
+
+                return usernames
 
 
 class UserRepositoryFullModel(BaseRepository):

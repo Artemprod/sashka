@@ -51,3 +51,11 @@ class Research(ModelBase):
     telegram_client: Mapped["TelegramClient"] = relationship(
         back_populates="researches"
     )
+
+    user_messages: Mapped[list["UserMessage"]] = relationship(
+        back_populates="research")
+
+    assistant_messages:Mapped[list["AssistantMessage"]] = relationship(
+        back_populates="research")
+
+

@@ -7,6 +7,7 @@ from src.database.repository.ping import PingPromptRepository
 from src.database.repository.research import ResearchRepo
 from src.database.repository.status import StatusRepo
 from src.database.repository.user import UserInResearchRepo
+from src.database.repository.user_in_reserach import InResearchRepo
 
 
 class BaseRepoStorage:
@@ -26,6 +27,7 @@ class RepoStorage(BaseRepoStorage):
         self._user_in_research_repo = UserInResearchRepo(self._db_manager)
         self._message_repo = MessageRepository(self._db_manager)
         self._ping_prompt_repo = PingPromptRepository(self._db_manager)
+        self._in_research_repo = InResearchRepo(self._db_manager)
 
     @property
     def client_repo(self):
@@ -57,3 +59,7 @@ class RepoStorage(BaseRepoStorage):
     @property
     def ping_prompt_repo(self):
         return self._ping_prompt_repo
+
+    @property
+    def in_research_repo(self):
+        return self._in_research_repo
