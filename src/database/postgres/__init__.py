@@ -1,7 +1,7 @@
 from src.database.postgres.models.assistants import Assistant
 from src.database.postgres.models.client import TelegramClient
 from src.database.postgres.models.enum_types import UserStatusEnum, ResearchStatusEnum
-from src.database.postgres.models.many_to_many import UserResearch
+from src.database.postgres.models.many_to_many import UserResearch, ArchivedUserResearch
 from src.database.postgres.models.message import UserMessage, VoiceMessage, AssistantMessage
 from src.database.postgres.models.ping import PingPrompt
 from src.database.postgres.models.research import Research
