@@ -34,3 +34,6 @@ class Assistant(ModelBase):
 
     messages: Mapped[list["AssistantMessage"]] = relationship(
         back_populates="assistant")
+
+    user_messages: Mapped[list["UserMessage"]] = relationship(
+        back_populates="assistant")

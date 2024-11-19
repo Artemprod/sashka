@@ -335,7 +335,8 @@ class UserPingator:
             current_time_utc = datetime.now(timezone.utc)
 
             if send_time <= current_time_utc:
-                await self.send_command_message_ping_user(user=user, message_number=unresponded_messages,
+                await self.send_command_message_ping_user(user=user,
+                                                          message_number=unresponded_messages,
                                                           research_id=research_info.research_id)
 
         except Exception as e:

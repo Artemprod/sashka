@@ -120,7 +120,6 @@ class TelegramCommunicator:
 
 
     async def _collect_user_information(self, message_object: "IncomeUserMessageDTOQueue"):
-        print()
         try:
             # Получаем информацию о Telegram-клиенте
             telegram_client: TelegramClientDTOGet = await self._repository.client_repo.get_client_by_telegram_id(

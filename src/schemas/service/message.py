@@ -5,8 +5,13 @@ from pydantic import BaseModel
 
 
 class UserMessageDTOPost(BaseModel):
-    from_user: int
-    chat: int
+
+    user_telegram_id: int
+    chat_id: int
+    research_id: int
+    telegram_client_id: int
+    assistant_id: int
+
     forwarded_from: Optional[str] = None
     reply_to_message_id: Optional[int] = None
     media: bool
@@ -19,9 +24,15 @@ class UserMessageDTOPost(BaseModel):
 
 
 class UserMessageDTOGet(BaseModel):
-    user_message_id: int
-    from_user: int
-    chat: int
+
+    message_id: int
+
+    user_telegram_id:int
+    chat_id:int
+    research_id:int
+    telegram_client_id:int
+    assistant_id:int
+
     forwarded_from: Optional[str] = None
     reply_to_message_id: Optional[int] = None
     media: bool
@@ -37,10 +48,12 @@ class UserMessageDTOGet(BaseModel):
 class AssistantMessageDTOPost(BaseModel):
 
     text: str
-    chat_id: int
-    to_user_id: int
-    assistant_id: int
-    telegram_client_id: int
+
+    user_telegram_id:int
+    assistant_id:int
+    chat_id:int
+    telegram_client_id:int
+    research_id:int
 
 
     class Config:
@@ -49,13 +62,17 @@ class AssistantMessageDTOPost(BaseModel):
 
 class AssistantMessageDTOGet(BaseModel):
 
-    assistant_message_id: int
+    message_id: int
     text: str
-    chat_id: int
+
+    user_telegram_id:int
+    assistant_id:int
+    chat_id:int
+    telegram_client_id:int
+    research_id:int
+
     created_at: datetime
-    to_user_id: int
-    assistant_id: int
-    telegram_client_id: int
+
 
     class Config:
         from_attributes = True

@@ -1,17 +1,7 @@
-from datasourse_for_test.resercch_imirtation import UserResearch
 from pyrogram import filters
 from pyrogram.types import Message
 
-from src.database.database_t import comon_database
 
-
-def in_research(_, __, message: Message):
-    researches = comon_database.get_all()
-    for research in researches:
-        research: UserResearch = researches[research]
-        if message.from_user.id in research.user_ids:
-            return True
-    return False
 
 
 def dynamic_data_filter(data):

@@ -33,6 +33,7 @@ from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.schemas.service.queue import TelegramObjectHeadersDTO
 from src.schemas.service.queue import TelegramTimeDelaHeadersDTO
 from src.schemas.service.user import UserDTOBase
+from src.services.communicator.context import Context
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
 from src.services.communicator.prompt_generator import PromptGenerator
 from src.services.communicator.request import ContextRequest
@@ -160,28 +161,40 @@ class BaseMessageHandler:
                                 assistant_message=prompt.assistant_message)
 
     async def save_assistant_message(self,
+                                     research_id,
                                      content: str,
-                                     user_id: int,
+                                     user_telegram_id: int,
                                      assistant_id: int,
                                      client_id:int):
         await self.repository.message_repo.assistant.save_new_message(
             values=AssistantMessageDTOPost(
                 text=content,
-                chat_id=user_id,
-                to_user_id=user_id,
+                user_telegram_id=user_telegram_id,
                 assistant_id=assistant_id,
-                telegram_client_id=client_id
+                chat_id=user_telegram_id,
+                telegram_client_id=client_id,
+                research_id=research_id
             ).dict())
 
 
 
-    async def save_user_message(self, content: str, user_id: int, chat_id: int = None, is_voice: bool = False,
+    async def save_user_message(self,
+                                content: str,
+                                research_id:int,
+                                telegram_client_id:int,
+                                assistant_id:int,
+                                user_telegram_id: int,
+                                chat_id: int = None,
+                                is_voice: bool = False,
                                 is_media: bool = False):
-        chat_id = chat_id if chat_id else user_id
+        chat_id = chat_id or telegram_client_id
         await self.repository.message_repo.user.save_new_message(
             values=UserMessageDTOPost(
-                from_user=user_id,
-                chat=chat_id,
+                user_telegram_id=user_telegram_id,
+                chat_id=chat_id,
+                research_id=research_id,
+                telegram_client_id=telegram_client_id,
+                assistant_id=assistant_id,
                 media=is_media,
                 voice=is_voice,
                 text=content
@@ -189,26 +202,15 @@ class BaseMessageHandler:
 
 
 class MessageFirstSend(BaseMessageHandler):
-    """
-    Отправляет первое сообщнеи
-    для работы необходимо пользовательтское имя чтобы отправить сообщение незнакомому пользователю и его telegram id чтобы
-    сохранить сообщение в базе данных
-    """
+    """Отправляет первое сообщение. Для работы необходимо имя пользователя, чтобы отправить сообщение незнакомому пользователю, и его Telegram ID, чтобы сохранить сообщение в базе данных."""
 
-    def __init__(self, publisher: 'NatsPublisher',
-                 repository: 'RepoStorage',
-                 single_request: 'SingleRequest',
-                 prompt_generator: 'PromptGenerator'):
+    def __init__(self, publisher: 'NatsPublisher', repository: 'RepoStorage', single_request: 'SingleRequest', prompt_generator: 'PromptGenerator'):
         super().__init__(publisher, repository, prompt_generator)
         self.message_delay_generator = MessageGeneratorTimeDelay()
         self.single_request = single_request
 
-    async def handle(self,
-                     users: List[UserDTOBase],
-                     research_id: int,
-                     destination_configs: 'NatsDestinationDTO'):
-
-        client = await self.get_client_name(research_id)
+    async def handle(self, users: List[UserDTOBase], research_id: int, destination_configs: 'NatsDestinationDTO'):
+        client = await self._get_client(research_id)
         assistant_id = await self.get_assistant(research_id)
 
         if not users or not client:
@@ -218,47 +220,36 @@ class MessageFirstSend(BaseMessageHandler):
             self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
             for send_time, user in self.message_delay_generator.generate(users=users)
         ]
-
         await asyncio.gather(*tasks)
 
-    async def _process_user(self,
-                            user: UserDTOBase,
-                            send_time: datetime,
-                            research_id: int,
-                            client: 'TelegramClientDTOGet',
-                            assistant_id: int,
-                            destination_configs: 'NatsDestinationDTO'):
+    async def _get_client(self, research_id: int) -> 'TelegramClientDTOGet':
+        client = await self.get_client_name(research_id)
+        if not client:
+            raise ValueError(f"No client found for research ID: {research_id}")
+        return client
+
+    async def _process_user(self, user: UserDTOBase, send_time: datetime, research_id: int, client: 'TelegramClientDTOGet', assistant_id: int, destination_configs: 'NatsDestinationDTO'):
         try:
-
             single_request_object = await self.form_single_request(research_id)
-            content: SingleResponseDTO = await self.single_request.get_response(single_obj=single_request_object)
-            await self.save_assistant_message(content.response, user.tg_user_id, assistant_id, client.client_id)
-            await self._publish_message(content, user, send_time, client,destination_configs)
-            await self._change_user_status_in_progress(telegram_id=user.tg_user_id)
-
+            content = await self.single_request.get_response(single_obj=single_request_object)
+            await self.save_assistant_message(
+                research_id=research_id,
+                content=content.response,
+                user_telegram_id=user.tg_user_id,
+                assistant_id=assistant_id,
+                client_id=client.client_id
+            )
+            await self._publish_message(content, user, send_time, client, destination_configs)
+            await self._update_user_status(user.tg_user_id)
         except Exception as e:
             logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
             raise e
 
-    async def _publish_message(self,
-                                        content: "SingleResponseDTO",
-                                        user: UserDTOBase,
-                                        send_time: datetime,
-                                        client: 'TelegramClientDTOGet',
-                                        destination_configs: 'NatsDestinationDTO'):
-
+    async def _publish_message(self, content: "SingleResponseDTO", user: UserDTOBase, send_time: datetime, client: 'TelegramClientDTOGet', destination_configs: 'NatsDestinationDTO'):
         publish_message = await self._create_publish_message(content, user, send_time, client, destination_configs)
         await self.publisher.publish_message_to_stream(stream_message=publish_message)
 
-
-
-    async def _create_publish_message(self,
-                                      content: 'SingleResponseDTO',
-                                      user: UserDTOBase,
-                                      send_time: datetime,
-                                      client: 'TelegramClientDTOGet',
-                                      destination_configs: 'NatsDestinationDTO') -> 'NatsQueueMessageDTOStreem':
-
+    async def _create_publish_message(self, content: 'SingleResponseDTO', user: UserDTOBase, send_time: datetime, client: 'TelegramClientDTOGet', destination_configs: 'NatsDestinationDTO') -> 'NatsQueueMessageDTOStreem':
         headers = TelegramTimeDelaHeadersDTO(
             tg_client_name=str(client.name),
             user=json.dumps(user.dict()),
@@ -272,14 +263,15 @@ class MessageFirstSend(BaseMessageHandler):
             headers=headers.dict()
         )
 
-    async def _change_user_status_in_progress(self, telegram_id: int) -> bool:
+    async def _update_user_status(self, telegram_id: int) -> bool:
         try:
-            user = await self.repository.user_in_research_repo.short.update_user_status(telegram_id=telegram_id,
-                                                                                        status=UserStatusEnum.IN_PROGRESS)
-            return True if user else False
+            user = await self.repository.user_in_research_repo.short.update_user_status(
+                telegram_id=telegram_id,
+                status=UserStatusEnum.IN_PROGRESS
+            )
+            return user is not None
         except Exception as e:
             raise e
-
 
 
 
@@ -290,7 +282,7 @@ class MessageAnswer(BaseMessageHandler):
                  prompt_generator: "ExtendedPingPromptGenerator",
                  context_request: "ContextRequest"):
         super().__init__(publisher, repository, prompt_generator)
-        self.context_former = MessageFromContext(repository=repository)
+        # self.context_former = MessageFromContext(repository=repository)
         self.context_request = context_request
 
     async def _publish_and_save_message(self,
@@ -302,6 +294,7 @@ class MessageAnswer(BaseMessageHandler):
         publish_message = await self._create_publish_message(content, user, client, destination_configs)
         await self.publisher.publish_message_to_stream(stream_message=publish_message)
         await self.save_assistant_message(content.response, user.tg_user_id, assistant_id, client.client_id)
+
 
     async def _publish_message(self,
                                         content: "ContextResponseDTO",
@@ -329,109 +322,150 @@ class MessageAnswer(BaseMessageHandler):
 
 
 class ResearchMessageAnswer(MessageAnswer):
-    async def handle(self,
-                     message_object: IncomeUserMessageDTOQueue,
-                     destination_configs: NatsDestinationDTO,
-                     research_id: int):
-        await self.save_user_message(content=message_object.message,
-                                     user_id=message_object.from_user,
-                                     chat_id=message_object.chat,
-                                     is_voice=message_object.voice,
-                                     is_media=message_object.media)
 
+    async def handle(
+        self,
+        message_object: IncomeUserMessageDTOQueue,
+        destination_configs: NatsDestinationDTO,
+        research_id: int
+    ):
+        # Получение информации об ассистенте и клиенте
         assistant = await self.get_assistant(research_id=research_id)
+        client = await self._get_client_by_telegram_id(message_object.client_telegram_id)
 
-        client: TelegramClientDTOGet = await self.repository.client_repo.get_client_by_telegram_id(telegram_id=message_object.client_telegram_id)
+        # Сохранение сообщения пользователя
+        await self._save_user_message(message_object, research_id, client, assistant)
 
-        context = await self.context_former.form_context(telegram_id=message_object.from_user)
+        # Формирование контекста и генерация промпта
+        context = await self._form_context(message_object, research_id, client.client_id, assistant)
+        prompt = await self._generate_prompt(research_id)
 
-        prompt: PromptDTO = await self.prompt_generator.research_prompt_generator.generate_prompt(
-            research_id=research_id)
+        # Получение ответа от контекста
+        response = await self._get_context_response(prompt, context)
 
-        response: ContextResponseDTO = await self.context_request.get_response(
-            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt,
-                                          context=context))
+        # Сохранение сообщения ассистента
+        await self._save_assistant_message(response, message_object, research_id, client, assistant)
 
-        await self.save_assistant_message(content=response.response,user_id=message_object.from_user,assistant_id=assistant,client_id=client.client_id,)
-        await self._publish_message(content=response,
-                                             client=client,
-                                             user=UserDTOBase(username=message_object.username,
-                                                              tg_user_id=message_object.from_user),
-                                             destination_configs=destination_configs)
+        # Публикация ответного сообщения
+        await self._publish_response(response, client, message_object, destination_configs)
+        print()
+    async def _get_client_by_telegram_id(self, telegram_id: int) -> TelegramClientDTOGet:
+        return await self.repository.client_repo.get_client_by_telegram_id(telegram_id=telegram_id)
 
+    async def _save_user_message(self, message_object: IncomeUserMessageDTOQueue, research_id: int, client: TelegramClientDTOGet, assistant):
+        await self.save_user_message(
+            content=message_object.message,
+            research_id=research_id,
+            telegram_client_id=client.client_id,
+            assistant_id=assistant,
+            user_telegram_id=message_object.from_user,
+            chat_id=message_object.chat,
+            is_voice=message_object.voice,
+            is_media=message_object.media
+        )
+
+    async def _form_context(self, message_object: IncomeUserMessageDTOQueue, research_id: int, telegram_client_id: int, assistant_id: int) -> List[Dict[str, str]]:
+        context = Context(
+            research_id=research_id,
+            telegram_client_id=telegram_client_id,
+            assistant_id=assistant_id,
+            user_telegram_id=message_object.from_user,
+            chat_id=message_object.chat
+        )
+        return await context.load_from_repo(self.repository)
+
+    async def _generate_prompt(self, research_id: int) -> PromptDTO:
+        return await self.prompt_generator.research_prompt_generator.generate_prompt(research_id=research_id)
+
+    async def _get_context_response(self, prompt: PromptDTO, context: List[Dict[str, str]]) -> ContextResponseDTO:
+
+        return await self.context_request.get_response(
+            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt, context=context)
+        )
+
+    async def _save_assistant_message(self, response: ContextResponseDTO, message_object: IncomeUserMessageDTOQueue, research_id: int, client: TelegramClientDTOGet, assistant):
+        await self.save_assistant_message(
+            research_id=research_id,
+            content=response.response,
+            user_telegram_id=message_object.from_user,
+            assistant_id=assistant,
+            client_id=client.client_id,
+        )
+
+    async def _publish_response(self, response: ContextResponseDTO, client: TelegramClientDTOGet, message_object: IncomeUserMessageDTOQueue, destination_configs: NatsDestinationDTO):
+        await self._publish_message(
+            content=response,
+            client=client,
+            user=UserDTOBase(username=message_object.username, tg_user_id=message_object.from_user),
+            destination_configs=destination_configs
+        )
 
 # TODO разные классы заддач разщнести по разным классам и вынести метод паблишишера эти классыы только фомрирует ответ от ИИ
 # Ответы от ИИ какие бывают ...
 class PingMessage(MessageAnswer):
-    """ сообщения для пинга пользователоей в иследовании """
+    """Сообщения для пинга пользователей в исследовании"""
 
-    async def handle(self,
-                     user: UserDTOBase,
-                     message_number,
-                     research_id: int,
-                     destination_configs:
-                     NatsDestinationDTO):
+    async def handle(
+        self,
+        user: UserDTOBase,
+        message_number: int,
+        research_id: int,
+        destination_configs: NatsDestinationDTO
+    ):
+        # Получение информации об ассистенте и клиенте
+        assistant_id = await self.get_assistant(research_id=research_id)
+        client = await self._get_client_by_research_id(research_id)
 
-        assistant_id: int = await self.get_assistant(research_id=research_id)
-        client: TelegramClientDTOGet = await self.repository.client_repo.get_client_by_research_id(research_id)
+        # Формирование контекста и генерация промпта
+        context = await self._form_context(user, research_id, client.client_id, assistant_id)
+        prompt = await self._generate_prompt(message_number)
 
-        context = await self.context_former.form_context(telegram_id=user.tg_user_id)
-        prompt: PromptDTO = await self.prompt_generator.ping_prompt_generator.generate_prompt(
-            message_number=message_number)
+        # Получение ответа от контекста
+        response = await self._get_context_response(prompt, context)
 
-        response: ContextResponseDTO = await self.context_request.get_response(
-            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt,
-                                          context=context))
+        # Сохранение сообщения ассистента
+        await self._save_assistant_message(response, user, assistant_id, client, research_id)
 
-        # TODO убрать этот метод в коммуникатор я думаю это ответсвенность коммуникатора за публикацию
-        await self.save_assistant_message(content=response.response, user_id=user.tg_user_id,
-                                          assistant_id=assistant_id, client_id=client.client_id, )
+        # Публикация ответного сообщения
+        await self._publish_response(response, client, user, destination_configs)
 
-        await self._publish_message(content=response,
-                                    client=client,
-                                    user=user,
-                                    destination_configs=destination_configs)
+    async def _get_client_by_research_id(self, research_id: int) -> TelegramClientDTOGet:
+        return await self.repository.client_repo.get_client_by_research_id(research_id)
+
+    async def _form_context(self, user: UserDTOBase, research_id: int, telegram_client_id: int, assistant_id: int) -> List[Dict[str, str]]:
+        context = Context(
+            research_id=research_id,
+            telegram_client_id=telegram_client_id,
+            assistant_id=assistant_id,
+            user_telegram_id=user.tg_user_id,
+            chat_id=None
+        )
+        return await context.load_from_repo(self.repository)
+
+    async def _generate_prompt(self, message_number: int) -> PromptDTO:
+        return await self.prompt_generator.ping_prompt_generator.generate_prompt(message_number=message_number)
+
+    async def _get_context_response(self, prompt: PromptDTO, context: List[Dict[str, str]]) -> ContextResponseDTO:
+        return await self.context_request.get_response(
+            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt, context=context)
+        )
+
+    async def _save_assistant_message(self, response: ContextResponseDTO, user: UserDTOBase, assistant_id: int, client: TelegramClientDTOGet, research_id: int):
+        await self.save_assistant_message(
+            research_id=research_id,
+            content=response.response,
+            user_telegram_id=user.tg_user_id,
+            assistant_id=assistant_id,
+            client_id=client.client_id,
+        )
+
+    async def _publish_response(self, response: ContextResponseDTO, client: TelegramClientDTOGet, user: UserDTOBase, destination_configs: NatsDestinationDTO):
+        await self._publish_message(
+            content=response,
+            client=client,
+            user=user,
+            destination_configs=destination_configs
+        )
 
 
 
-
-
-#
-# class CommonMessageAnswer(MessageAnswer):
-#
-#     # TODO кварги костыль нужно убрать метод должен работать для вскех вынести в инком мессадж или дополнительнчый класс
-#     async def handle(self,
-#                      message: IncomeUserMessageDTOQueue,
-#                      destination_configs: NatsDestinationDTO,
-#                      **kwargs):
-#         await self.save_user_message(content=message.message,
-#                                      user_id=message.from_user,
-#                                      chat_id=message.chat,
-#                                      is_voice=message.voice,
-#                                      is_media=message.media)
-#
-#         assistant: AssistantDTOGet = await self.get_assistant_for_free_talk()
-#         client: TelegramClientDTOGet = await self.get_client_name(client_telegram_id=message.client_telegram_id)
-#         context = await self.context_former.form_context(telegram_id=message.from_user)
-#
-#         prompt: PromptDTO = await self.prompt_generator.generate_common_prompt(
-#             assistant_id=assistant.assistant_id)
-#         response: ContextResponseDTO = await self.context_request.get_response(
-#             context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt,
-#                                           context=context))
-#
-#         await self._publish_and_save_message(content=response,
-#                                              client=client,
-#                                              user=UserDTOBase(username=message.username,
-#                                                               tg_user_id=message.from_user),
-#                                              assistant_id=assistant.assistant_id,
-#                                              destination_configs=destination_configs)
-#
-#     # TODO вынести выдачу ассситентов в отлдельный класс заебал
-#     @cached(ttl=300, cache=Cache.MEMORY)
-#     async def get_assistant_for_free_talk(self) -> Optional[AssistantDTOGet]:
-#         assistants = await self.repository.assistant_repo.get_all_assistants()
-#         if not assistants:
-#             logger.error("No assistants in database")
-#             raise ValueError("No assistants")
-#         return next((asis for asis in assistants if asis.for_conversation), None)
