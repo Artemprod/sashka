@@ -52,9 +52,11 @@
 #         self.actual = UserInResearchRepository(db_session_manager)
 #         self.archived = UserInArchivedResearchRepository(db_session_manager)
 from functools import wraps
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from loguru import logger
-from sqlalchemy import select, insert, delete
+from pyrogram.errors.exceptions.all import count
+from sqlalchemy import select, insert, delete, func
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.postgres import UserResearch, ArchivedUserResearch
@@ -65,54 +67,63 @@ from src.schemas.service.user import UserDTOFull
 class UserResearchTransferService:
     """Сервис для управления переносом пользователей между активными и архивными исследованиями."""
 
-    def __init__(self, db_session_manager: DatabaseSessionManager):
+    def __init__(self, db_session_manager):
         self.db_session_manager = db_session_manager
 
-    async def _execute_transaction(self, session: AsyncSession, stmt: Any) -> Any:
-        """Выполнение транзакции с обработкой ошибок."""
-        try:
-            result = await session.execute(stmt)
-            await session.commit()
-            return result
-        except Exception as e:
-            await session.rollback()
-            logger.error(f"Ошибка при выполнении транзакции: {str(e)}")
-            raise
+    async def transfer_users(self, research_id: int) -> Optional[int]:
+        """
+        Переносит пользователей из активного исследования в архив одной атомарной транзакцией.
 
-    async def get_users_in_research(self, research_id: int) -> List[UserResearch]:
-        """Получение списка пользователей в исследовании."""
-        async with self.db_session_manager.async_session_factory() as session:
-            stmt = select(UserResearch).where(UserResearch.research_id == research_id)
-            result = await self._execute_transaction(session, stmt)
-            return result.scalars().all()
+        Args:
+            research_id: ID исследования, пользователей которого нужно перенести
 
-    async def archive_users(self, users: List[UserResearch]) -> List[UserDTOFull]:
-        """Архивирование пользователей."""
-        archived_users = []
+        Raises:
+            SQLAlchemyError: при ошибках работы с БД
+        """
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
-                for user in users:
-                    values = self._prepare_archive_values(user)
-                    stmt = insert(ArchivedUserResearch).values(**values).returning(ArchivedUserResearch)
-                    result = await self._execute_transaction(session, stmt)
-                    archived_user = result.scalar_one()
-                    archived_users.append(UserDTOFull.model_validate(archived_user, from_attributes=True))
-            await session.commit()
-        return archived_users
+                try:
+                    logger.info("Забираю пользователей и начинаю перенос")
 
-    async def delete_users_from_research(self, research_id: int) -> None:
-        """Удаление пользователей из исследования."""
-        async with self.db_session_manager.async_session_factory() as session:
-            stmt = delete(UserResearch).where(UserResearch.research_id == research_id)
-            await self._execute_transaction(session, stmt)
+                    # Проверяем, есть ли пользователи в исследовании
+                    count_stmt = select(func.count()).select_from(UserResearch).where(UserResearch.research_id == research_id)
+                    result = await session.execute(count_stmt)
+                    user_count = result.scalar_one_or_none()
 
-    @staticmethod
-    def _prepare_archive_values(user: UserResearch) -> Dict[str, Any]:
-        """Подготовка данных для архивирования."""
-        return {
-            'user_id': user.user_id,
-            'research_id': user.research_id,
-        }
+                    if user_count is None or user_count == 0:
+                        logger.info(f"No users found for research {research_id}")
+                        return -1
+
+                    # Создаем INSERT ... SELECT запрос для переноса данных одной операцией
+                    insert_stmt = insert(ArchivedUserResearch).from_select(
+                        [UserResearch.user_id, UserResearch.research_id, UserResearch.created_at, ],  # Колонки для вставки
+                        select(UserResearch.user_id, UserResearch.research_id, UserResearch.created_at).where(UserResearch.research_id == research_id)
+                    )
+
+                    # Выполняем INSERT и DELETE в рамках одной транзакции
+                    await session.execute(insert_stmt)
+                    logger.info("Перенос пользователей успешно завершен")
+
+                    delete_stmt = delete(UserResearch).where(
+                        UserResearch.research_id == research_id
+                    )
+                    logger.info("Удаление пользователей из активного исследования")
+                    result = await session.execute(delete_stmt)
+
+                    # Логируем количество перенесенных записей
+                    deleted_count = result.rowcount
+                    logger.info(
+                        f"Successfully transferred {deleted_count} users from research {research_id} to archive"
+                    )
+
+                except SQLAlchemyError as e:
+                    logger.error(
+                        f"Failed to transfer users for research {research_id}: {str(e)}", exc_info=True
+                    )
+                    raise
+
+
+
 
 
 
