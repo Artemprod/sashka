@@ -84,6 +84,7 @@ TEST_CASES = [
         api_id='11111',
         api_hash=test_api_hash,
         expectation=pytest.raises(ApiIdInvalid)),
+
     TestDataCases(
         _id="Wrong hash",
         name="test",

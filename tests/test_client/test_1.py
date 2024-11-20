@@ -38,6 +38,7 @@ class TestManager:
     # неправильный api id ✅
     # неправильный облочный пароль✅
     # телфон забанен
+
     @pytest.mark.parametrize(
         "test_case",
         [

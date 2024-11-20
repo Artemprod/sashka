@@ -81,12 +81,6 @@ class TelegramResearchManager(BaseResearchManager):
         """Устанавливает статус пользователей и возвращает список пользователей, для которых статус не был установлен."""
         db_users = set()
 
-        # Получаем список user_id из базы данных для указанных telegram_id
-        if research.examinees_ids:
-            user_ids = await self._database_repository.user_in_research_repo.short.get_many_user_ids_by_telegram_ids(
-                telegram_ids=research.examinees_ids
-            )
-            db_users.update(user_ids)
 
         # Получаем список user_id из базы данных для указанных имен пользователей
         if research.examinees_user_names:
@@ -144,7 +138,7 @@ class TelegramResearchManager(BaseResearchManager):
 
     async def _save_new_research(self, research_dto: ResearchDTOBeDb) -> ResearchDTOFull:
         return await self._database_repository.research_repo.short.save_new_research(
-            values=research_dto.dict(exclude={'examinees_ids', 'examinees_user_names'})
+            values=research_dto.dict(exclude={'examinees_user_names'})
         )
 
     async def _get_saved_research(self, research_id: int) -> ResearchDTORel:
@@ -161,9 +155,6 @@ class TelegramResearchManager(BaseResearchManager):
                 # Создаем объекты UserDTO, используя полученную информацию
                 users_dto.extend(UserDTO(tg_user_id=user.tg_user_id, username=user.username) for user in user_info)
 
-        # Добавляем объекты UserDTO на основе examinees_ids, если были переданы
-        if research.examinees_ids:
-            users_dto.extend(UserDTO(tg_user_id=tg_user_id) for tg_user_id in research.examinees_ids)
 
         # Добавляем пользователей в базу данных
         try:
@@ -188,11 +179,7 @@ class TelegramResearchManager(BaseResearchManager):
     async def _bind_users_to_research(self, research_id: int, research: ResearchDTOPost) -> None:
         db_users_ids = []  # Список для хранения user_id
 
-        if research.examinees_ids:
-            users_by_ids = await self._database_repository.user_in_research_repo.short.get_many_user_ids_by_telegram_ids(
-                telegram_ids=research.examinees_ids
-            )
-            db_users_ids.extend(users_by_ids)
+
 
         if research.examinees_user_names:
             users_by_usernames = await self._database_repository.user_in_research_repo.short.get_many_user_ids_by_usernames(

@@ -27,7 +27,6 @@ class ResearchDTOPost(BaseModel):
     descriptions: Optional[str] = None
     additional_information: Optional[str] = None
     assistant_id: Optional[int]
-    examinees_ids: Optional[list[int]]
     examinees_user_names: list[str]
 
 
