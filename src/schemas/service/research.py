@@ -26,8 +26,6 @@ class ResearchDTOPost(BaseModel):
     end_date: datetime = Field(default_factory=lambda: datetime.now() + timedelta(days=10))
     descriptions: Optional[str] = None
     additional_information: Optional[str] = None
-    assistant_id: Optional[int]
-    examinees_ids: Optional[list[int]]
     examinees_user_names: list[str]
 
 
