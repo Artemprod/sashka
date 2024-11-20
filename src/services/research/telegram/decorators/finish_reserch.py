@@ -14,21 +14,13 @@ def move_users_to_archive(func):
             # Выполнение основной функции
             result = await func(self, research_id)
 
-            # Получение пользователей через repository
-            users = await self.repository.in_research_repo.transfer_service.get_users_in_research(research_id)
-            if not users:
-                logger.info(f"Пользователи не найдены в исследовании {research_id}")
-                return result
-
             # Архивирование пользователей
-            logger.info(f"Архивирование {len(users)} пользователей")
-            await self.repository.in_research_repo.transfer_service.archive_users(users)
+            logger.info(f"Архивирование пользователей")
+            archived = await self.repository.in_research_repo.transfer_service.transfer_users(research_id)
 
-            # Удаление пользователей из активного исследования
-            logger.info("Удаление пользователей из активного исследования")
-            await self.repository.in_research_repo.transfer_service.delete_users_from_research(research_id)
+            if archived == -1:
+                logger.warning("список пользователй в исследовании пуст")
 
-            logger.info("Перенос пользователей успешно завершен")
             return result
 
         except Exception as e:
