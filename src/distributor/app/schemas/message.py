@@ -44,4 +44,13 @@ class Datas(BaseModel):
         from_attributes = True
         arbitrary_types_allowed = True
 
+class MessageToSendData(BaseModel):
+
+    message:str
+    user: UserDTOBase
+
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+
 Datas.model_rebuild()

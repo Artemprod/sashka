@@ -39,7 +39,7 @@ async def form_user_information(user: User) -> UserInfo:
 
     return UserInfo(
         tg_user_id=user.id,
-        username=user.username,
+        username=user.username or "user_dont_have_a_name",
         is_contact=user.contact,
         is_mutual_contact=user.mutual_contact,
         is_deleted=user.deleted,
