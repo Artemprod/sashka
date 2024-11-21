@@ -9,7 +9,7 @@ from faststream.nats import NatsMessage
 from loguru import logger
 from telethon import TelegramClient
 
-from src.distributor.app.schemas.message import Datas
+from src.distributor.app.schemas.message import Datas, MessageToSendData
 from src.distributor.app.schemas.message import UserDTOBase
 from src.distributor.telegram_client.pyro.client.container import ClientsManager
 from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
@@ -42,8 +42,9 @@ async def _extract_user_from_headers(headers: dict) -> UserDTOBase:
         raise ValueError("Invalid user header format.")
 
 
-async def _get_data_from_headers(msg: NatsMessage, context: Context = Context()) -> Datas:
+async def _get_data_from_headers(body:str, msg: NatsMessage, context: Context = Context()) -> Datas:
     """Извлекает данные из заголовков сообщения."""
+
     logger.debug(f"Message headers: {msg.headers}")
 
     user = await _extract_user_from_headers(msg.headers)
@@ -73,3 +74,58 @@ async def _get_data_from_headers(msg: NatsMessage, context: Context = Context())
         current_time=current_time,
         send_time=send_time,
     )
+
+
+async def get_data_from_body(body: str) -> MessageToSendData:
+    if not body:
+        logger.error("Body is missing from the message.")
+        raise ValueError("Body is missing from the message.")
+
+    try:
+        data = json.loads(body)
+
+        # Декодировать строковый JSON в объект для user
+        if isinstance(data.get("user"), str):
+            data["user"] = json.loads(data["user"])
+
+        # Валидация с использованием Pydantic
+        validated_data = MessageToSendData(**data)
+
+        if not validated_data.message:
+            logger.error("Missing Message")
+            raise ValueError("Missing Message")
+        if not validated_data.user:
+            logger.error("Missing user data.")
+            raise ValueError("Missing user data")
+
+        return validated_data
+
+    except (ValueError, TypeError, json.JSONDecodeError) as e:
+        logger.error(f"Error processing body: {e}")
+        raise ValueError("Invalid data in body.") from e
+
+
+async def get_telegram_client(body: str, context: Context = Context()) -> TelegramClient:
+    """Извлекает клиента."""
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError as e:
+        logger.error("Failed to decode JSON body.")
+        raise ValueError("Invalid JSON format.") from e
+
+    client_name = data.get("tg_client") or data.get("tg_client_name")
+    if not client_name:
+        logger.error("Client name not provided in the body.")
+        raise ValueError("Client name is missing in the JSON body.")
+
+    container: 'TelethonClientsContainer' = context.get("telethon_container")
+    if container is None:
+        logger.error("Container not found in context.")
+        raise ValueError("Container not found in context.")
+
+    client: 'TelegramClient' = container.get_telethon_client_by_name(name=client_name)
+    if not client:
+        logger.error(f"No Telegram client found with the name: {client_name}")
+        raise ValueError("No Telegram client found.")
+
+    return client
