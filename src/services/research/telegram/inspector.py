@@ -109,11 +109,48 @@ class ResearchStopper:
                 f"Статус исследования: {research_status.status_name}, Пользователи в процессе: {len(user_in_progress)}")
             # await self.notifier.handle_incomplete_research()
 
+    async def complete_research_for_user(self, research_id, user_id: int) -> None:
+        """ Останавливает исследование для пользователя и переводит его статус на завершённый """
+        user = await self._get_user_in_research(research_id, user_id)
+        logger.info('Начал завершение исследования')
+
+        await self.repository.status_repo.research_status.change_research_status(
+            research_id=research_id, status=ResearchStatusEnum.DONE
+        )
+        # Передаем только одного пользователя в эту функцию и все нормально должно сработать
+        await self.repository.status_repo.user_status.update_status_group_of_user(
+            user_group=user, status=UserStatusEnum.DONE
+        )
+
+        research_status = await self.repository.status_repo.research_status.get_research_status(research_id=research_id)
+        user_in_progress = await self._get_users_in_progress(research_id=research_id)
+
+        if research_status.status_name != ResearchStatusEnum.IN_PROGRESS and not user_in_progress:
+            logger.info("Исследование завершено")
+            # await self.notifier.notify_completion()
+
+        else:
+            logger.info("Исследование не завершено")
+            logger.info(
+                f"Статус исследования: {research_status.status_name}, Пользователи в процессе: {len(user_in_progress)}")
+            # await self.notifier.handle_incomplete_research()
+
     async def _get_users_in_research(self, research_id) -> List[UserDTOFull]:
         users_in_research = await self.repository.user_in_research_repo.short.get_users_by_research_id(
             research_id=research_id
         )
         return [user.tg_user_id for user in users_in_research]
+
+    async def _get_user_in_research(self, research_id: int, user_id: int) -> [UserDTOFull]:
+        """Получает определенного пользователя в исследовании"""
+        users_in_research = await self.repository.user_in_research_repo.short.get_users_by_research_id(
+            research_id=research_id
+        )
+        for user_in_research in users_in_research:
+            if user_in_research.tg_user_id == user_id:
+                return [user_in_research.tg_user_id]
+        return []
+        # return [user.tg_user_id for user in users_in_research if user.tg_user_id == user_id]
 
     async def _get_users_in_progress(self, research_id):
         return await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
@@ -181,7 +218,10 @@ class ResearchOverChecker:
 
 
 class StopWordChecker:
-    """Класс для поиска как точного, так и частичного стоп-слов в сообщениях, завершение исследования при их нахождении."""
+    """
+    Класс для поиска как точного, так и частичного стоп-слов в сообщениях, завершение исследования при их
+    нахождении.
+    """
 
     def __init__(self,
                  stopper: 'ResearchStopper',
@@ -198,13 +238,14 @@ class StopWordChecker:
                                              "STOP"]
         self.stop_patterns = [re.compile(rf'\b{re.escape(phrase)}\b', re.IGNORECASE) for phrase in self.stop_phrases]
 
-    async def check_for_stop_words(self, research_id: int, response_message: str) -> bool:
+    async def check_for_stop_words(self, research_id: int, response_message: str, user_id: int) -> bool:
         """
-        Проверяет сообщение на наличие стоп-фраз и при их обнаружении завершает исследование.
+        Проверяет сообщение на наличие стоп-фраз и при их обнаружении завершает исследование для пользователя.
 
         :param research_id: ID исследования, для которого выполняется проверка.
         :param response_message: Проверяемое сообщение (сгенерированное или полученное в процессе исследования).
         :return: True, если была обнаружена стоп-фраза и исследование завершено, иначе False.
+        :param user_id: ID пользователя, для которого выполняется проверка.
         """
         try:
             if await self._contains_stop_phrase(response_message) or await self.check_partial_match(response_message):
@@ -278,7 +319,6 @@ class PingDelayCalculator:
 
 
 class UserPingator:
-
 
     def __init__(self, repo, publisher):
         self.repo = repo
