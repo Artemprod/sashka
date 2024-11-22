@@ -1,8 +1,8 @@
 import os
 import shutil
+from pathlib import Path
 
 import pytest
-from environs import Env
 from pyrogram import Client
 
 from src.dispatcher.communicators.consol import ConsoleCommunicator
@@ -15,10 +15,10 @@ api_has = "fe561473a06737cb358db923e05e7868"
 
 @pytest.fixture
 async def init_client():
-    env = Env()
-    env.read_env('.env')
-    session_path = r"D:\projects\AIPO_V2\CUSTDEVER\tests\test_client\session_files\test.session"
-    app = Client(name=session_path, api_id=api_id, api_hash=api_has, test_mode=True, phone_number=test_phone,
+    session_path = Path(__file__).parent.joinpath("session_files").joinpath("test.session")
+
+    app = Client(name=str(session_path.absolute()), api_id=api_id, api_hash=api_has, test_mode=True,
+                 phone_number=test_phone,
                  password=test_password)
     yield app
 
@@ -31,9 +31,7 @@ def get_console_communicator():
 @pytest.fixture
 def session_folder():
     folder_path = "./session_files/"
-
     # Создание новой папки
-
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
     # Возвращаем путь к папке, если нужно использовать его в тестах
