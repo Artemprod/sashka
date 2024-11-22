@@ -109,6 +109,7 @@ class ResearchStopper:
                 f"Статус исследования: {research_status.status_name}, Пользователи в процессе: {len(user_in_progress)}")
             # await self.notifier.handle_incomplete_research()
 
+    # TODO: complete research for unique user
     async def complete_research_for_user(self, research_id, user_id: int) -> None:
         """ Останавливает исследование для пользователя и переводит его статус на завершённый """
         user = await self._get_user_in_research(research_id, user_id)
@@ -159,7 +160,7 @@ class ResearchStopper:
 
 
 class ResearchOverChecker:
-    def __init__(self, repository, stopper):
+    def __init__(self, repository, stopper: ResearchStopper):
         self.repository = repository
         self.stopper = stopper
         self.settings = self._load_settings()
