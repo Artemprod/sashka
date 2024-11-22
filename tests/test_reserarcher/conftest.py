@@ -5,15 +5,17 @@ import faker
 import pytest
 
 from configs.database import test_database_postgres_settings
-from src.database.postgres import ModelBase, Services, ResearchOwner, User, Research, ResearchStatus, \
-    ResearchStatusEnum, UserStatusEnum, UserStatus
+from src.database.postgres import ModelBase, Services, User, ResearchStatusEnum, UserStatusEnum, ResearchOwner, \
+    Research, ResearchStatus, UserStatus
 from src.database.postgres.engine.session import DatabaseSessionManager
-from src.database.repository.assistant import AssistantRepository
 from src.database.repository.client import ClientRepository
 from src.database.repository.storage import RepoStorage
 from src.database.repository.user import UserRepository
 from src.schemas.service.assistant import AssistantDTOPost
 from src.schemas.service.client import TelegramClientDTOPost
+from src.schemas.service.owner import ResearchOwnerDTO
+from src.schemas.service.research import ResearchDTOBeDb
+from src.schemas.service.status import ResearchStatusDTO, UserStatusDTO
 
 fake = faker.Faker()
 
@@ -84,10 +86,6 @@ async def create_test_data(init_db):
     await ClientRepository(init_db).save(telegram_client.dict())
 
     # Create Service
-    service_data = {
-        "service_id": 1, "name": "Test Service"
-    }
-    ServicesRepor
     async with init_db.session_scope() as session:
         async with session.begin():
             # Создаем тестовый сервис
@@ -112,7 +110,7 @@ async def create_test_data(init_db):
             session.add(research_owner)
             await session.commit()
 
-    # Create User
+    # Create Users
     async with init_db.session_scope() as session:
         async with session.begin():
             users = [
