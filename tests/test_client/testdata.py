@@ -8,7 +8,7 @@ from pyrogram.errors import ApiIdInvalid
 from pyrogram.errors import PasswordHashInvalid
 from pyrogram.errors import PhoneNumberInvalid
 
-from src.distributor.telegram_client.exceptions import MaxAttemptsExceededError
+from src.distributor.telegram_client.pyro.exceptions.autrization import MaxAttemptsExceededError
 
 test_api_id = '17349'
 test_api_hash = "344583e45741c457fe1862106095a5eb"
