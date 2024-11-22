@@ -6,7 +6,7 @@ from testdata import TEST_CASES
 from testdata import TestDataCases
 
 from src.dispatcher.communicators.reggestry import BaseCommunicator
-from src.distributor.telegram_client.pyro.client import Manager
+from src.distributor.telegram_client.pyro.client.app_manager import Manager
 
 
 class TestCommunicator(BaseCommunicator):
