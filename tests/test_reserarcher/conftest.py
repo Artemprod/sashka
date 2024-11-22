@@ -13,9 +13,8 @@ from src.database.repository.storage import RepoStorage
 from src.database.repository.user import UserRepository
 from src.schemas.service.assistant import AssistantDTOPost
 from src.schemas.service.client import TelegramClientDTOPost
-from src.schemas.service.owner import ResearchOwnerDTO
-from src.schemas.service.research import ResearchDTOBeDb
-from src.schemas.service.status import ResearchStatusDTO, UserStatusDTO
+from src.services.publisher.publisher import NatsPublisher
+from src.services.research.telegram.inspector import ResearchStopper
 
 fake = faker.Faker()
 
@@ -162,12 +161,13 @@ async def create_test_data(init_db):
     # Create Research Status
     async with init_db.session_scope() as session:
         async with session.begin():
-            research_status = ResearchStatus(
-                research_id=researches[0].research_id,
-                status_name=ResearchStatusEnum.WAIT,
-                updated_at=datetime.datetime.utcnow()
-            )
-            session.add(research_status)
+            for i in range(len(researches)):
+                research_status = ResearchStatus(
+                    research_id=researches[i].research_id,
+                    status_name=ResearchStatusEnum.WAIT,
+                    updated_at=datetime.datetime.utcnow()
+                )
+                session.add(research_status)
             await session.commit()
 
     # Create User Status
@@ -195,3 +195,18 @@ async def create_test_data(init_db):
             await session.commit()
 
     print("Тестовые данные успешно созданы!")
+
+
+@pytest.fixture(scope="session")
+def repo_storage(init_db, create_test_data):
+    yield RepoStorage(init_db)
+
+
+@pytest.fixture(scope="session")
+def research_stopper(repo_storage):
+    yield ResearchStopper(repo_storage, notifier=None)
+
+
+@pytest.fixture(scope="session")
+async def publisher():
+    yield NatsPublisher()

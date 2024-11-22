@@ -1,22 +1,11 @@
 import pytest
 
-from src.database.repository.storage import RepoStorage
-from src.services.research.telegram.inspector import StopWordChecker, ResearchStopper
+from src.services.research.telegram.inspector import StopWordChecker
 
 
-@pytest.fixture(scope="session")
-def research_repository(init_db, create_test_data):
-    yield RepoStorage(init_db)
-
-
-@pytest.fixture(scope="session")
-def research_stopper(research_repository):
-    yield ResearchStopper(research_repository, notifier=None)
-
-
-@pytest.fixture(scope="session")
-def stop_word_checker(research_stopper, research_repository):
-    yield StopWordChecker(research_stopper, research_repository, stop_phrases=["стоп", "стоп-слово", "все спасибо"])
+@pytest.fixture(scope="function")
+def stop_word_checker(research_stopper, repo_storage):
+    yield StopWordChecker(research_stopper, repo_storage, stop_phrases=["стоп", "стоп-слово", "все спасибо"])
 
 
 class TestStopWordChecker:
