@@ -101,7 +101,7 @@ async def get_data_from_body(body: str) -> MessageToSendData:
         return validated_data
 
     except (ValueError, TypeError, json.JSONDecodeError) as e:
-        logger.error(f"Error processing body: {e}")
+        logger.error(f"Error processing body: {e}, {body}")
         raise ValueError("Invalid data in body.") from e
 
 
@@ -110,7 +110,7 @@ async def get_telegram_client(body: str, context: Context = Context()) -> Telegr
     try:
         data = json.loads(body)
     except json.JSONDecodeError as e:
-        logger.error("Failed to decode JSON body.")
+        logger.error(f"Failed to decode JSON body. {body}")
         raise ValueError("Invalid JSON format.") from e
 
     client_name = data.get("tg_client") or data.get("tg_client_name")
