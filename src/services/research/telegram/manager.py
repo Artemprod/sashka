@@ -132,13 +132,13 @@ class TelegramResearchManager(BaseResearchManager):
     # Asynchronous helper methods for database operations
 
     async def _create_new_owner(self, owner_dto: ResearchOwnerDTO) -> ResearchOwnerFullDTO:
-        owner = await self._database_repository.owner_repo().short.get_owner_by_service_id(
+        owner = await self._database_repository.owner_repo.short.get_owner_by_service_id(
             service_id=owner_dto.service_owner_id)
 
         # TODO Сделать нормальную авторизациб и аутентификацию для того тчобы создовать иследования
         # ЕЩПроблема с созданием овнера получение его сервиса
         if not owner:
-            owner = await self._database_repository.owner_repo().short.add_owner(values=owner_dto.dict())
+            owner = await self._database_repository.owner_repo.short.add_owner(values=owner_dto.dict())
         return owner
 
     # TODO Выдвать клиента только в случае если нет данных от пользователя какого клиента выдовать
