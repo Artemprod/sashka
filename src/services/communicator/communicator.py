@@ -15,7 +15,7 @@ from src.schemas.service.user import UserDTOBase
 from src.schemas.service.user import UserDTOFull
 from src.services.communicator.checker import Checker
 
-from src.services.communicator.messager import MessageFirstSend
+from src.services.communicator.messager import MessageFirstSend, ScheduledFirstMessage
 from src.services.communicator.messager import PingMessage
 from src.services.communicator.messager import ResearchMessageAnswer
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
@@ -43,7 +43,14 @@ class TelegramCommunicator:
         self._destination_configs = destination_configs or self._load_destination_configs()
         self._checker = Checker(repository=repository)
         # Инициализация компонентов для обработки сообщений
-        self._first_message_distributes = MessageFirstSend(
+        # self._first_message_distributes = MessageFirstSend(
+        #     publisher=publisher,
+        #     repository=repository,
+        #     single_request=single_request,
+        #     prompt_generator=prompt_generator
+        # )
+
+        self._first_message_distributes = ScheduledFirstMessage(
             publisher=publisher,
             repository=repository,
             single_request=single_request,
@@ -76,7 +83,7 @@ class TelegramCommunicator:
     async def make_first_message_distribution(self, research_id: int, users: List[UserDTOBase]):
         try:
             await self._first_message_distributes.handle(users=users,
-                                                         destination_configs=self._destination_configs['firs_message'],
+                                                         destination_configs=self._destination_configs['reply'],
                                                          research_id=research_id)
         except Exception as e:
             raise e

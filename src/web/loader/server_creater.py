@@ -9,7 +9,7 @@ from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
 from src.services.analitcs.decorator.collector import AnalyticCollector
 from src.services.publisher.publisher import NatsPublisher
-from src.web.loader.on_startup import initialize_research_manager
+from src.web.loader.on_startup import initialize_research_manager, initialize_apscheduler
 from src.web.routers.account.client import router as client_router
 from src.web.routers.analitics.dialog import router as dialog_router
 from src.web.routers.reserach.telegram import router as research_router
@@ -22,7 +22,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         database_url=database_postgres_settings.async_postgres_url)
     repository = RepoStorage(database_session_manager=session)
     publisher = NatsPublisher()
+    apscheduler= initialize_apscheduler()
 
+    app.state.apschedular = apscheduler
     app.state.research_manager = initialize_research_manager(publisher=publisher,
                                                             repository=repository)
 
@@ -35,6 +37,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Закрытие ресурсов (если необходимо)
     logger.info("Cleanup after lifespan")
+    apscheduler.shutdown()
 
 
 def create_server(lifespan_func=lifespan):

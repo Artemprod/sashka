@@ -9,10 +9,18 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
+from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.jobstores.redis import RedisJobStore
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.date import DateTrigger
 from loguru import logger
+from pytz import utc
 
+from configs.database import database_postgres_settings
 from configs.nats_queues import nats_subscriber_communicator_settings
+from configs.redis import redis_apscheduler_config
 from configs.research import research_pingator_settings
+from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.postgres.models.enum_types import ResearchStatusEnum
 from src.database.postgres.models.enum_types import UserStatusEnum
 from src.database.repository.storage import RepoStorage
@@ -399,34 +407,54 @@ class UserPingator:
 
 
 class ResearchProcess:
-    def __init__(self,
-                 repository: RepoStorage,
-                 notifier,
-                 publisher: NatsPublisher,
-                 ):
-
+    def __init__(self, repository, notifier, publisher):
         self.research_starter = ResearchStarter(repository=repository, publisher=publisher)
         self.research_stopper = ResearchStopper(repository, notifier)
         self.research_over_checker = ResearchOverChecker(repository, self.research_stopper)
         self.research_user_pingator = UserPingator(repo=repository, publisher=publisher)
+        self.repository = repository
+
+        self.scheduler = self._configure_scheduler()
+        self.tasks = []
+
+    @staticmethod
+    def _configure_scheduler():
+        jobstores = {'default': MemoryJobStore()}
+        print("JOBS___", jobstores)
+
+        scheduler = AsyncIOScheduler(jobstores=jobstores, timezone=utc)
+        scheduler.start()
+        return scheduler
 
     async def run(self, research_id: int) -> None:
         """ Основной цикл проведения исследования. """
         await self.research_starter.start_up_research(research_id)
-
+        research = await self.repository.research_repo.short.get_research_by_id(research_id=research_id)
+        end_time = research.end_date
+        print("END_TIME________________", end_time)
         # Запуск асинхронных задач для проверки завершения исследования
 
-        tasks_over_checker = asyncio.create_task(self.research_over_checker.monitor_completion(research_id))
+        # tasks_over_checker = asyncio.create_task(self.research_over_checker.monitor_completion(research_id))
         tasks_user_ping = asyncio.create_task(self.research_user_pingator.ping_users(research_id))
+        self.tasks.append(tasks_user_ping)
+
+        job = self.scheduler.add_job(func=self.stop_scheduled_task,
+                                     trigger=DateTrigger(run_date=end_time),
+                                     args=[research_id]
+                                     )
 
         try:
             # Ждём, когда одна из задач завершится, остальные будут отменены
-            done, pending = await asyncio.wait([tasks_over_checker, tasks_user_ping],
+            done, pending = await asyncio.wait([
+                                                tasks_user_ping],
                                                return_when=asyncio.FIRST_COMPLETED)
 
             # Отмена всех оставшихся задач (например, пингатор может продолжать дольше нужного)
             for task in pending:
                 task.cancel()
+            job.remove()
+            self.scheduler.shutdown()
+            logger.warning(f'scheduler останвовился.')
             # Наверняка отменям все
             await self.research_stopper.complete_research(research_id)
 
@@ -435,3 +463,28 @@ class ResearchProcess:
             # Обработка ошибок на глобальном уровне
             logger.error(f"Ошибка в процессе исследования {research_id}: {str(e)}")
             raise e
+
+    async def stop_scheduled_task(self,research_id):
+        for task in self.tasks:
+            if not task.done():
+                task.cancel()
+                logger.info(f"Task cancelled at {datetime.now()}")
+        await self.research_stopper.complete_research(research_id)
+
+
+
+# if __name__ == '__main__':
+#     async def main():
+#         repository = RepoStorage(database_session_manager=DatabaseSessionManager(
+#         database_url=database_postgres_settings.async_postgres_url))
+#
+#         publisher = NatsPublisher()
+#
+#         process = ResearchProcess(repository=repository,
+#                                   notifier=None,
+#                                   publisher=publisher,
+#                                   )
+#         await process.run(37)
+#
+#     asyncio.run(main())
+
