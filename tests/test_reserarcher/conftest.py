@@ -10,7 +10,6 @@ from src.database.postgres import ModelBase, Services, User, ResearchStatusEnum,
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.client import ClientRepository
 from src.database.repository.storage import RepoStorage
-from src.database.repository.user import UserRepository
 from src.schemas.service.assistant import AssistantDTOPost
 from src.schemas.service.client import TelegramClientDTOPost
 from src.services.publisher.publisher import NatsPublisher
@@ -55,14 +54,18 @@ async def init_db(db_engine) -> DatabaseSessionManager:
 
 
 @pytest.fixture(scope="session")
-async def create_test_data(init_db):
-    repo_storage = RepoStorage(init_db)
+async def _repo_storage(init_db):
+    yield RepoStorage(init_db)
+
+
+@pytest.fixture(scope="session")
+async def create_test_data(init_db, _repo_storage):
     # Create Assistant
     assistants = AssistantDTOPost(
         name="Test Assistant", system_prompt="Test System Prompt",
         user_prompt="Test User Prompt", for_conversation=True
     )
-    await repo_storage.assistant_repo.save_new_assistant(assistants.dict())
+    await _repo_storage.assistant_repo.save_new_assistant(assistants.dict())
 
     # Create TelegramClient
     telegram_client = TelegramClientDTOPost(
@@ -82,10 +85,10 @@ async def create_test_data(init_db):
         workdir="/tmp/test_client",
         created_at=datetime.datetime.utcnow()
     )
-    await ClientRepository(init_db).save(telegram_client.dict())
+    await _repo_storage.client_repo.save(telegram_client.dict())
 
     # Create Service
-    async with init_db.session_scope() as session:
+    async with init_db.async_session_factory() as session:
         async with session.begin():
             # Создаем тестовый сервис
             service = Services(service_id=1, name="Test Service")
@@ -93,7 +96,7 @@ async def create_test_data(init_db):
             await session.commit()
 
     # Create ResearchOwner
-    async with init_db.session_scope() as session:
+    async with init_db.async_session_factory() as session:
         async with session.begin():
             research_owner = ResearchOwner(
                 name=fake.first_name(),
@@ -110,7 +113,7 @@ async def create_test_data(init_db):
             await session.commit()
 
     # Create Users
-    async with init_db.session_scope() as session:
+    async with init_db.async_session_factory() as session:
         async with session.begin():
             users = [
                 User(
@@ -134,7 +137,7 @@ async def create_test_data(init_db):
             await session.commit()
 
     # Create Research
-    async with init_db.session_scope() as session:
+    async with init_db.async_session_factory() as session:
         async with session.begin():
             # Создаем исследования
             researches = [
@@ -159,7 +162,7 @@ async def create_test_data(init_db):
             await session.commit()
 
     # Create Research Status
-    async with init_db.session_scope() as session:
+    async with init_db.async_session_factory() as session:
         async with session.begin():
             for i in range(len(researches)):
                 research_status = ResearchStatus(
@@ -171,7 +174,7 @@ async def create_test_data(init_db):
             await session.commit()
 
     # Create User Status
-    async with init_db.session_scope() as session:
+    async with init_db.async_session_factory() as session:
         async with session.begin():
             user_status = [
                 UserStatus(
@@ -184,11 +187,10 @@ async def create_test_data(init_db):
             session.add_all(user_status)
             await session.commit()
 
-    user_repo = UserRepository(init_db)
-    async with init_db.session_scope() as session:
+    async with init_db.async_session_factory() as session:
         async with session.begin():
             for i in range(len(users)):
-                await user_repo.bind_research(
+                await _repo_storage.user_in_research_repo.short.bind_research(
                     user_id=users[i].user_id,
                     research_id=researches[0].research_id
                 )
