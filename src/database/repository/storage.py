@@ -35,6 +35,7 @@ class RepoStorage(BaseRepoStorage):
     def assistant_repo(self):
         return self._assistant_repo
 
+    @property
     def owner_repo(self):
         return self._owner_repo
 
