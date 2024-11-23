@@ -28,7 +28,7 @@ def communicator():
     return TestCommunicator()
 
 
-@pytest.skip("Deprecated")
+@pytest.skip("Deprecated", allow_module_level=True)
 class TestManager:
     @pytest.mark.asyncio
     async def test_connection(self, init_client, session_folder, communicator):
