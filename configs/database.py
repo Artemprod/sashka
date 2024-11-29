@@ -13,7 +13,7 @@ class PostgresDataBaseConfigs(BaseConfig):
     postgres_user: str = Field(default="postgres", validation_alias="MAIN_POSTGRES_USER")
     postgres_password: str = Field(default="1234", validation_alias="MAIN_POSTGRES_PASSWORD")
     postgres_host: str = Field(default="localhost", validation_alias="MAIN_POSTGRES_HOST")
-    postgres_port: str = Field(default="5000", validation_alias="MAIN_POSTGRES_PORT")
+    postgres_port: str = Field(default="5432", validation_alias="MAIN_POSTGRES_PORT")
     postgres_database: str = Field(default="cusdever_client", validation_alias="MAIN_POSTGRES_DATABASE")
 
     @property
@@ -30,7 +30,7 @@ class PostgresTestDataBaseConfigs(BaseConfig):
     test_postgres_user: str = Field(default="postgres", validation_alias="TEST_POSTGRES_USER")
     test_postgres_password: str = Field(default="1234", validation_alias="TEST_POSTGRES_PASSWORD")
     test_postgres_host: str = Field(default="localhost", validation_alias="TEST_POSTGRES_HOST")
-    test_postgres_port: str = Field(default="5000", validation_alias="TEST_POSTGRES_PORT")
+    test_postgres_port: str = Field(default="5432", validation_alias="TEST_POSTGRES_PORT")
     test_postgres_database: str = Field(default="test_cusdever_client", validation_alias="TEST_POSTGRES_DATABASE")
 
     @property
