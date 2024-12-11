@@ -203,25 +203,36 @@ class StopWordChecker:
                                              "STOP"]
         self.stop_patterns = [re.compile(rf'\b{re.escape(phrase)}\b', re.IGNORECASE) for phrase in self.stop_phrases]
 
-    async def check_for_stop_words(self, research_id: int, response_message: str) -> bool:
+    async def monitor_stop_words(self, telegram_id: int, response_message: str) -> str:
         """
         Проверяет сообщение на наличие стоп-фраз и при их обнаружении завершает исследование.
 
-        :param research_id: ID исследования, для которого выполняется проверка.
+        :param telegram_id: ID исследования, для которого выполняется проверка.
         :param response_message: Проверяемое сообщение (сгенерированное или полученное в процессе исследования).
         :return: True, если была обнаружена стоп-фраза и исследование завершено, иначе False.
         """
         try:
-            if await self._contains_stop_phrase(response_message) or await self.check_partial_match(response_message):
-                logger.info(f"Найдена стоп-фраза в сообщении для исследования {research_id}: '{response_message}'")
+            if (
+                    not await self._contains_stop_phrase(response_message)
+                    # not await self.check_partial_match(response_message)
+            ):
+                return response_message
 
-                await self.stopper.complete_research(research_id=research_id)
-                return True
-            return False
+            logger.info(f"Найдена стоп-фраза в сообщении для исследования {telegram_id}: '{response_message}'")
+            cleared_message =  self._delete_stop_words(response_message)
+            await self.repo.user_in_research_repo.short.update_user_status(telegram_id, UserStatusEnum.DONE)
+            return cleared_message
 
         except Exception as e:
-            logger.error(f"Ошибка при проверке стоп-слов для исследования {research_id}: {str(e)}")
-            return False
+            logger.error(f"Ошибка при проверке стоп-слов для исследования {telegram_id}: {str(e)}")
+            raise
+
+    # TODO refactor
+    def _delete_stop_words(self, message: str) -> str:
+        for pattern in self.stop_patterns:
+            edited_message = re.sub(pattern, "", message)
+        return edited_message
+
 
     async def _contains_stop_phrase(self, message: str) -> bool:
         """
@@ -231,21 +242,21 @@ class StopWordChecker:
         """
         return any(pattern.search(message) for pattern in self.stop_patterns)
 
-    async def check_partial_match(self, message: str, threshold: float = 0.8) -> bool:
-        """
-        Проверяет частичное совпадение стоп-фраз в сообщении.
-
-        :param message: Сообщение для проверки.
-        :param threshold: Пороговое значение для частичного совпадения (по умолчанию 0.8 или 80%).
-        :return: True, если частичное совпадение превышает порог, иначе False.
-        """
-        words = message.lower().split()
-        for phrase in self.stop_phrases:
-            phrase_words = phrase.lower().split()  # Разбиваем фразу на слова
-            matches = sum(word in words for word in phrase_words)  # Подсчитываем совпавшие слова
-            if matches / len(phrase_words) >= threshold:
-                return True
-        return False
+    # async def check_partial_match(self, message: str, threshold: float = 0.8) -> bool:
+    #     """
+    #     Проверяет частичное совпадение стоп-фраз в сообщении.
+    #
+    #     :param message: Сообщение для проверки.
+    #     :param threshold: Пороговое значение для частичного совпадения (по умолчанию 0.8 или 80%).
+    #     :return: True, если частичное совпадение превышает порог, иначе False.
+    #     """
+    #     words = message.lower().split()
+    #     for phrase in self.stop_phrases:
+    #         phrase_words = phrase.lower().split()  # Разбиваем фразу на слова
+    #         matches = sum(word in words for word in phrase_words)  # Подсчитываем совпавшие слова
+    #         if matches / len(phrase_words) >= threshold:
+    #             return True
+    #     return False
 
     async def update_stop_phrases(self, new_phrases: List[str]):
         """

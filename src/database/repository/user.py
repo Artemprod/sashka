@@ -3,7 +3,7 @@ from operator import and_
 from typing import List
 from typing import Optional
 
-
+import sqlalchemy.exc
 from loguru import logger
 from sqlalchemy import delete
 from sqlalchemy import insert
@@ -164,21 +164,27 @@ class UserRepository(BaseRepository):
                 logger.info(f"User information updated for user with telegram_id {telegram_id}")
                 return UserDTOFull.model_validate(updated_user, from_attributes=True)
 
-    async def update_user_status(self, telegram_id, status: UserStatusEnum):
+    async def update_user_status(self, telegram_id, status: UserStatusEnum)->Optional[UserStatusEnum]:
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
-                sub_user = select(User.user_id).where(User.tg_user_id == telegram_id).scalar_subquery()
+                try:
+                    sub_user = select(User.user_id).where(User.tg_user_id == telegram_id).scalar_subquery()
 
-                stmt = (update(UserStatus)
-                        .values(status_name=status, updated_at=datetime.datetime.now())
-                        .where(UserStatus.user_id == sub_user)
-                        .returning(UserStatus)
-                        )
+                    stmt = (update(UserStatus)
+                            .values(status_name=status, updated_at=datetime.datetime.now())
+                            .where(UserStatus.user_id == sub_user)
+                            .returning(UserStatus)
+                            )
 
-                updated = await session.execute(stmt)
-                await session.commit()
-                logger.info(f"User status updated {updated}")
-                return updated
+                    updated = await session.execute(stmt)
+                    await session.commit()
+                    logger.info(f"User status updated {updated}")
+                    return updated.scalars().first().status_name
+
+                except sqlalchemy.exc.SQLAlchemyError as e:
+                    logger.error(f"error in update status {updated}")
+                    raise e
+
 
     async def delete_user(self, telegram_id: int) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
