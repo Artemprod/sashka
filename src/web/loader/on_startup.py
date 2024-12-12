@@ -1,3 +1,4 @@
+import pytz
 from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -34,6 +35,6 @@ def initialize_apscheduler() -> AsyncIOScheduler:
         )
     }
 
-    scheduler = AsyncIOScheduler(jobstores=jobstores, timezone=utc)
+    scheduler = AsyncIOScheduler(jobstores=jobstores,  timezone=pytz.utc)
     scheduler.start()
     return scheduler

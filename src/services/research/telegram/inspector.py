@@ -8,19 +8,11 @@ from datetime import timezone
 from typing import Dict
 from typing import List
 from typing import Optional
-
-from apscheduler.jobstores.memory import MemoryJobStore
-from apscheduler.jobstores.redis import RedisJobStore
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.date import DateTrigger
+import pytz
 from loguru import logger
-from pytz import utc
-
-from configs.database import database_postgres_settings
 from configs.nats_queues import nats_subscriber_communicator_settings
-from configs.redis import redis_apscheduler_config
 from configs.research import research_pingator_settings
-from src.database.postgres.engine.session import DatabaseSessionManager
+
 from src.database.postgres.models.enum_types import ResearchStatusEnum
 from src.database.postgres.models.enum_types import UserStatusEnum
 from src.database.repository.storage import RepoStorage
@@ -34,6 +26,17 @@ from src.services.research.models import PingDataQueueDTO
 from src.services.research.telegram.decorators.finish_reserch import move_users_to_archive
 from src.services.research.utils import CyclePingAttemptCalculator
 
+
+class BaseStopper:
+
+    def __init__(self, repository, stopper):
+        self.repository = repository
+        self.stopper = stopper
+        self.settings = self._load_settings()
+
+    @staticmethod
+    def _load_settings() -> Dict[str, int]:
+        return {"delay_check_interval": 60}
 
 class ResearchStarter:
     def __init__(self,
@@ -86,7 +89,7 @@ class ResearchStarter:
 
 
 class ResearchStopper:
-    def __init__(self, repository: RepoStorage, notifier):
+    def __init__(self, repository: RepoStorage, notifier=None):
         self.repository = repository
         self.notifier = notifier
 
@@ -134,53 +137,20 @@ class ResearchStopper:
         )
 
 
-class ResearchOverChecker:
-    def __init__(self, repository, stopper):
-        self.repository = repository
-        self.stopper = stopper
-        self.settings = self._load_settings()
 
-    @staticmethod
-    def _load_settings() -> Dict[str, int]:
-        return {"delay_check_interval": 60}
+class UserDoneStopper(BaseStopper):
 
-    async def monitor_completion(self, research_id: int):
-        """
-        Универсальный метод для проверки завершения исследования (по времени
-        или по статусу пользователей). Проверяет на двух уровнях: по энд-дате и
-        по количеству пользователей в процессе.
-        """
-        end_date = await self._get_research_end_date(research_id)
-
+    async def monitor_user_status(self,research_id:int):
         while True:
-            research_status = await self.get_research_current_status(research_id)
-
-            # Проверка на конечную дату
-            if end_date and datetime.now() >= end_date:
-                await self.stopper.complete_research(research_id)
-                logger.info(f"Завершил исследование {research_id} по истечению времени")
-                break
-
             # Проверка на наличие активных пользователей
             user_in_progress = await self._get_users_in_progress(research_id)
-
             if not user_in_progress:
                 await self.stopper.complete_research(research_id)
                 logger.info(f"Завершил исследование {research_id}, так как закончились пользователи")
-                break
-
-            # Проверка на смену статуса исследования
-            if research_status not in [ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.WAIT.value]:
-                await self.stopper.complete_research(research_id)
-                logger.info(f"Завершил исследование {research_id} по смене статуса")
-                break
+                return
 
             logger.info(f"Проверяю исследование {research_id}, пользователей в процессе: {len(user_in_progress)}")
             await asyncio.sleep(self.settings['delay_check_interval'])
-
-    async def _get_research_end_date(self, research_id: int) -> Optional[datetime]:
-        research = await self.repository.research_repo.short.get_research_by_id(research_id=research_id)
-        return research.end_date.replace(tzinfo=None) if research.end_date else None
 
     async def _get_users_in_progress(self, research_id: int) -> List[UserDTOFull]:
         # Получение пользователей с активным статусом
@@ -188,9 +158,71 @@ class ResearchOverChecker:
             research_id=research_id, status=UserStatusEnum.IN_PROGRESS
         )
 
-    async def get_research_current_status(self, research_id: int) -> str:
+class ResearchStatusStopper(BaseStopper):
+
+    async def monitor_research_status(self, research_id:int):
+
+        while True:
+            research_status = await self._get_research_current_status(research_id)
+            # Проверка на смену статуса исследования
+            if research_status not in [ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.WAIT.value]:
+                await self.stopper.complete_research(research_id)
+                logger.info(f"Завершил исследование {research_id} по смене статуса")
+                return
+
+            logger.info(f"Проверяю исследование {research_id}, статус исследования: {research_status}")
+            await asyncio.sleep(self.settings['delay_check_interval'])
+
+    async def _get_research_current_status(self, research_id: int) -> str:
         research_status = await self.repository.status_repo.research_status.get_research_status(research_id=research_id)
         return research_status.status_name
+
+
+class ResearchOverChecker(BaseStopper):
+
+    async def monitor_time_completion(self, research_id: int):
+        """
+        Универсальный метод для проверки завершения исследования (по времени
+        или по статусу пользователей). Проверяет на двух уровнях: по энд-дате и
+        по количеству пользователей в процессе.
+        """
+        end_date = await self._get_research_end_date(research_id)
+
+        if not end_date:
+            logger.warning(f"Исследование {research_id} не имеет конечной даты")
+            return
+
+        while True:
+            current_time = datetime.now(pytz.utc).replace(tzinfo=None)
+
+            print("CURRENT TIME ____ ",current_time)
+            print("END DATE ____ ", end_date)
+
+            # Проверка на конечную дату
+            if current_time >= end_date:
+                await self.stopper.complete_research(research_id)
+                logger.info(f"Завершил исследование {research_id} по истечению времени, время завершения {current_time}")
+                return 1
+
+            logger.info(
+                f"Проверяю исследование {research_id}, оставшееся время иследвония : {end_date - current_time}")
+
+            await asyncio.sleep(self.settings['delay_check_interval'])
+
+    async def _get_research_end_date(self, research_id: int) -> Optional[datetime]:
+        research = await self.repository.research_repo.short.get_research_by_id(research_id=research_id)
+
+        # Быстрый возврат, если даты нет
+        if not research.end_date:
+            return None
+
+        # Если время уже наивное, возвращаем как есть
+        if research.end_date.tzinfo is None:
+            return research.end_date
+
+        # Конвертируем в UTC, если timezone отличается
+        return research.end_date.astimezone(pytz.utc).replace(tzinfo=None)
+
 
 
 class StopWordChecker:
@@ -407,54 +439,40 @@ class UserPingator:
 
 
 class ResearchProcess:
-    def __init__(self, repository, notifier, publisher):
+    def __init__(self,
+                 repository: RepoStorage,
+                 notifier,
+                 publisher: NatsPublisher,
+                 ):
+
+
         self.research_starter = ResearchStarter(repository=repository, publisher=publisher)
         self.research_stopper = ResearchStopper(repository, notifier)
+        self.user_status_stopper = UserDoneStopper(repository=repository, stopper=self.research_stopper)
+        self.research_status_stopper = ResearchStatusStopper( repository=repository, stopper=self.research_stopper)
         self.research_over_checker = ResearchOverChecker(repository, self.research_stopper)
         self.research_user_pingator = UserPingator(repo=repository, publisher=publisher)
-        self.repository = repository
-
-        self.scheduler = self._configure_scheduler()
-        self.tasks = []
-
-    @staticmethod
-    def _configure_scheduler():
-        jobstores = {'default': MemoryJobStore()}
-        print("JOBS___", jobstores)
-
-        scheduler = AsyncIOScheduler(jobstores=jobstores, timezone=utc)
-        scheduler.start()
-        return scheduler
 
     async def run(self, research_id: int) -> None:
         """ Основной цикл проведения исследования. """
         await self.research_starter.start_up_research(research_id)
-        research = await self.repository.research_repo.short.get_research_by_id(research_id=research_id)
-        end_time = research.end_date
-        print("END_TIME________________", end_time)
+
         # Запуск асинхронных задач для проверки завершения исследования
 
-        # tasks_over_checker = asyncio.create_task(self.research_over_checker.monitor_completion(research_id))
+        tasks_over_checker = asyncio.create_task(self.research_over_checker.monitor_time_completion(research_id))
+        task_user_done_status = asyncio.create_task(self.user_status_stopper.monitor_user_status(research_id))
+        task_research_done_status = asyncio.create_task(self.research_status_stopper.monitor_research_status(research_id))
         tasks_user_ping = asyncio.create_task(self.research_user_pingator.ping_users(research_id))
-        self.tasks.append(tasks_user_ping)
-
-        job = self.scheduler.add_job(func=self.stop_scheduled_task,
-                                     trigger=DateTrigger(run_date=end_time),
-                                     args=[research_id]
-                                     )
 
         try:
             # Ждём, когда одна из задач завершится, остальные будут отменены
-            done, pending = await asyncio.wait([
-                                                tasks_user_ping],
+            done, pending = await asyncio.wait([tasks_over_checker, task_user_done_status,task_research_done_status, tasks_user_ping],
                                                return_when=asyncio.FIRST_COMPLETED)
 
             # Отмена всех оставшихся задач (например, пингатор может продолжать дольше нужного)
             for task in pending:
                 task.cancel()
-            job.remove()
-            self.scheduler.shutdown()
-            logger.warning(f'scheduler останвовился.')
+
             # Наверняка отменям все
             await self.research_stopper.complete_research(research_id)
 
@@ -463,13 +481,6 @@ class ResearchProcess:
             # Обработка ошибок на глобальном уровне
             logger.error(f"Ошибка в процессе исследования {research_id}: {str(e)}")
             raise e
-
-    async def stop_scheduled_task(self,research_id):
-        for task in self.tasks:
-            if not task.done():
-                task.cancel()
-                logger.info(f"Task cancelled at {datetime.now()}")
-        await self.research_stopper.complete_research(research_id)
 
 
 

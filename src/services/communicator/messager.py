@@ -11,6 +11,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+import pytz
 from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
@@ -333,7 +334,7 @@ class ScheduledFirstMessage(MessageFirstSend):
             self.scheduler.add_job(
                 self.publisher.publish_message_to_stream,
                 args=[publish_message],
-                trigger=DateTrigger(run_date=send_time+timedelta(seconds=20))
+                trigger=DateTrigger(run_date=send_time+timedelta(seconds=20),timezone=pytz.utc)
             )
 
             #TODO делать апдейт статуса когда ? когда отпралися  ?

@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
@@ -18,6 +19,7 @@ from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.manager import TelegramResearchManager
 from src.web.dependencies.researcher.start import get_publisher, get_apscheduler
 from src.web.dependencies.researcher.start import get_research_manager
+from src.web.dependencies.researcher.validation import validate_data
 
 router = APIRouter(prefix="/research/telegram", tags=["Research"])
 
@@ -33,27 +35,33 @@ async def start_research(
         apscheduler: AsyncIOScheduler = Depends(get_apscheduler)
 ) -> dict:
     """Запускает новый процесс исследования."""
+
+
+
     try:
+        validated_research = await validate_data(research)
         # Создание нового исследования
-        created_research: ResearchDTORel = await manager.create_research(research=research, owner=owner)
+        created_research: ResearchDTORel = await manager.create_research(research=validated_research, owner=owner)
         # Создание и публикация сообщения о начале исследования
         subject_message = NatsQueueMessageDTOSubject(
             message='',
             subject=nats_subscriber_researcher_settings.researches.start_telegram_research,
             headers={"research_id": str(created_research.research_id)}
         )
-
+        #FIXME Тут скорее вынести в сервис начала иследования разделение ответсвенности представление не должно знать бизнес логику
         # Запланировать публикацию сообщения через 5 минут после начала исследования
         apscheduler.add_job(
             publisher.publish_message_to_subject,
             args=[subject_message],
-            trigger=DateTrigger(run_date=created_research.start_date)
+            trigger=DateTrigger(run_date=created_research.start_date, timezone=pytz.utc)
         )
 
         return {
             "message": f"Research '{created_research.name}' has been planed to start at {created_research.start_date}",
             "research_id": created_research.research_id
         }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Failed to start research: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to start research: {str(e)}") from e

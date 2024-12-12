@@ -29,3 +29,4 @@ class ModelBase(DeclarativeBase):
         str_1024: String(2048),
         str_10: String(2048),
     }
+
