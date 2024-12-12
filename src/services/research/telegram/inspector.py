@@ -189,7 +189,6 @@ class StopWordChecker:
     """Класс для поиска как точного, так и частичного стоп-слов в сообщениях, завершение исследования при их нахождении."""
 
     def __init__(self,
-                 stopper: 'ResearchStopper',
                  repo: 'RepoStorage',
                  stop_phrases: Optional[List[str]] = None):
         """
@@ -197,7 +196,6 @@ class StopWordChecker:
         :param repo: Репозиторий для работы с данными.
         :param stop_phrases: Список стоп-фраз для проверки. Если не передан, используются стандартные фразы.
         """
-        self.stopper = stopper
         self.repo = repo
         self.stop_phrases = stop_phrases or ["завершено", "исследование завершено", "конец исследования", "окончено",
                                              "STOP"]
@@ -212,10 +210,7 @@ class StopWordChecker:
         :return: True, если была обнаружена стоп-фраза и исследование завершено, иначе False.
         """
         try:
-            if (
-                    not await self._contains_stop_phrase(response_message)
-                    # not await self.check_partial_match(response_message)
-            ):
+            if not await self._contains_stop_phrase(response_message):
                 return response_message
 
             logger.info(f"Найдена стоп-фраза в сообщении для исследования {telegram_id}: '{response_message}'")
@@ -231,7 +226,9 @@ class StopWordChecker:
     def _delete_stop_words(self, message: str) -> str:
         for pattern in self.stop_patterns:
             edited_message = re.sub(pattern, "", message)
-        return edited_message
+            if edited_message != message:
+                return edited_message
+        return message
 
 
     async def _contains_stop_phrase(self, message: str) -> bool:
