@@ -15,13 +15,8 @@ def load_repo(mocker):
 
 
 @pytest.fixture
-def load_stopper(mocker):
-    return mocker.Mock(spec=ResearchStopper)
-
-
-@pytest.fixture
-def load_stop_word_checker(load_repo,load_stopper,):
-    return  StopWordChecker(stopper=load_stopper,repo=load_repo)
+def load_stop_word_checker(load_repo):
+    return  StopWordChecker(repo=load_repo)
 
 
 @pytest.mark.asyncio
