@@ -411,6 +411,22 @@ class MessageAnswer(BaseMessageHandler):
 
 
 class ResearchMessageAnswer(MessageAnswer):
+    def __init__(
+            self,
+            publisher,
+            repository,
+            prompt_generator: "ExtendedPingPromptGenerator",
+            context_request: "ContextRequest",
+            stop_word_checker: "StopWordChecker"
+    ):
+        super().__init__(
+            publisher=publisher,
+            repository=repository,
+            prompt_generator=prompt_generator,
+            context_request=context_request
+        )
+
+        self.stop_word_checker = stop_word_checker
 
     async def handle(
         self,
@@ -430,7 +446,7 @@ class ResearchMessageAnswer(MessageAnswer):
         prompt = await self._generate_prompt(research_id)
 
         # Получение ответа от контекста
-        response = await self._get_context_response(prompt, context)
+        response = await self._get_context_response(prompt, context, message_object.client_telegram_id)
 
         # Сохранение сообщения ассистента
         await self._save_assistant_message(response, message_object, research_id, client, assistant)
@@ -466,11 +482,21 @@ class ResearchMessageAnswer(MessageAnswer):
     async def _generate_prompt(self, research_id: int) -> PromptDTO:
         return await self.prompt_generator.research_prompt_generator.generate_prompt(research_id=research_id)
 
-    async def _get_context_response(self, prompt: PromptDTO, context: List[Dict[str, str]]) -> ContextResponseDTO:
-
-        return await self.context_request.get_response(
-            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt, context=context)
+    async def _get_context_response(
+            self,
+            prompt: PromptDTO,
+            context: List[Dict[str, str]],
+            client_telegram_id: int
+    ) -> ContextResponseDTO:
+        responce = await self.context_request.get_response(
+            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt,
+                                          context=context)
         )
+        await self.stop_word_checker.monitor_stop_words(
+            telegram_client_id=client_telegram_id,
+            response=responce.response
+        )
+        return responce
 
     async def _save_assistant_message(self, response: ContextResponseDTO, message_object: IncomeUserMessageDTOQueue, research_id: int, client: TelegramClientDTOGet, assistant):
         await self.save_assistant_message(

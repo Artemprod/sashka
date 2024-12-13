@@ -35,6 +35,7 @@ class TelegramCommunicator:
                  single_request: "SingleRequest",
                  context_request: "ContextRequest",
                  prompt_generator: "ExtendedPingPromptGenerator",
+                 stop_word_checker: "StopWordChecker",
                  destination_configs: Optional[Dict] = None,
                  ):
 
@@ -60,7 +61,8 @@ class TelegramCommunicator:
             publisher=publisher,
             repository=repository,
             prompt_generator=prompt_generator,
-            context_request=context_request
+            context_request=context_request,
+            stop_word_checker=stop_word_checker
         )
 
         self.ping_message = PingMessage(
