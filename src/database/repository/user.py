@@ -164,7 +164,7 @@ class UserRepository(BaseRepository):
                 logger.info(f"User information updated for user with telegram_id {telegram_id}")
                 return UserDTOFull.model_validate(updated_user, from_attributes=True)
 
-    async def update_user_status(self, telegram_id, status: UserStatusEnum)->Optional[UserStatusEnum]:
+    async def update_user_status(self, telegram_id, status: UserStatusEnum):
         async with (self.db_session_manager.async_session_factory() as session):
             async with session.begin():  # использовать транзакцию
                 try:
@@ -182,7 +182,7 @@ class UserRepository(BaseRepository):
                     return updated.scalars().first().status_name
 
                 except sqlalchemy.exc.SQLAlchemyError as e:
-                    logger.error(f"error in update status {updated}")
+                    logger.error(f"error in update status for user {telegram_id}: {str(e)}")
                     raise e
 
 

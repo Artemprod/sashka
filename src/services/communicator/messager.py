@@ -373,7 +373,7 @@ class ResearchMessageAnswer(MessageAnswer):
         prompt = await self._generate_prompt(research_id)
 
         # Получение ответа от контекста
-        response = await self._get_context_response(prompt, context, message_object.client_telegram_id)
+        response = await self._get_context_response(prompt, context, message_object.from_user)
 
         # Сохранение сообщения ассистента
         await self._save_assistant_message(response, message_object, research_id, client, assistant)
@@ -420,8 +420,8 @@ class ResearchMessageAnswer(MessageAnswer):
                                           context=context)
         )
         await self.stop_word_checker.monitor_stop_words(
-            telegram_client_id=client_telegram_id,
-            response=responce.response
+            telegram_id=client_telegram_id,
+            response_message=responce.response
         )
         return responce
 
