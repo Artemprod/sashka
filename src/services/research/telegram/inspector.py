@@ -120,13 +120,13 @@ class ResearchStopper:
         research_status = await self._get_research_status(research_id)
 
         # Условия не корректного завершения исследования
-        if users_in_progress and research_status != ResearchStatusEnum.DONE:
+        if users_in_progress and research_status != ResearchStatusEnum.DONE.value:
             logger.warning("Некорректное завершение. Пользователи и исследование в процессе")
             raise UserAndResearchInProgressError()
         elif users_in_progress:
             logger.warning("Некорректное завершение.Пользователи остаются в процессе")
             raise UserInProgressError()
-        elif research_status != ResearchStatusEnum.DONE:
+        elif research_status != ResearchStatusEnum.DONE.value:
             logger.warning("Некорректное завершение. Статус исследования не сменён на DONE")
             raise ResearchStatusInProgressError()
 
