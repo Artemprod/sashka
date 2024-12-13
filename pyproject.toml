@@ -37,6 +37,7 @@ pydantic-settings = "^2.6.1"
 pydantic-settings-yaml = "^0.2.0"
 ruff = "^0.7.3"
 aiocache = "^0.12.3"
+apscheduler = "^3.10.4"
 pytest-mock = "^3.14.0"
 
 

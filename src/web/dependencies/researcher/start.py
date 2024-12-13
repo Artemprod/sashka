@@ -1,3 +1,4 @@
+from apscheduler.schedulers.background import BackgroundScheduler
 from starlette.requests import Request
 
 from src.database.postgres.engine.session import DatabaseSessionManager
@@ -30,3 +31,7 @@ async def get_analytic_instruments(request: Request) -> AnalyticCollector:
     """Извлекает CSV аналитический класс из состояния приложения."""
     return request.app.state.analytic_collector.instruments
 
+
+async def get_apscheduler(request: Request) -> BackgroundScheduler:
+    """Извлекает планировщик"""
+    return request.app.state.apschedular

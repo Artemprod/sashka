@@ -3,6 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
 from nats.js.api import DeliverPolicy
 from nats.js.api import RetentionPolicy
 from nats.js.api import StorageType
@@ -10,7 +11,7 @@ from pydantic import Field
 from pydantic import field_validator
 
 from configs.base import BaseConfig
-
+load_dotenv()
 sys.path.append(str(Path(__file__).parent.parent))
 
 

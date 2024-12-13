@@ -1,11 +1,12 @@
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic import Field
 from pydantic import field_validator
 
 from configs.base import BaseConfig
-
+load_dotenv()
 sys.path.append(str(Path(__file__).parent.parent))
 
 
