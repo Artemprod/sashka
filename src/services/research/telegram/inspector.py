@@ -21,12 +21,14 @@ from src.schemas.service.research import ResearchDTOFull
 from src.schemas.service.user import UserDTOBase
 from src.schemas.service.user import UserDTOFull
 from src.schemas.service.user import UserDTQueue
+from src.services.exceptions.research import UntimelyCompletionError, ResearchCompletionError, \
+    UserAndResearchInProgressError, UserInProgressError, ResearchStatusInProgressError
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.models import PingDataQueueDTO
 from src.services.research.telegram.decorators.finish_reserch import move_users_to_archive
 from src.services.research.utils import CyclePingAttemptCalculator
 
-
+#TODO Вынести во всех классах reserch id в инициализхатор классса потому что классы являются частю фасада
 class BaseStopper:
 
     def __init__(self, repository, stopper):
@@ -87,42 +89,66 @@ class ResearchStarter:
         )
         return users_in_research
 
-
 class ResearchStopper:
-    def __init__(self, repository: RepoStorage, notifier=None):
+    def __init__(self, repository, notifier=None):
+        """
+        Инициализация класса для остановки исследования.
+
+        :param repository: Репозиторий для работы с данными.
+        :param notifier: Необязательный нотификатор.
+        """
         self.repository = repository
         self.notifier = notifier
 
-    @move_users_to_archive
-    async def complete_research(self, research_id) -> None:
-        """ Останавливает исследование и переводит его статус на завершённый """
+    async def complete_research(self, research_id: int) -> int:
+        """
+        Завершает исследование, меняя статусы пользователей и исследования.
+
+        :param research_id: Идентификатор исследования.
+        :raises: Exception при ошибке завершения исследования.
+        """
+
         user_group = await self._get_users_in_research(research_id)
-        logger.info('Начал завершение исследования')
+        logger.info("Получен список пользователей для завершения исследования")
 
+        # изменение статусов
+        await self._update_research_status(research_id)
+        await self._update_user_statuses(user_group)
+
+        # Проверка корректности завершения
+        users_in_progress = await self._get_users_in_progress(research_id)
+        research_status = await self._get_research_status(research_id)
+
+        # Условия не корректного завершения исследования
+        if users_in_progress and research_status != ResearchStatusEnum.DONE:
+            logger.warning("Некорректное завершение. Пользователи и исследование в процессе")
+            raise UserAndResearchInProgressError()
+        elif users_in_progress:
+            logger.warning("Некорректное завершение.Пользователи остаются в процессе")
+            raise UserInProgressError()
+        elif research_status != ResearchStatusEnum.DONE:
+            logger.warning("Некорректное завершение. Статус исследования не сменён на DONE")
+            raise ResearchStatusInProgressError()
+
+        logger.info(f"Исследование {research_id} завершено успешно")
+        return 1
+
+
+
+    async def _update_research_status(self, research_id: int) -> None:
+        """Обновление статуса исследования."""
         await self.repository.status_repo.research_status.change_research_status(
-            research_id=research_id,
-            status=ResearchStatusEnum.DONE
+            research_id=research_id, status=ResearchStatusEnum.DONE
         )
+        logger.info(f"Статус исследования {research_id} обновлён на DONE")
 
+    async def _update_user_statuses(self, user_group: List[UserDTOFull]) -> None:
+        """Обновление статусов пользователей."""
         await self.repository.status_repo.user_status.update_status_group_of_user(
             user_group=user_group,
             status=UserStatusEnum.DONE
         )
-
-        research_status = await self.repository.status_repo.research_status.get_research_status(
-            research_id=research_id
-        )
-
-        user_in_progress = await self._get_users_in_progress(research_id=research_id)
-
-        if research_status.status_name != ResearchStatusEnum.IN_PROGRESS and not user_in_progress:
-            logger.info("Исследование завершено")
-            # await self.notifier.notify_completion()
-        else:
-            logger.info("Исследование не завершено")
-            logger.info(
-                f"Статус исследования: {research_status.status_name}, Пользователи в процессе: {len(user_in_progress)}")
-            # await self.notifier.handle_incomplete_research()
+        logger.info(f"Статусы пользователей в группе {user_group} обновлены на DONE")
 
     async def _get_users_in_research(self, research_id) -> List[UserDTOFull]:
         users_in_research = await self.repository.user_in_research_repo.short.get_users_by_research_id(
@@ -130,45 +156,49 @@ class ResearchStopper:
         )
         return [user.tg_user_id for user in users_in_research]
 
-    async def _get_users_in_progress(self, research_id):
-        return await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
+    async def _get_users_in_progress(self, research_id) -> int:
+        users_in_progress = await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
             research_id=research_id,
             status=UserStatusEnum.IN_PROGRESS
         )
+        return len(users_in_progress)
 
-
+    async def _get_research_status(self, research_id: int) -> ResearchStatusEnum:
+        """Получение текущего статуса исследования."""
+        research_status = await self.repository.status_repo.research_status.get_research_status(
+            research_id=research_id
+        )
+        return research_status.status_name
 
 class UserDoneStopper(BaseStopper):
 
-    async def monitor_user_status(self,research_id:int):
+    async def monitor_user_status(self,research_id:int)->int:
         while True:
-            # Проверка на наличие активных пользователей
-            user_in_progress = await self._get_users_in_progress(research_id)
-            if not user_in_progress:
-                await self.stopper.complete_research(research_id)
-                logger.info(f"Завершил исследование {research_id}, так как закончились пользователи")
-                return
+            # Проверка наличие активных пользователей
+            users_in_progress = await self._get_users_in_progress(research_id)
+            if not users_in_progress:
+                logger.info(f"Завершаю исследование {research_id}, так как закончились пользователи")
+                return 1
 
-            logger.info(f"Проверяю исследование {research_id}, пользователей в процессе: {len(user_in_progress)}")
+            logger.info(f"Проверяю исследование {research_id}, пользователей в процессе: {users_in_progress}")
             await asyncio.sleep(self.settings['delay_check_interval'])
 
-    async def _get_users_in_progress(self, research_id: int) -> List[UserDTOFull]:
+    async def _get_users_in_progress(self, research_id: int)->int:
         # Получение пользователей с активным статусом
-        return await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
-            research_id=research_id, status=UserStatusEnum.IN_PROGRESS
-        )
+        users_in_progress = await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
+            research_id=research_id, status=UserStatusEnum.IN_PROGRESS)
+        return len(users_in_progress)
 
 class ResearchStatusStopper(BaseStopper):
 
-    async def monitor_research_status(self, research_id:int):
+    async def monitor_research_status(self, research_id:int)->int:
 
         while True:
             research_status = await self._get_research_current_status(research_id)
             # Проверка на смену статуса исследования
             if research_status not in [ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.WAIT.value]:
-                await self.stopper.complete_research(research_id)
-                logger.info(f"Завершил исследование {research_id} по смене статуса")
-                return
+                logger.info(f"Завершаю исследование {research_id} по смене статуса. Статус {research_status}")
+                return 1
 
             logger.info(f"Проверяю исследование {research_id}, статус исследования: {research_status}")
             await asyncio.sleep(self.settings['delay_check_interval'])
@@ -200,8 +230,7 @@ class ResearchOverChecker(BaseStopper):
 
             # Проверка на конечную дату
             if current_time >= end_date:
-                await self.stopper.complete_research(research_id)
-                logger.info(f"Завершил исследование {research_id} по истечению времени, время завершения {current_time}")
+                logger.info(f"Завершаю исследование {research_id} по истечению времени, время завершения {current_time}")
                 return 1
 
             logger.info(
@@ -332,29 +361,24 @@ class UserPingator:
         self._attempt_calculator = CyclePingAttemptCalculator
         self._ping_calculator = PingDelayCalculator()
 
+        self.settings = self._load_settings()
+
+    @staticmethod
+    def _load_settings() -> Dict[str, int]:
+        return {"delay_check_interval": 60}
+
     async def ping_users(self, research_id: int):
         """Пинг пользователей до тех пор, пока есть активные пользователи."""
         logger.info(f"Start ping for research {research_id} ")
 
         research_info: ResearchDTOFull = await self.repo.research_repo.short.get_research_by_id(research_id=research_id)
-        max_attempt = self._attempt_calculator(
-            research_info=research_info,
-            attempt_multiplicative=self.config.ping_attempts_multiplier).calculate_max_attempts()
 
-        attempt = 0
-        while attempt < max_attempt:
+        while True:
             users = await self.get_active_users(research_id)
-            research_status = await self.get_research_current_status(research_id)
-
-            # Объединенные проверки завершения
-            if not users or research_status not in [ResearchStatusEnum.IN_PROGRESS.value,
-                                                    ResearchStatusEnum.WAIT.value]:
-                logger.info("Все пользователи завершили задачи либо исследование неактивно. Остановка пинга.")
-                break
-
             await self.ping_users_concurrently(users, research_info)
             await asyncio.sleep(self.config.ping_interval)
-            attempt += 1
+            await asyncio.sleep(self.settings['delay_check_interval'])
+
 
     async def ping_users_concurrently(self, users: List[UserDTOFull], research_info: ResearchDTOFull):
         """Пингует пользователей параллельно с обработкой исключений."""
@@ -441,19 +465,19 @@ class UserPingator:
 class ResearchProcess:
     def __init__(self,
                  repository: RepoStorage,
-                 notifier,
                  publisher: NatsPublisher,
+                 notifier=None,
                  ):
 
 
         self.research_starter = ResearchStarter(repository=repository, publisher=publisher)
         self.research_stopper = ResearchStopper(repository, notifier)
         self.user_status_stopper = UserDoneStopper(repository=repository, stopper=self.research_stopper)
-        self.research_status_stopper = ResearchStatusStopper( repository=repository, stopper=self.research_stopper)
+        self.research_status_stopper = ResearchStatusStopper(repository=repository, stopper=self.research_stopper)
         self.research_over_checker = ResearchOverChecker(repository, self.research_stopper)
         self.research_user_pingator = UserPingator(repo=repository, publisher=publisher)
 
-    async def run(self, research_id: int) -> None:
+    async def run(self, research_id: int) -> int:
         """ Основной цикл проведения исследования. """
         await self.research_starter.start_up_research(research_id)
 
@@ -466,36 +490,28 @@ class ResearchProcess:
 
         try:
             # Ждём, когда одна из задач завершится, остальные будут отменены
-            done, pending = await asyncio.wait([tasks_over_checker, task_user_done_status,task_research_done_status, tasks_user_ping],
+            done, pending = await asyncio.wait([tasks_over_checker,
+                                                task_user_done_status,
+                                                task_research_done_status,
+                                                tasks_user_ping],
+
                                                return_when=asyncio.FIRST_COMPLETED)
 
+            logger.info(f"pending tasks {len(pending)}")
             # Отмена всех оставшихся задач (например, пингатор может продолжать дольше нужного)
             for task in pending:
                 task.cancel()
+            logger.info(f'All tasks stoped')
 
-            # Наверняка отменям все
+            # Проверяем и заврешаем иследование
             await self.research_stopper.complete_research(research_id)
 
             logger.info(f'Все задачи исследования {research_id} завершены.')
+            return 1
+
         except Exception as e:
             # Обработка ошибок на глобальном уровне
             logger.error(f"Ошибка в процессе исследования {research_id}: {str(e)}")
             raise e
 
-
-
-# if __name__ == '__main__':
-#     async def main():
-#         repository = RepoStorage(database_session_manager=DatabaseSessionManager(
-#         database_url=database_postgres_settings.async_postgres_url))
-#
-#         publisher = NatsPublisher()
-#
-#         process = ResearchProcess(repository=repository,
-#                                   notifier=None,
-#                                   publisher=publisher,
-#                                   )
-#         await process.run(37)
-#
-#     asyncio.run(main())
 

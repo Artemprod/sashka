@@ -1,41 +1,71 @@
-import sys
+import enum
 from dataclasses import dataclass
-from datetime import datetime
-from pathlib import Path
 from typing import Union, Any
 from contextlib import nullcontext as does_not_raise
+
+from pytest import raises
+
+from src.database.postgres import ResearchStatusEnum
+from src.services.exceptions.research import UserAndResearchInProgressError, UserInProgressError, \
+    ResearchStatusInProgressError
+
 
 @dataclass
 class TestDataCases:
     _id: str
+    user_in_progres:int
+    research_status:enum.Enum
     research_id:int
-    start_date: datetime
-    end_date: datetime
-    time_zone:str
     expectation: Union[Exception, Any]
 
-# Остановка точно по времени минута в минуту
-# Когда дата конца раньше чем дата начала
-# Когда дата конца такая же как дата начала
-# Разные тайм зоны ( тайм зона должна быть одинакова )
+# Проверить отработку полного заверешения при условие
+# Проверить ошибку UserAndResearchInProgressError
+# Проверить ошибку UserInProgressError
+# Проверить ошибку ResearchStatusInProgressError
 
-precise_end_1 = TestDataCases(
-    _id="13:00:00",
-    research_id=123,
-    start_date=datetime.strptime("2024-12-11T12:00:00", '%Y-%m-%dT%H:%M:%S'),
-    end_date=datetime.strptime("2024-12-11T13:00:00", '%Y-%m-%dT%H:%M:%S'),
-    time_zone="UTC",
+correct_completion = TestDataCases(
+    _id="correct completion",
+research_id=1,
+user_in_progres=0,
+research_status=ResearchStatusEnum.DONE,
     expectation=does_not_raise(),
 )
 
-precise_end_2 = TestDataCases(
-    _id="13:12:31",
-    research_id=123,
-    start_date=datetime.strptime("2024-12-11T12:00:00", '%Y-%m-%dT%H:%M:%S'),
-    end_date=datetime.strptime("2024-12-11T13:12:31", '%Y-%m-%dT%H:%M:%S'),
-    time_zone="UTC",
-    expectation=does_not_raise(),
+exception_user_in_progress_one = TestDataCases(
+    _id="exception: 1 user in progres",
+research_id=1,
+user_in_progres=1,
+research_status=ResearchStatusEnum.DONE,
+    expectation=raises(UserInProgressError),
 )
 
+exception_user_in_progres_ten = TestDataCases(
+    _id="exception: 10 users in progres",
+research_id=1,
+user_in_progres=10,
 
-TEST_CASES = [precise_end_1,precise_end_2]
+research_status=ResearchStatusEnum.DONE,
+    expectation=raises(UserInProgressError),
+)
+
+exception_user_and_research_in_progress = TestDataCases(
+    _id="exception: user and research in progress",
+research_id=1,
+user_in_progres=1,
+research_status=ResearchStatusEnum.IN_PROGRESS,
+    expectation=raises(UserAndResearchInProgressError),
+)
+
+exception_research_in_progress = TestDataCases(
+    _id="exception: research in progress",
+research_id=1,
+user_in_progres=0,
+research_status=ResearchStatusEnum.IN_PROGRESS,
+    expectation=raises(ResearchStatusInProgressError),
+)
+
+TEST_CASES = [correct_completion,
+              exception_user_in_progress_one,
+              exception_user_in_progres_ten,
+              exception_user_and_research_in_progress,
+              exception_research_in_progress]

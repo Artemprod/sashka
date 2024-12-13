@@ -9,14 +9,8 @@ def load_repository(mocker):
     return mocker.Mock(spec=RepoStorage)
 
 @pytest.fixture
-def load_stopper(mocker):
-    return mocker.Mock(spec=ResearchStopper)
-
-@pytest.fixture
-def load_time_stopper(load_repository,load_stopper)->ResearchOverChecker:
-    instance = ResearchOverChecker(repository=load_repository,stopper=load_stopper)
-    instance.settings['delay_check_interval'] = 0.1
-    return instance
+def load_research_stopper(load_repository)->ResearchStopper:
+    return ResearchStopper(repository=load_repository)
 
 
 
