@@ -186,6 +186,26 @@ class UserRepository(BaseRepository):
                     raise e
 
 
+    async def get_user_status(self, telegram_id: int) -> UserStatusEnum:
+        async with self.db_session_manager.async_session_factory() as session:
+            async with session.begin():
+                try:
+                    sub_user = select(User.user_id).where(User.tg_user_id == telegram_id).scalar_subquery()
+
+                    stmt = (
+                        select(UserStatus)
+                        .where(UserStatus.user_id == sub_user)
+                    )
+
+                    user_status = await session.execute(stmt)
+                    logger.info(f"Getting user status with telegram_id {telegram_id}")
+                    return user_status.scalars().first().status_name
+
+                except sqlalchemy.exc.SQLAlchemyError as e:
+                    logger.error(f"Error getting user status with telegram_id {telegram_id}: {str(e)}")
+                    raise e
+
+
     async def delete_user(self, telegram_id: int) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():

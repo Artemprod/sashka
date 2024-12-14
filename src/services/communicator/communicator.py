@@ -90,7 +90,10 @@ class TelegramCommunicator:
     async def reply_message(self, message_object: "IncomeUserMessageDTOQueue"):
         """Обрабатывает и отвечает на входящее сообщение."""
         try:
-            check = await self._checker.check_user(user_telegram_id=message_object.from_user, client_telegram_id=message_object.client_telegram_id)
+            check = await self._checker.check_user(
+                user_telegram_id=message_object.from_user,
+                client_telegram_id=message_object.client_telegram_id
+            )
             if not check.user_in_db:
                 # Попытка создания нового пользователя
                 new_user = await self._add_new_user(message_object)
@@ -108,6 +111,9 @@ class TelegramCommunicator:
                     asyncio.create_task(self._collect_user_information(message_object))
                 if not check.user_research_id:
                     logger.warning(f"User {message_object.from_user} not in reseserch ")
+                    return
+                if not check.is_active_status:
+                    logger.warning(f"User {message_object.from_user} not active")
                     return
                 # Обрабатываем сообщение
                 await self._handle_message(message_object, check.user_research_id)
