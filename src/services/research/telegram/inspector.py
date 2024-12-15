@@ -190,16 +190,15 @@ class StopWordChecker:
 
     def __init__(self,
                  repo: 'RepoStorage',
-                 stop_phrases: Optional[List[str]] = None):
+                 stop_phrases: Optional[str] = None):
         """
         :param stopper: Объект класса ResearchStopper, который выполняет завершение исследования.
         :param repo: Репозиторий для работы с данными.
-        :param stop_phrases: Список стоп-фраз для проверки. Если не передан, используются стандартные фразы.
+        :param stop_phrases: Cтоп-фраза для проверки. Если не передан, используются стандартная фраза.
         """
         self.repo = repo
-        self.stop_phrases = stop_phrases or ["завершено", "исследование завершено", "конец исследования", "окончено",
-                                             "STOP"]
-        self.stop_patterns = [re.compile(rf'\b{re.escape(phrase)}\b', re.IGNORECASE) for phrase in self.stop_phrases]
+        self.stop_phrase = stop_phrases or 'STOP_DIALOG'
+        self.stop_pattern = re.compile(rf'\b{re.escape(self.stop_phrase)}\b', re.IGNORECASE)
 
     async def monitor_stop_words(self, telegram_id: int, response_message: str) -> str:
         """
@@ -214,7 +213,7 @@ class StopWordChecker:
                 return response_message
 
             logger.info(f"Найдена стоп-фраза в сообщении для исследования {telegram_id}: '{response_message}'")
-            cleared_message =  self._delete_stop_words(response_message)
+            cleared_message =  self._delete_stop_word(response_message)
             await self.repo.user_in_research_repo.short.update_user_status(telegram_id, UserStatusEnum.DONE)
             return cleared_message
 
@@ -223,12 +222,8 @@ class StopWordChecker:
             raise
 
     # TODO refactor
-    def _delete_stop_words(self, message: str) -> str:
-        for pattern in self.stop_patterns:
-            edited_message = re.sub(pattern, "", message)
-            if edited_message != message:
-                return edited_message
-        return message
+    def _delete_stop_word(self, message: str) -> str:
+        return re.sub(self.stop_pattern, "", message)
 
 
     async def _contains_stop_phrase(self, message: str) -> bool:
@@ -237,7 +232,7 @@ class StopWordChecker:
         :param message: Сообщение для проверки.
         :return: True, если найдена стоп-фраза, иначе False.
         """
-        return any(pattern.search(message) for pattern in self.stop_patterns)
+        return self.stop_pattern.search(message) is not None
 
     # async def check_partial_match(self, message: str, threshold: float = 0.8) -> bool:
     #     """
@@ -255,19 +250,19 @@ class StopWordChecker:
     #             return True
     #     return False
 
-    async def update_stop_phrases(self, new_phrases: List[str]):
+    async def update_stop_phrases(self, new_word: str):
         """
         Обновляет список стоп-фраз и пересоздает регулярные выражения для нового набора фраз.
 
-        :param new_phrases: Новый список стоп-фраз.
+        :param new_word: Новый список стоп-фраз.
         """
-        self.stop_phrases = new_phrases
-        self.stop_patterns = [re.compile(rf'\b{re.escape(phrase)}\b', re.IGNORECASE) for phrase in self.stop_phrases]
-        logger.info("Список стоп-фраз обновлен")
+        self.stop_phrase = new_word
+        self.stop_pattern = re.compile(rf'\b{re.escape(self.stop_phrase)}\b', re.IGNORECASE)
+        logger.info("Стоп-фраза обновлена")
 
     async def log_stop_phrases(self):
         """Логирует текущий список стоп-фраз."""
-        logger.info(f"Текущий список стоп-фраз: {', '.join(self.stop_phrases)}")
+        logger.info(f"Текущая стоп-фраза: {self.stop_phrase}")
 
 
 class PingDelayCalculator:
