@@ -1,7 +1,7 @@
 import pytest
 
 from src.database.postgres import UserStatusEnum
-from tests.test_inspector.test_cases import test_cases, StopWordTestCase
+from test_cases import test_cases, StopWordTestCase
 
 
 class TestStopWordChecker:

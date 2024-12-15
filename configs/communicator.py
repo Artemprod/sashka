@@ -2,10 +2,11 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic import Field, field_validator
 
 from configs.base import BaseConfig
-
+load_dotenv()
 sys.path.append(str(Path(__file__).parent.parent))
 
 

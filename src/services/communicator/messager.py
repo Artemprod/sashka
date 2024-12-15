@@ -11,10 +11,15 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-
+import pytz
+from apscheduler.jobstores.redis import RedisJobStore
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.date import DateTrigger
 from loguru import logger
+from pytz import utc
 
 from configs.communicator import communicator_first_message_policy
+from configs.redis import redis_apscheduler_config
 from src.database.postgres.models.enum_types import UserStatusEnum
 from src.database.repository.storage import RepoStorage
 from src.schemas.communicator.distanation import NatsDestinationDTO
@@ -34,6 +39,7 @@ from src.schemas.service.queue import TelegramObjectHeadersDTO
 from src.schemas.service.queue import TelegramTimeDelaHeadersDTO
 from src.schemas.service.user import UserDTOBase
 from src.services.communicator.context import Context
+from src.services.communicator.decorarors.method_rewrite import create_publish_message
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
 from src.services.communicator.prompt_generator import PromptGenerator
 from src.services.communicator.request import ContextRequest
@@ -55,8 +61,8 @@ class MessageGeneratorTimeDelay:
             "delay_between_messages": communicator_first_message_policy.delay_between_messages,
         }
 
-    def generate(self, users: List[UserDTOBase]):
-        current_time = datetime.now(tz=timezone.utc)  # Текущее время
+    def generate(self, users: List[UserDTOBase], start_time:datetime):
+        current_time = start_time
 
         people_per_day = self.settings.get("send_policy", 10)
         delay_between_messages = self.settings.get("delay_between_messages", timedelta(minutes=4))
@@ -153,6 +159,10 @@ class BaseMessageHandler:
         research = await self.repository.research_repo.short.get_research_by_id(research_id=research_id)
         return research.assistant_id
 
+    async def get_research_start_date(self, research_id) -> datetime:
+        research = await self.repository.research_repo.short.get_research_by_id(research_id=research_id)
+        return research.start_date
+
     async def form_single_request(self, research_id=None, assistant_id=None) -> SingleRequestDTO:
 
         prompt: PromptDTO = await (self.prompt_generator.generate_first_message_prompt(
@@ -204,21 +214,27 @@ class BaseMessageHandler:
 class MessageFirstSend(BaseMessageHandler):
     """Отправляет первое сообщение. Для работы необходимо имя пользователя, чтобы отправить сообщение незнакомому пользователю, и его Telegram ID, чтобы сохранить сообщение в базе данных."""
 
-    def __init__(self, publisher: 'NatsPublisher', repository: 'RepoStorage', single_request: 'SingleRequest', prompt_generator: 'PromptGenerator'):
+    def __init__(self, publisher: 'NatsPublisher', repository: 'RepoStorage', single_request: 'SingleRequest', prompt_generator):
         super().__init__(publisher, repository, prompt_generator)
+
         self.message_delay_generator = MessageGeneratorTimeDelay()
         self.single_request = single_request
 
-    async def handle(self, users: List[UserDTOBase], research_id: int, destination_configs: 'NatsDestinationDTO'):
+    async def handle(self, users: List[UserDTOBase],
+                     research_id: int,
+                     destination_configs: 'NatsDestinationDTO'):
+
         client = await self._get_client(research_id)
         assistant_id = await self.get_assistant(research_id)
+        start_date = await self.get_research_start_date(research_id)
+        print("START DATE______", start_date)
 
         if not users or not client:
             raise ValueError("No users found or client not available for the given research ID")
 
         tasks = [
             self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
-            for send_time, user in self.message_delay_generator.generate(users=users)
+            for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date)
         ]
         await asyncio.gather(*tasks)
 
@@ -240,6 +256,7 @@ class MessageFirstSend(BaseMessageHandler):
                 client_id=client.client_id
             )
             await self._publish_message(content, user, send_time, client, destination_configs)
+
             await self._update_user_status(user.tg_user_id)
         except Exception as e:
             logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
@@ -274,8 +291,66 @@ class MessageFirstSend(BaseMessageHandler):
             raise e
 
 
-def create_publish_message(cls):
-    async def new_method(self, content, user, client, destination_configs):
+class ScheduledFirstMessage(MessageFirstSend):
+    def __init__(self, publisher, repository, single_request, prompt_generator):
+        super().__init__(publisher, repository, single_request, prompt_generator)
+        self.scheduler = self._configure_scheduler()
+
+    def _configure_scheduler(self):
+        jobstores = {
+            'default': RedisJobStore(
+                jobs_key=redis_apscheduler_config.jobs_key,
+                run_times_key=redis_apscheduler_config.run_times_key,
+                host=redis_apscheduler_config.host,
+                port=redis_apscheduler_config.port,
+                db=redis_apscheduler_config.first_message_database
+            )
+        }
+        scheduler = AsyncIOScheduler(jobstores=jobstores, timezone=utc)
+        scheduler.start()
+        return scheduler
+
+    async def _process_user(self, user: UserDTOBase,
+                            send_time: datetime,
+                            research_id: int,
+                            client: 'TelegramClientDTOGet',
+                            assistant_id: int,
+                            destination_configs: 'NatsDestinationDTO'):
+        try:
+            single_request_object = await self.form_single_request(research_id)
+            content:SingleResponseDTO = await self.single_request.get_response(single_obj=single_request_object)
+
+            await self.save_assistant_message(
+                research_id=research_id,
+                content=content.response,
+                user_telegram_id=user.tg_user_id,
+                assistant_id=assistant_id,
+                client_id=client.client_id
+            )
+            publish_message = await self._create_publish_message_(content, user, client, destination_configs)
+
+            print("_____SEND TIME_____", send_time)
+            # Добавляем асинхронную корутину в планировщик
+            self.scheduler.add_job(
+                self.publisher.publish_message_to_stream,
+                args=[publish_message],
+                trigger=DateTrigger(run_date=send_time+timedelta(seconds=20),timezone=pytz.utc)
+            )
+
+            #TODO делать апдейт статуса когда ? когда отпралися  ?
+            await self._update_user_status(user.tg_user_id)
+
+        except Exception as e:
+            logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
+            raise e
+
+
+
+
+    async def _create_publish_message_(self, content: "SingleResponseDTO",
+                                      user: UserDTOBase,
+                                      client: 'TelegramClientDTOGet',
+                                      destination_configs: 'NatsDestinationDTO') -> 'NatsQueueMessageDTOStreem':
         data = {
             "message": content.response,
             "tg_client": str(client.name),
@@ -287,8 +362,6 @@ def create_publish_message(cls):
             stream=destination_configs.stream
         )
 
-    cls._create_publish_message = new_method
-    return cls
 
 @create_publish_message
 class MessageAnswer(BaseMessageHandler):
