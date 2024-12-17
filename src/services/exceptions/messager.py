@@ -1,0 +1,2 @@
+class NotLastMessageError(Exception):
+    pass

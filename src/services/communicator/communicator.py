@@ -21,6 +21,7 @@ from src.services.communicator.messager import ResearchMessageAnswer
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
 from src.services.communicator.request import ContextRequest
 from src.services.communicator.request import SingleRequest
+from src.services.exceptions.messager import NotLastMessageError
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
 
@@ -182,7 +183,8 @@ class TelegramCommunicator:
                 destination_configs=self._destination_configs['reply'],
                 research_id=user_research_id
             )
-
+        except NotLastMessageError:
+            logger.info(f'This is not main message process: {message_object.from_user}')
         except Exception as e:
             raise e
 
