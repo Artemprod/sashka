@@ -34,5 +34,41 @@
         "for_conversation": true,
         "created_at": "2023-09-05T09:20:00"
 
+    },
+        {
+        "assistant_id": 100,
+        "name": "Pingator assistant",
+        "system_prompt": "Pingator",
+        "user_prompt": "Pingator",
+        "first_message_prompt": null,
+        "middle_part_prompt": null,
+        "last_message_prompt": null,
+        "for_conversation": true,
+        "created_at": "2023-09-05T09:20:00"
+
+    },
+           {
+        "assistant_id": 101,
+        "name": "Pingator assistant",
+        "system_prompt": "Pingator",
+        "user_prompt": "Pingator",
+        "first_message_prompt": null,
+        "middle_part_prompt": null,
+        "last_message_prompt": null,
+        "for_conversation": true,
+        "created_at": "2023-09-05T09:20:00"
+
+    },
+           {
+        "assistant_id": 102,
+        "name": "Pingator assistant",
+        "system_prompt": "Pingator",
+        "user_prompt": "Pingator",
+        "first_message_prompt": null,
+        "middle_part_prompt": null,
+        "last_message_prompt": null,
+        "for_conversation": true,
+        "created_at": "2023-09-05T09:20:00"
+
     }
 ]

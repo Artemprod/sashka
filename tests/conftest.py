@@ -4,7 +4,7 @@ from datetime import timedelta, datetime
 
 import pytest
 from pyrogram.filters import service
-from sqlalchemy import insert
+from sqlalchemy import insert, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.util import await_only
 
@@ -22,13 +22,17 @@ from src.services.research.telegram.inspector import ResearchOverChecker, Resear
 @pytest.fixture(scope="session", autouse=True)
 async def prepare_database():
     session = DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url_test)
+
     async with session.engine.begin() as conn:
         await conn.run_sync(ModelBase.metadata.drop_all)
         await conn.run_sync(ModelBase.metadata.create_all)
+        await conn.execute(text("ALTER TABLE user_research DROP CONSTRAINT IF EXISTS user_research_user_id_key"))
+        await conn.commit()
+
 
     def open_mock_json(model:str):
         #TODO заменить на нормальный путь
-        with open(rf"D:\PROJECTS\AIPO\CUSTDEVER\sashka\tests\models\mock_{model}.json", "r") as file:
+        with open(rf"D:\PROJECTS\AIPO\CUSTDEVER\sashka\tests\mock_models\mock_{model}.json", "r") as file:
             return json.load(file)
 
     users = open_mock_json(model="user")
@@ -114,6 +118,7 @@ async def prepare_database():
             message["created_at"] = datetime.strptime(message["created_at"], "%Y-%m-%dT%H:%M:%S")
 
     async with session.async_session_factory() as session:
+
         add_users = insert(User).values(users)
         add_service = insert(Services).values(services)
         add_research_owner = insert(ResearchOwner).values(research_owners)

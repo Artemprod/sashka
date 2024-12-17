@@ -1,44 +1,27 @@
 import pytest
 
+from src.services.research.telegram.inspector import UserPingator
+from test_cases import PING_TEST_CASES, TestDataCases
 
 
+@pytest.mark.parametrize(
+"test_case",
+    [
+        pytest.param(test_case, id=test_case._id)
+        for test_case in PING_TEST_CASES
+    ],
+)
+async def test_unresponde_messages(load_pingator, test_case:TestDataCases):
+    #GIVEN пингатор расчитывающий количество неотвеченных сообщений в контексте
 
-#
-# from tests.test_inspector.test_pingator.conftest import prepare_database
-# from utils import status_generator
-#
-#
-# @pytest.mark.parametrize(
-# "test_case",
-#     [
-#         pytest.param(test_case, id=test_case._id)
-#         for test_case in STOP_TEST_CASES
-#     ],
-# )
-# async def test_unresponde_messages(
-#         test_case:TestDataCases,
-#         load_pingator,
-#         mocker,
-# ):
-#
-#     pingator = load_pingator
-#
-#     await pingator.count_unresponded_assistant_message()
-
-#
-#
-#     # генерирует статусы
-#     # generator = status_generator(status_list=test_case.status)
-#     # status_stopper._get_research_current_status = mocker.AsyncMock(side_effect=lambda *args, **kwargs:next(generator) )
-#     # result = await status_stopper.monitor_research_status(research_id=test_case.research_id)
-#     # assert result==1
-#
-
-
-async def test_unresponde_messages(load_pingator):
-    #GIVEN пингатор расчитывающий колдичесвто неотвеченых сообщений в контексте
+    pingator: UserPingator = load_pingator
     #WHEN вызывается метод расчета неотвеченных сообщений
-    #THEN результат должен быть для каждого контекста разный -> я должен знать точное количесвто неотвеченнх для каждого пользователя
+    count = await pingator.count_unresponded_assistant_message(telegram_id=test_case.telegram_id,
+                                                       research_id=test_case.research_id,
+                                                       telegram_client_id=test_case.telegram_client_id,
+                                                       assistant_id=test_case.assistant_id)
 
-    assert 1== 1
+    #THEN результат должен быть для каждого контекста разный -> я должен знать точное количесвто неотвеченнх для каждого пользователя
+    with test_case.expectation:
+        assert count == test_case.expected_unread_messages, "Количество неотвеченных сообщений не совпадает с ожидаемым"
 
