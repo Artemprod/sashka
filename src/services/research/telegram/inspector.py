@@ -385,7 +385,7 @@ class UserPingator:
             users = await self.get_active_users(research_id)
             await self.ping_users_concurrently(users, research_info)
             await asyncio.sleep(self.config.ping_interval)
-            await asyncio.sleep(self.settings['delay_check_interval'])
+
 
 
     async def ping_users_concurrently(self, users: List[UserDTOFull], research_info: ResearchDTOFull):
@@ -400,17 +400,22 @@ class UserPingator:
     async def handle_user_ping(self, user: UserDTOFull, research_info: ResearchDTOFull):
         """Обработка пинга для одного пользователя."""
         try:
-            unresponded_messages = await self.count_unresponded_assistant_message(user.tg_user_id)
+            unresponded_messages = await self.count_unresponded_assistant_message(telegram_id=user.tg_user_id,
+                                                                                  research_id=research_info.research_id,
+                                                                                  telegram_client_id=research_info.telegram_client_id,
+                                                                                  assistant_id=research_info.assistant_id)
             if unresponded_messages == 0:
                 return
 
             if unresponded_messages > self.config.max_pings_messages:
                 logger.info(f"Превышено максимальное количество пингов для пользователя {user.tg_user_id}.")
                 return
+
             time_delay = self._ping_calculator.calculate(n=unresponded_messages)
             send_time = await self.calculate_send_time(user.tg_user_id, time_delay)
-            current_time_utc = datetime.now(timezone.utc)
 
+            # Время в UTC стандарте
+            current_time_utc = datetime.now(pytz.utc)
             if send_time <= current_time_utc:
                 await self.send_command_message_ping_user(user=user,
                                                           message_number=unresponded_messages,
@@ -446,20 +451,36 @@ class UserPingator:
             return research_status.status_name
         raise ValueError("No status name value")
 
-    async def count_unresponded_assistant_message(self, telegram_id: int) -> int:
+    # async def count_unresponded_assistant_message(self, telegram_id: int) -> int:
+    #     """Получение всех неотвеченных сообщений от ассистента."""
+    #     unresponded_messages = await self.repo.message_repo.assistant.fetch_assistant_messages_after_user(
+    #         telegram_id=telegram_id)
+    #     return len(unresponded_messages)
+
+
+    async def count_unresponded_assistant_message(self, telegram_id: int,research_id:int, telegram_client_id:int, assistant_id:int) -> int:
         """Получение всех неотвеченных сообщений от ассистента."""
-        unresponded_messages = await self.repo.message_repo.assistant.fetch_assistant_messages_after_user(
-            telegram_id=telegram_id)
+        unresponded_messages = await self.repo.message_repo.assistant.fetch_context_assistant_messages_after_user(
+            telegram_id=telegram_id,
+            research_id=research_id,
+            telegram_client_id=telegram_client_id,
+            assistant_id=assistant_id)
+
         return len(unresponded_messages)
 
     async def calculate_send_time(self, telegram_id: int, time_delay: int) -> datetime:
         """Расчёт времени отправки следующего пинга."""
         try:
             last_user_message = await self.repo.message_repo.user.get_last_user_message_by_user_telegram_id(telegram_id)
-            # TODO поменять потом на часасы секунды
-            last_message_time = last_user_message.created_at.replace(
-                tzinfo=timezone.utc) if last_user_message.created_at.tzinfo is None else last_user_message.created_at
+            # Конвертируем точно в UTC
+            last_message_time = (
+                last_user_message.created_at.replace(tzinfo=pytz.utc)
+                if last_user_message.created_at.tzinfo is None
+                else last_user_message.created_at.astimezone(pytz.utc)
+            )
+            #TODO сделать изменение атрибута секунды часы минуты
             return last_message_time + timedelta(hours=time_delay)
+
         except Exception as e:
             logger.error("Error with calculation time send time")
             raise e

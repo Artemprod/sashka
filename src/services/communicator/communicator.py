@@ -73,6 +73,7 @@ class TelegramCommunicator:
         )
 
     # TODO Вынести конфиги и закгрузку конфигов в отдельный модуль
+    # TODO Вынести чекекр из коммуниктаора
     @staticmethod
     def _load_destination_configs() -> dict:
         return {

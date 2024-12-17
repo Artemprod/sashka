@@ -61,6 +61,52 @@ class AssistantMessageRepository(BaseRepository):
             result = await session.execute(query)
             messages = result.scalars().all()
             return [AssistantMessageDTOGet.model_validate(msg, from_attributes=True) for msg in messages]
+    #TODO я не передаю чат id в будущем нужно пройтись по всей цепочки и посомтреть как формируется чат ид и использовать его
+    async def fetch_context_assistant_messages_after_user(
+            self, telegram_id, research_id, telegram_client_id, assistant_id
+    ) -> Optional[List[AssistantMessageDTOGet]]:
+        async with self.db_session_manager.async_session_factory() as session:
+            # Подзапрос для времени последнего сообщения пользователя
+            sub = (
+                select(UserMessage.created_at)
+                .filter(
+                    and_(
+                        UserMessage.user_telegram_id == telegram_id,
+                        UserMessage.research_id == research_id,
+                        UserMessage.telegram_client_id == telegram_client_id,
+                        UserMessage.assistant_id == assistant_id,
+                    )
+                )
+                .order_by(desc(UserMessage.created_at))
+                .limit(1)
+            ).scalar_subquery()
+
+            # Основной запрос для сообщений ассистента
+            query = (
+                select(AssistantMessage)
+                .filter(
+                    and_(
+                        AssistantMessage.user_telegram_id == telegram_id,
+                        AssistantMessage.research_id == research_id,
+                        AssistantMessage.telegram_client_id == telegram_client_id,
+                        AssistantMessage.assistant_id == assistant_id,
+                        AssistantMessage.created_at > sub  # Фильтрация по времени
+                    )
+                )
+                .order_by(AssistantMessage.created_at.asc())
+            )
+
+            # Выполнение запроса
+            result = await session.execute(query)
+            messages = result.scalars().all()
+
+            # Возврат списка DTO
+            return (
+                [AssistantMessageDTOGet.model_validate(msg, from_attributes=True) for msg in messages]
+                if messages
+                else []
+            )
+
 
     async def get_context_messages(self, user_telegram_id, chat_id, research_id, telegram_client_id, assistant_id):
         async with self.db_session_manager.async_session_factory() as session:
