@@ -1,0 +1,38 @@
+[
+    {
+        "assistant_id": 1,
+        "name": "Assistant Alpha",
+        "system_prompt": "Welcome! How can I help you today?",
+        "user_prompt": "Please let me know what you need assistance with.",
+        "first_message_prompt": "Hi there! Ready to assist you.",
+        "middle_part_prompt": "Checking some details...",
+        "last_message_prompt": "Is there anything else I can do for you?",
+        "for_conversation": true,
+        "created_at": "2022-07-15T08:30:00"
+
+    },
+    {
+        "assistant_id": 2,
+        "name": "Assistant Beta",
+        "system_prompt": "Hello! What can I do for you today?",
+        "user_prompt": "Feel free to ask me anything.",
+        "first_message_prompt": "Greetings! I'm here to help.",
+        "middle_part_prompt": null,
+        "last_message_prompt": "Thanks for reaching out. Goodbye!",
+        "for_conversation": false,
+        "created_at": "2023-01-10T14:45:00"
+
+    },
+    {
+        "assistant_id": 3,
+        "name": "Assistant Gamma",
+        "system_prompt": "Hi! How may I assist you today?",
+        "user_prompt": "I'm here to help with any queries you have.",
+        "first_message_prompt": null,
+        "middle_part_prompt": null,
+        "last_message_prompt": null,
+        "for_conversation": true,
+        "created_at": "2023-09-05T09:20:00"
+
+    }
+]
