@@ -74,7 +74,14 @@ three_messages_101 = TestDataCases(
     expected_unread_messages=3,
     expectation=does_not_raise())
 
-
+no_messages_102 = TestDataCases(
+    _id="no messages from user: id 102, in research 102",
+    telegram_id=102,
+    research_id=100,
+    telegram_client_id=100,
+    assistant_id=100,
+    expected_unread_messages=1,
+    expectation=does_not_raise())
 
 
 PING_TEST_CASES = [one_message_100,
@@ -82,4 +89,4 @@ PING_TEST_CASES = [one_message_100,
                    three_messages_100,
                    one_message_101,
                    two_messages_101,
-                   three_messages_101]
+                   three_messages_101,no_messages_102]

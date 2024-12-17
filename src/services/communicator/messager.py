@@ -446,14 +446,15 @@ class ResearchMessageAnswer(MessageAnswer):
         prompt = await self._generate_prompt(research_id)
 
         # Получение ответа от контекста
-        response = await self._get_context_response(prompt, context, message_object.client_telegram_id)
+        response = await self._get_context_response(prompt, context, telegram_id=message_object.client_telegram_id)
+
 
         # Сохранение сообщения ассистента
         await self._save_assistant_message(response, message_object, research_id, client, assistant)
 
         # Публикация ответного сообщения
         await self._publish_response(response, client, message_object, destination_configs)
-        print()
+
     async def _get_client_by_telegram_id(self, telegram_id: int) -> TelegramClientDTOGet:
         return await self.repository.client_repo.get_client_by_telegram_id(telegram_id=telegram_id)
 
@@ -486,17 +487,25 @@ class ResearchMessageAnswer(MessageAnswer):
             self,
             prompt: PromptDTO,
             context: List[Dict[str, str]],
-            client_telegram_id: int
+            telegram_id:int
     ) -> ContextResponseDTO:
-        responce = await self.context_request.get_response(
-            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt,
-                                          context=context)
+        try:
+            response:ContextResponseDTO = await self.context_request.get_response(
+                context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt,
+                                              context=context)
+            )
+
+            result:str = await self.stop_word_checker.monitor_stop_words(
+            telegram_id=telegram_id,
+            response_message=response.response
         )
-        await self.stop_word_checker.monitor_stop_words(
-            telegram_client_id=client_telegram_id,
-            response=responce.response
-        )
-        return responce
+            return ContextResponseDTO(
+                context=response.context,
+                response=result,
+            )
+        except Exception as e:
+            logger.error("Error with response from ai context")
+            raise e
 
     async def _save_assistant_message(self, response: ContextResponseDTO, message_object: IncomeUserMessageDTOQueue, research_id: int, client: TelegramClientDTOGet, assistant):
         await self.save_assistant_message(

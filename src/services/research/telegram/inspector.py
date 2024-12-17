@@ -288,7 +288,7 @@ class StopWordChecker:
             return cleared_message
 
         except Exception as e:
-            logger.error(f"Ошибка при проверке стоп-слов для исследования {telegram_id}: {str(e)}")
+            logger.error(f"Ошибка при проверке стоп-слов для исследования у пользователя {telegram_id}: {str(e)}")
             raise
 
     # TODO refactor
@@ -451,12 +451,6 @@ class UserPingator:
             return research_status.status_name
         raise ValueError("No status name value")
 
-    # async def count_unresponded_assistant_message(self, telegram_id: int) -> int:
-    #     """Получение всех неотвеченных сообщений от ассистента."""
-    #     unresponded_messages = await self.repo.message_repo.assistant.fetch_assistant_messages_after_user(
-    #         telegram_id=telegram_id)
-    #     return len(unresponded_messages)
-
 
     async def count_unresponded_assistant_message(self, telegram_id: int,research_id:int, telegram_client_id:int, assistant_id:int) -> int:
         """Получение всех неотвеченных сообщений от ассистента."""
@@ -466,6 +460,7 @@ class UserPingator:
             telegram_client_id=telegram_client_id,
             assistant_id=assistant_id)
 
+        print("НЕОТВЕЧЕНЫЕ СООБЩЕНИЯ_____________",len(unresponded_messages)," ", unresponded_messages)
         return len(unresponded_messages)
 
     async def calculate_send_time(self, telegram_id: int, time_delay: int) -> datetime:
