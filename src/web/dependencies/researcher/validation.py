@@ -6,7 +6,6 @@ from src.schemas.service.research import ResearchDTOPost
 async def validate_data(reserved_dto: ResearchDTOPost) -> ResearchDTOPost:
     if reserved_dto.timezone_info:
         try:
-            print()
             timezone = pytz.timezone(reserved_dto.timezone_info)
             start_date = timezone.localize(reserved_dto.start_date.replace(tzinfo=None))
             end_date = timezone.localize(reserved_dto.end_date.replace(tzinfo=None))
