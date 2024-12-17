@@ -455,14 +455,13 @@ class ResearchMessageAnswer(MessageAnswer):
         prompt = await self._generate_prompt(research_id)
 
         # Получение ответа от контекста
-        response = await self._get_context_response(prompt, context, message_object.from_user)
+        response = await self._get_context_response(prompt, context, message_object.client_telegram_id)
 
         # Сохранение сообщения ассистента
         await self._save_assistant_message(response, message_object, research_id, client, assistant)
 
         # Публикация ответного сообщения
         await self._publish_response(response, client, message_object, destination_configs)
-
     async def _get_client_by_telegram_id(self, telegram_id: int) -> TelegramClientDTOGet:
         return await self.repository.client_repo.get_client_by_telegram_id(telegram_id=telegram_id)
 

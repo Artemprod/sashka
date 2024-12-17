@@ -7,7 +7,6 @@ from sqlalchemy.orm import mapped_column
 from src.database.postgres.models.base import ModelBase
 from src.database.postgres.models.base import created_at
 
-
 class UserResearch(ModelBase):
     __tablename__ = 'user_research'
 
@@ -26,8 +25,10 @@ class UserResearch(ModelBase):
         primary_key=True,
 
     )
-
     created_at: Mapped[created_at]
+
+
+
 
 
 class ArchivedUserResearch(ModelBase):
@@ -50,3 +51,7 @@ class ArchivedUserResearch(ModelBase):
     )
 
     created_at: Mapped[created_at]
+
+
+
+
