@@ -138,9 +138,6 @@ class BaseMessageHandler:
             raise
 
 
-
-
-
     async def get_user_ids(self, research_id) -> Optional[List[int]]:
         users = await self.repository.user_in_research_repo.short.get_users_by_research_id(research_id=research_id)
         return [int(user.tg_user_id) for user in users] if users else None
@@ -166,10 +163,11 @@ class BaseMessageHandler:
         research = await self.repository.research_repo.short.get_research_by_id(research_id=research_id)
         return research.start_date
 
-    async def form_single_request(self, research_id=None, assistant_id=None) -> SingleRequestDTO:
+    async def form_single_request(self,telegram_user_id:int, research_id=None,) -> SingleRequestDTO:
 
-        prompt: PromptDTO = await (self.prompt_generator.generate_first_message_prompt(
-            research_id=research_id) if research_id else self.prompt_generator.generate_common_prompt(assistant_id))
+        prompt: PromptDTO = await self.prompt_generator.generate_first_message_prompt(research_id=research_id,
+                                                                                      telegram_user_id=telegram_user_id)
+
         return SingleRequestDTO(user_prompt=prompt.user_prompt, system_prompt=prompt.system_prompt,
                                 assistant_message=prompt.assistant_message)
 
@@ -249,7 +247,7 @@ class MessageFirstSend(BaseMessageHandler):
 
     async def _process_user(self, user: UserDTOBase, send_time: datetime, research_id: int, client: 'TelegramClientDTOGet', assistant_id: int, destination_configs: 'NatsDestinationDTO'):
         try:
-            single_request_object = await self.form_single_request(research_id)
+            single_request_object = await self.form_single_request(research_id, telegram_user_id=user.tg_user_id)
             content = await self.single_request.get_response(single_obj=single_request_object)
             await self.save_assistant_message(
                 research_id=research_id,
@@ -320,7 +318,7 @@ class ScheduledFirstMessage(MessageFirstSend):
                             assistant_id: int,
                             destination_configs: 'NatsDestinationDTO'):
         try:
-            single_request_object = await self.form_single_request(research_id)
+            single_request_object = await self.form_single_request(telegram_user_id=user.tg_user_id, research_id=research_id)
             content:SingleResponseDTO = await self.single_request.get_response(single_obj=single_request_object)
 
             await self.save_assistant_message(
@@ -452,7 +450,7 @@ class ResearchMessageAnswer(MessageAnswer):
 
         # Формирование контекста и генерация промпта
         context = await self._form_context(message_object, research_id, client.client_id, assistant)
-        prompt = await self._generate_prompt(research_id)
+        prompt = await self._generate_prompt(research_id,telegram_user_id=message_object.from_user)
 
         # Получение ответа от контекста
         response = await self._get_context_response(prompt, context, message_object.client_telegram_id)
@@ -487,8 +485,8 @@ class ResearchMessageAnswer(MessageAnswer):
         )
         return await context.load_from_repo(self.repository)
 
-    async def _generate_prompt(self, research_id: int) -> PromptDTO:
-        return await self.prompt_generator.research_prompt_generator.generate_prompt(research_id=research_id)
+    async def _generate_prompt(self, research_id: int, telegram_user_id:int) -> PromptDTO:
+        return await self.prompt_generator.generate_research_prompt(research_id=research_id,telegram_user_id=telegram_user_id)
 
     async def _get_context_response(
             self,

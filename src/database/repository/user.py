@@ -297,6 +297,16 @@ class UserRepository(BaseRepository):
 
                 return usernames
 
+    async def get_first_name_by_telegram_id(self,telegram_id) -> Optional[List[str]]:
+        async with self.db_session_manager.async_session_factory() as session:
+            async with session.begin():
+                stmt = select(User.name).where(User.tg_user_id==telegram_id)
+                # Выполнение запроса и получение результатов
+                result = await session.execute(stmt)
+                # Получение всех значений из скаляров как список
+                usernames = result.scalar_one()
+                return usernames
+
 
 class UserRepositoryFullModel(BaseRepository):
     """
