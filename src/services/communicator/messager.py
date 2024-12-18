@@ -447,9 +447,11 @@ class ResearchMessageAnswer(MessageAnswer):
         await self._save_user_message(message_object, research_id, client, assistant)
 
         # Запуск таймера на ожидание новых сообщений перед отправкой
-        await self._wait_another_messages(
+        if not await self._wait_for_new_messages(
             client_telegram_id=message_object.client_telegram_id
-        )
+        ):
+            logger.info(f'This is not first message: {message_object.from_user}')
+            return
 
         # Формирование контекста и генерация промпта
         context = await self._form_context(message_object, research_id, client.client_id, assistant)
@@ -517,7 +519,11 @@ class ResearchMessageAnswer(MessageAnswer):
             client_id=client.client_id,
         )
 
-    async def _wait_another_messages(self, client_telegram_id: int):
+    async def _wait_for_new_messages(self, client_telegram_id: int) -> bool:
+        """
+        Ожидает в течении заданного промежутка времени дополнительные сообщения от пользоватеся.
+        если сообщение первое, то возвращает true. Иначе - false
+        """
         timeout_before_publish = await self._get_random_timeout_before_publish()
 
         if client_telegram_id in self._message_waiters:
@@ -525,7 +531,7 @@ class ResearchMessageAnswer(MessageAnswer):
                 timeout=timeout_before_publish
             )
             logger.info(f'Обновил таймер на {timeout_before_publish} секунд перед отправкой сообщения')
-            raise NotLastMessageError()
+            return False
 
         self._message_waiters[client_telegram_id] = MessageWaiter()
 
@@ -535,6 +541,7 @@ class ResearchMessageAnswer(MessageAnswer):
             timeout=timeout_before_publish
         )
         self._message_waiters.pop(client_telegram_id)
+        return True
 
     async def _get_random_timeout_before_publish(self) -> int:
         # Выбор рандомной задержки перед отправкой

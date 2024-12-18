@@ -12,6 +12,7 @@ import pytz
 from loguru import logger
 from configs.nats_queues import nats_subscriber_communicator_settings
 from configs.research import research_pingator_settings
+from re import Pattern
 
 from src.database.postgres.models.enum_types import ResearchStatusEnum
 from src.database.postgres.models.enum_types import UserStatusEnum
@@ -255,20 +256,24 @@ class ResearchOverChecker(BaseStopper):
 
 
 class StopWordChecker:
-    """Класс для поиска как точного, так и частичного стоп-слов в сообщениях, завершение исследования при их нахождении."""
+    """
+    Класс для поиска стоп-слова в сообщениях и завершения диалога при его нахождении.
+    """
 
-    def __init__(self,
-                 repo: 'RepoStorage',
-                 stop_phrases: Optional[str] = None):
+    def __init__(self,repo: 'RepoStorage'):
         """
-        :param stopper: Объект класса ResearchStopper, который выполняет завершение исследования.
         :param repo: Репозиторий для работы с данными.
-        :param stop_phrases: Cтоп-фраза для проверки. Если не передан, используются стандартная фраза.
         """
         self.repo = repo
-        self.stop_phrase = stop_phrases or 'STOP_DIALOG'
-        self.stop_pattern = re.compile(rf'\b{re.escape(self.stop_phrase)}\b', re.IGNORECASE)
 
+    async def _get_stop_phrase(self) -> str:
+        configuraion = await self.repo.configuration_repo.get()
+        return configuraion.stop_word
+
+    async def _get_stop_pattern(self) -> Pattern:
+        stop_phrase = await self._get_stop_phrase()
+        return re.compile(rf'\b{re.escape(stop_phrase)}\b', re.IGNORECASE)
+        
     async def monitor_stop_words(self, telegram_id: int, response_message: str) -> str:
         """
         Проверяет сообщение на наличие стоп-фраз и при их обнаружении завершает исследование.
@@ -278,11 +283,20 @@ class StopWordChecker:
         :return: True, если была обнаружена стоп-фраза и исследование завершено, иначе False.
         """
         try:
-            if not await self._contains_stop_phrase(response_message):
+            pattern = await self._get_stop_pattern()
+
+            if not self._is_contains_stop_phrase(
+                    message=response_message,
+                    pattern=pattern
+            ):
                 return response_message
 
             logger.info(f"Найдена стоп-фраза в сообщении для исследования {telegram_id}: '{response_message}'")
-            cleared_message =  self._delete_stop_word(response_message)
+
+            cleared_message =  self._delete_stop_word(
+                message=response_message,
+                pattern=pattern
+            )
             await self.repo.user_in_research_repo.short.update_user_status(telegram_id, UserStatusEnum.DONE)
             return cleared_message
 
@@ -291,47 +305,16 @@ class StopWordChecker:
             raise
 
     # TODO refactor
-    def _delete_stop_word(self, message: str) -> str:
-        return re.sub(self.stop_pattern, "", message)
+    def _delete_stop_word(self, message: str, pattern: Pattern) -> str:
+        return re.sub(pattern, "", message)
 
-
-    async def _contains_stop_phrase(self, message: str) -> bool:
+    def _is_contains_stop_phrase(self, message: str, pattern: Pattern) -> bool:
         """
         Выполняет поиск стоп-слов в сообщении с использованием регулярных выражений.
         :param message: Сообщение для проверки.
         :return: True, если найдена стоп-фраза, иначе False.
         """
-        return self.stop_pattern.search(message) is not None
-
-    # async def check_partial_match(self, message: str, threshold: float = 0.8) -> bool:
-    #     """
-    #     Проверяет частичное совпадение стоп-фраз в сообщении.
-    #
-    #     :param message: Сообщение для проверки.
-    #     :param threshold: Пороговое значение для частичного совпадения (по умолчанию 0.8 или 80%).
-    #     :return: True, если частичное совпадение превышает порог, иначе False.
-    #     """
-    #     words = message.lower().split()
-    #     for phrase in self.stop_phrases:
-    #         phrase_words = phrase.lower().split()  # Разбиваем фразу на слова
-    #         matches = sum(word in words for word in phrase_words)  # Подсчитываем совпавшие слова
-    #         if matches / len(phrase_words) >= threshold:
-    #             return True
-    #     return False
-
-    async def update_stop_phrases(self, new_word: str):
-        """
-        Обновляет список стоп-фраз и пересоздает регулярные выражения для нового набора фраз.
-
-        :param new_word: Новый список стоп-фраз.
-        """
-        self.stop_phrase = new_word
-        self.stop_pattern = re.compile(rf'\b{re.escape(self.stop_phrase)}\b', re.IGNORECASE)
-        logger.info("Стоп-фраза обновлена")
-
-    async def log_stop_phrases(self):
-        """Логирует текущий список стоп-фраз."""
-        logger.info(f"Текущая стоп-фраза: {self.stop_phrase}")
+        return pattern.search(message) is not None
 
 
 class PingDelayCalculator:
