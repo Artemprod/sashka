@@ -387,7 +387,6 @@ class UserPingator:
             await asyncio.sleep(self.config.ping_interval)
 
 
-
     async def ping_users_concurrently(self, users: List[UserDTOFull], research_info: ResearchDTOFull):
         """Пингует пользователей параллельно с обработкой исключений."""
         tasks = [self.handle_user_ping(user, research_info) for user in users]
@@ -404,6 +403,7 @@ class UserPingator:
                                                                                   research_id=research_info.research_id,
                                                                                   telegram_client_id=research_info.telegram_client_id,
                                                                                   assistant_id=research_info.assistant_id)
+            print("______________UNREPOND_MESSAGES__________",unresponded_messages)
             if unresponded_messages == 0:
                 return
 
