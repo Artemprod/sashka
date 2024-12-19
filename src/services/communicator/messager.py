@@ -48,6 +48,7 @@ from src.services.communicator.request import SingleRequest
 from src.services.communicator.message_waiter import MessageWaiter
 from src.services.publisher.publisher import NatsPublisher
 from src.services.exceptions.messager import NotLastMessageError
+from src.services.research.telegram.inspector import StopWordChecker
 
 
 # TODO сделать рефактор и вынести все что можно вынести в модуль
