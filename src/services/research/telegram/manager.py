@@ -150,27 +150,28 @@ class TelegramResearchManager(BaseResearchManager):
 
         # Если есть `examinees_user_names`, получить информацию о пользователях
         if research.examinees_user_names is not None:
-            user_info = await self._collect_user_information_ids(telegram_client, research)
+            user_info:Optional[List[UserDTO]] = await self._collect_user_information_ids(telegram_client, research)
             if user_info:
                 # Создаем объекты UserDTO, используя полученную информацию
-                users_dto.extend(UserDTO(tg_user_id=user.tg_user_id, username=user.username) for user in user_info)
+                users_dto.extend(user_info)
 
 
         # Добавляем пользователей в базу данных
         try:
             return await self._database_repository.user_in_research_repo.short.add_many_users(
-                values=[user.dict() for user in users_dto]
+                values=[user.model_dump() for user in users_dto]
             )
         except Exception as e:
             raise e
 
     async def _collect_user_information_ids(self, telegram_client: TelegramClientDTOGet, research: ResearchDTOPost) -> \
             Optional[List[UserDTO]]:
+
         if not research.examinees_user_names:
-            return None
+            return
 
         users: List[UserDTOBase] = [UserDTOBase(username=name) for name in research.examinees_user_names]
-        users_info = await self._information_collector.collect_users_information(
+        users_info:Optional[List[UserDTO]] = await self._information_collector.collect_users_information(
             users=users,
             client=telegram_client
         )

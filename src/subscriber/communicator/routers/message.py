@@ -1,3 +1,5 @@
+import asyncio
+
 from faststream import Context
 from faststream import Depends
 from faststream.nats import NatsMessage
@@ -23,10 +25,8 @@ async def new_message_handler(
     # Получение экземпляра TelegramCommunicator из контекста
     communicator: TelegramCommunicator = context.get("communicator")
     logger.info(f"ЭТО СФОРМИРОВАННОЕ СООБЩЕНИЕ{income_message_data}")
-    try:
         # Обработка сообщения с использованием TelegramCommunicator
-        await communicator.reply_message(message_object=income_message_data)
-        logger.info("reply to message ")
-    except Exception as e:
-        logger.error("Failed to reply ")
-        raise e
+    asyncio.create_task(
+        communicator.reply_message(message_object=income_message_data)
+    )
+    await asyncio.sleep(0.1)

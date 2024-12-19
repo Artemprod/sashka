@@ -13,21 +13,21 @@ class StopWordTestCase:
 
 test_case_no_stop_word = StopWordTestCase(
     income_message="Все отлично",
-    stop_word="STOP",
+    stop_word="STOP_DIALOG",
     return_message="Все отлично",
     expected=does_not_raise(),
 )
 
 test_case_yes_stop_word = StopWordTestCase(
-    income_message="Все отлично STOP",
-    stop_word="STOP",
+    income_message="Все отлично STOP_DIALOG",
+    stop_word="STOP_DIALOG",
     return_message="Все отлично ",
     expected=does_not_raise(),
 )
 
 test_case_lower = StopWordTestCase(
-    income_message="Все отлично stop",
-    stop_word="STOP",
+    income_message="Все отлично stop_dialog",
+    stop_word="STOP_DIALOG",
     return_message="Все отлично ",
     expected=does_not_raise(),
 )

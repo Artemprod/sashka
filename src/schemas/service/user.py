@@ -43,6 +43,7 @@ class UserDTOQueue(BaseModel):
     status: str
     last_online_date: Optional[datetime] = None  # Можно оставить как datetime
     phone_number: Optional[str] = None
+    language_code: Optional[str] = None
 
     class Config(ConfigBase):
         pass
@@ -51,7 +52,7 @@ class UserDTOQueue(BaseModel):
 # Расширенный класс DTO с дополнительными полями
 class UserDTO(UserDTOBase):
 
-
+    name: Optional[str] = None
     second_name: Optional[str] = None
     phone_number: Optional[str] = None
     tg_link: Optional[str] = None

@@ -1,10 +1,8 @@
 from typing import Optional
 
-
-
-
 from src.database.exceptions.read import ObjectDoesNotExist
 from src.database.repository.storage import RepoStorage
+from src.database.postgres.models.enum_types import UserStatusEnum
 from src.schemas.communicator.checker import CheckerDTO
 from src.schemas.service.research import ResearchDTOFull
 
@@ -13,7 +11,7 @@ class Checker:
     def __init__(self, repository: 'RepoStorage'):
         self._repository = repository
 
-    async def check_user(self, user_telegram_id: int, client_telegram_id:int) -> CheckerDTO:
+    async def check_user(self, user_telegram_id: int, client_telegram_id: int) -> CheckerDTO:
         """
         1. Пвроерить в базе даннх пользователь ?
         2. Проверить он в иследовании?
@@ -28,13 +26,19 @@ class Checker:
             if not user_in_db:
                 return CheckerDTO(user_telegram_id=user_telegram_id, user_in_db=False)
 
-            user_research: Optional[int] = await self._get_user_research_id(user_telegram_id,client_telegram_id=client_telegram_id)
+            user_research: Optional[int] = await self._get_user_research_id(
+                user_telegram_id=user_telegram_id,
+                client_telegram_id=client_telegram_id
+            )
             is_has_info = await self._is_has_info(user_telegram_id=user_telegram_id)
+            is_active_status = await self._check_is_active_status(user_telegram_id=user_telegram_id)
+
             return CheckerDTO(
                 user_telegram_id=user_telegram_id,
                 user_in_db=True,
                 user_research_id=user_research,
-                is_has_info=is_has_info
+                is_has_info=is_has_info,
+                is_active_status=is_active_status
             )
         except Exception as e:
             # TODO Логирование ошибки
@@ -66,3 +70,9 @@ class Checker:
             return result
         except Exception as e:
             raise e
+
+    async def _check_is_active_status(self, user_telegram_id: int) -> bool:
+        user_status: UserStatusEnum = await self._repository.user_in_research_repo.short.get_user_status(
+            telegram_id=user_telegram_id,
+        )
+        return user_status != UserStatusEnum.DONE
