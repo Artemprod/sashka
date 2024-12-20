@@ -43,7 +43,9 @@ async def send_first_message_subscriber(body: str, msg: NatsMessage, context=Con
                    subject=nats_distributor_settings.message.send_message.subject,
                    deliver_policy=DeliverPolicy.ALL,
                    no_ack=True)
-async def send_message_subscriber(body: str, msg: NatsMessage, context=Context(), data=Depends(get_data_from_body), client=Depends(get_telegram_client)):
+async def send_message_subscriber(body: str, msg: NatsMessage, context=Context(),
+                                  data=Depends(get_data_from_body),
+                                  client=Depends(get_telegram_client)):
     """Send a conversation message."""
     await msg.ack()
     logger.warning("message acked")

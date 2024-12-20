@@ -87,7 +87,7 @@ async def get_data_from_body(body: str) -> MessageToSendData:
         # Декодировать строковый JSON в объект для user
         if isinstance(data.get("user"), str):
             data["user"] = json.loads(data["user"])
-
+        print("______________ВХОДЯЩАЯ ДАТА__________________", data)
         # Валидация с использованием Pydantic
         validated_data = MessageToSendData(**data)
 

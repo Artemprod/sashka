@@ -210,7 +210,7 @@ class BaseMessageHandler:
                 media=is_media,
                 voice=is_voice,
                 text=content
-            ).dict())
+            ).model_dump())
 
 
 class MessageFirstSend(BaseMessageHandler):
@@ -248,7 +248,7 @@ class MessageFirstSend(BaseMessageHandler):
 
     async def _process_user(self, user: UserDTOBase, send_time: datetime, research_id: int, client: 'TelegramClientDTOGet', assistant_id: int, destination_configs: 'NatsDestinationDTO'):
         try:
-            single_request_object = await self.form_single_request(research_id, telegram_user_id=user.tg_user_id)
+            single_request_object = await self.form_single_request(telegram_user_id=user.tg_user_id, research_id=research_id )
             content = await self.single_request.get_response(single_obj=single_request_object)
             await self.save_assistant_message(
                 research_id=research_id,
@@ -257,9 +257,11 @@ class MessageFirstSend(BaseMessageHandler):
                 assistant_id=assistant_id,
                 client_id=client.client_id
             )
-            await self._publish_message(content, user, send_time, client, destination_configs)
 
+            logger.warning(f"СООБЩЕНИЕ К ОТПРАВКЕ  {content}")
+            await self._publish_message(content, user, send_time, client, destination_configs)
             await self._update_user_status(user.tg_user_id)
+
         except Exception as e:
             logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
             raise e
@@ -271,7 +273,7 @@ class MessageFirstSend(BaseMessageHandler):
     async def _create_publish_message(self, content: 'SingleResponseDTO', user: UserDTOBase, send_time: datetime, client: 'TelegramClientDTOGet', destination_configs: 'NatsDestinationDTO') -> 'NatsQueueMessageDTOStreem':
         headers = TelegramTimeDelaHeadersDTO(
             tg_client_name=str(client.name),
-            user=json.dumps(user.dict()),
+            user=json.dumps(user.model_dump()),
             send_time_msg_timestamp=str(datetime.now(tz=timezone.utc).timestamp()),
             send_time_next_message_timestamp=str(send_time.timestamp())
         )
@@ -279,7 +281,7 @@ class MessageFirstSend(BaseMessageHandler):
             message=content.response,
             subject=destination_configs.subject,
             stream=destination_configs.stream,
-            headers=headers.dict()
+            headers=headers.model_dump()
         )
 
     async def _update_user_status(self, telegram_id: int) -> bool:
@@ -454,13 +456,14 @@ class ResearchMessageAnswer(MessageAnswer):
         prompt = await self._generate_prompt(research_id,telegram_user_id=message_object.from_user)
 
         # Получение ответа от контекста
-        response = await self._get_context_response(prompt, context, message_object.client_telegram_id)
+        response = await self._get_context_response(prompt=prompt, context=context, user_telegram_id=message_object.from_user)
 
         # Сохранение сообщения ассистента
         await self._save_assistant_message(response, message_object, research_id, client, assistant)
-
+        logger.warning(f"СООБЩЕНИЕ К ОТПРАВКЕ  {response}")
         # Публикация ответного сообщения
         await self._publish_response(response, client, message_object, destination_configs)
+
     async def _get_client_by_telegram_id(self, telegram_id: int) -> TelegramClientDTOGet:
         return await self.repository.client_repo.get_client_by_telegram_id(telegram_id=telegram_id)
 
@@ -493,14 +496,16 @@ class ResearchMessageAnswer(MessageAnswer):
             self,
             prompt: PromptDTO,
             context: List[Dict[str, str]],
-            client_telegram_id: int
+            user_telegram_id: int
     ) -> ContextResponseDTO:
+
         response = await self.context_request.get_response(
-            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt,
+            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt,
+                                          user_prompt=prompt.user_prompt,
                                           context=context)
         )
         response.response = await self.stop_word_checker.monitor_stop_words(
-            telegram_id=client_telegram_id,
+            telegram_id=user_telegram_id,
             response_message=response.response
         )
         return response
@@ -523,7 +528,7 @@ class ResearchMessageAnswer(MessageAnswer):
             )
             logger.info(f'Обновил таймер на {timeout_before_publish} секунд перед отправкой сообщения')
             raise NotLastMessageError()
-
+        #TODO вынести вейтер в инициализацию DepInj
         self._message_waiters[client_telegram_id] = MessageWaiter()
 
         logger.info(f'Начинаю ожидать {timeout_before_publish} секунд перед отправкой сообщения')
