@@ -21,6 +21,8 @@ str_10 = Annotated[str, 10]
 
 class ModelBase(DeclarativeBase):
 
+
+
     type_annotation_map = {
         intpk: Integer,
         created_at: DateTime,
@@ -29,3 +31,4 @@ class ModelBase(DeclarativeBase):
         str_1024: String(2048),
         str_10: String(2048),
     }
+

@@ -87,13 +87,13 @@ async def get_data_from_body(body: str) -> MessageToSendData:
         # Декодировать строковый JSON в объект для user
         if isinstance(data.get("user"), str):
             data["user"] = json.loads(data["user"])
-
         # Валидация с использованием Pydantic
         validated_data = MessageToSendData(**data)
 
         if not validated_data.message:
-            logger.error("Missing Message")
-            raise ValueError("Missing Message")
+            logger.warning("Missing Message")
+            validated_data.message = ""
+
         if not validated_data.user:
             logger.error("Missing user data.")
             raise ValueError("Missing user data")
@@ -101,8 +101,10 @@ async def get_data_from_body(body: str) -> MessageToSendData:
         return validated_data
 
     except (ValueError, TypeError, json.JSONDecodeError) as e:
-        logger.error(f"Error processing body: {e}, {body}")
-        raise ValueError("Invalid data in body.") from e
+
+        logger.error(f"Error processing body: {e}")
+
+
 
 
 async def get_telegram_client(body: str, context: Context = Context()) -> TelegramClient:

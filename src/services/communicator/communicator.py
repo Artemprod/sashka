@@ -15,12 +15,13 @@ from src.schemas.service.user import UserDTOBase
 from src.schemas.service.user import UserDTOFull
 from src.services.communicator.checker import Checker
 
-from src.services.communicator.messager import MessageFirstSend
+from src.services.communicator.messager import MessageFirstSend, ScheduledFirstMessage
 from src.services.communicator.messager import PingMessage
 from src.services.communicator.messager import ResearchMessageAnswer
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
 from src.services.communicator.request import ContextRequest
 from src.services.communicator.request import SingleRequest
+from src.services.exceptions.messager import NotLastMessageError
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
 
@@ -35,6 +36,7 @@ class TelegramCommunicator:
                  single_request: "SingleRequest",
                  context_request: "ContextRequest",
                  prompt_generator: "ExtendedPingPromptGenerator",
+                 stop_word_checker: "StopWordChecker",
                  destination_configs: Optional[Dict] = None,
                  ):
 
@@ -43,7 +45,8 @@ class TelegramCommunicator:
         self._destination_configs = destination_configs or self._load_destination_configs()
         self._checker = Checker(repository=repository)
         # Инициализация компонентов для обработки сообщений
-        self._first_message_distributes = MessageFirstSend(
+
+        self._first_message_distributes = ScheduledFirstMessage(
             publisher=publisher,
             repository=repository,
             single_request=single_request,
@@ -53,7 +56,8 @@ class TelegramCommunicator:
             publisher=publisher,
             repository=repository,
             prompt_generator=prompt_generator,
-            context_request=context_request
+            context_request=context_request,
+            stop_word_checker=stop_word_checker
         )
 
         self.ping_message = PingMessage(
@@ -64,6 +68,7 @@ class TelegramCommunicator:
         )
 
     # TODO Вынести конфиги и закгрузку конфигов в отдельный модуль
+    # TODO Вынести чекекр из коммуниктаора
     @staticmethod
     def _load_destination_configs() -> dict:
         return {
@@ -75,8 +80,9 @@ class TelegramCommunicator:
 
     async def make_first_message_distribution(self, research_id: int, users: List[UserDTOBase]):
         try:
+            logger.debug("ВЫЗОВ ФУНКЦИИ ОТПРАВКИ ПЕРВОГО СООБЩЗЕНИЯ ")
             await self._first_message_distributes.handle(users=users,
-                                                         destination_configs=self._destination_configs['firs_message'],
+                                                         destination_configs=self._destination_configs['reply'],
                                                          research_id=research_id)
         except Exception as e:
             raise e
@@ -88,7 +94,10 @@ class TelegramCommunicator:
     async def reply_message(self, message_object: "IncomeUserMessageDTOQueue"):
         """Обрабатывает и отвечает на входящее сообщение."""
         try:
-            check = await self._checker.check_user(user_telegram_id=message_object.from_user, client_telegram_id=message_object.client_telegram_id)
+            check = await self._checker.check_user(
+                user_telegram_id=message_object.from_user,
+                client_telegram_id=message_object.client_telegram_id
+            )
             if not check.user_in_db:
                 # Попытка создания нового пользователя
                 new_user = await self._add_new_user(message_object)
@@ -106,6 +115,9 @@ class TelegramCommunicator:
                     asyncio.create_task(self._collect_user_information(message_object))
                 if not check.user_research_id:
                     logger.warning(f"User {message_object.from_user} not in reseserch ")
+                    return
+                if not check.is_active_status:
+                    logger.warning(f"User {message_object.from_user} not active")
                     return
                 # Обрабатываем сообщение
                 await self._handle_message(message_object, check.user_research_id)
@@ -166,7 +178,8 @@ class TelegramCommunicator:
                 destination_configs=self._destination_configs['reply'],
                 research_id=user_research_id
             )
-
+        except NotLastMessageError:
+            logger.info(f'This is not main message process: {message_object.from_user}')
         except Exception as e:
             raise e
 

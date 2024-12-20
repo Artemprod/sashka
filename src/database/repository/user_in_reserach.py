@@ -3,9 +3,9 @@
 #
 # from src.database.postgres import UserResearch, ArchivedUserResearch
 # from src.database.postgres.engine.session import DatabaseSessionManager
-# from src.database.postgres.models.research import Research
+# from src.database.postgres.mock_models.research import Research
 #
-# from src.database.postgres.models.user import User
+# from src.database.postgres.mock_models.user import User
 # from src.database.repository.base import BaseRepository
 # from src.schemas.service.user import UserDTOFull
 #
