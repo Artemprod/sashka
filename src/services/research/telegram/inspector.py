@@ -83,6 +83,7 @@ class ResearchStarter:
         )
         try:
             await self.publisher.publish_message_to_subject(subject_message=subject_message)
+            logger.debug("ОТПРАВЛЕНО СООБЩЕНИЕ НА САБДЖЕКТ НАЧАТЬ ИСЛЕДОВАНИЕ ДЖИАЛОГ")
         except Exception as e:
             raise e
 
@@ -255,7 +256,6 @@ class ResearchOverChecker(BaseStopper):
 
         # Конвертируем в UTC, если timezone отличается
         return research.end_date.astimezone(pytz.utc).replace(tzinfo=None)
-
 
 
 class StopWordChecker:
