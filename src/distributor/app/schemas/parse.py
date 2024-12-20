@@ -50,6 +50,7 @@ class UserInfo(BaseModel):
     status: Optional[str] = None
     last_online_date: Optional[datetime]= Field(default=datetime.now())
     phone_number: Optional[str] = None
+    language_code:Optional[str] = None
 
     class Config:
         from_attributes = True

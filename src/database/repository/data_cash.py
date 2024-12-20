@@ -6,18 +6,18 @@
 # from sqlalchemy import delete, insert, select, update, func, cast, Integer, and_
 #
 # from src.database.postgres.engine.session import DatabaseSessionManager
-# from src.database.postgres.models.enum_types import UserStatusEnum, ResearchStatusEnum
-# from src.database.postgres.models.many_to_many import UserResearch
-# from src.database.postgres.models.research import Research
+# from src.database.postgres.mock_models.enum_types import UserStatusEnum, ResearchStatusEnum
+# from src.database.postgres.mock_models.many_to_many import UserResearch
+# from src.database.postgres.mock_models.research import Research
 #
-# from src.database.postgres.models.message import UserMessage, VoiceMessage, AssistantMessage
-# from src.database.postgres.models.research_owner import ResearchOwner
+# from src.database.postgres.mock_models.message import UserMessage, VoiceMessage, AssistantMessage
+# from src.database.postgres.mock_models.research_owner import ResearchOwner
 #
-# from src.database.postgres.models.status import UserStatus
+# from src.database.postgres.mock_models.status import UserStatus
 #
-# from src.database.postgres.models.user import User
+# from src.database.postgres.mock_models.user import User
 # from src.database.repository.base import BaseRepository
-# from src.resrcher.models import ResearchCashDTO
+# from src.resrcher.mock_models import ResearchCashDTO
 #
 #
 # class ResearchDataCashRepository(BaseRepository):

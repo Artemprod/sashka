@@ -37,7 +37,6 @@ class TelegramUserInformationCollector(UserInformationCollector):
         message = self._create_nats_message(users, client)
         try:
             response = await self.publisher.request_reply(nats_message=message)
-            print()
             if response:
                 logger.info("Ответ от сервера получен")
                 response_model = ResponseModel.model_validate_json(response)
@@ -80,4 +79,18 @@ class TelegramUserInformationCollector(UserInformationCollector):
 
     @staticmethod
     async def convert_to_user_dto(user_data: UserDTOQueue) -> UserDTO:
-        return UserDTO(**user_data.dict())
+        return UserDTO(
+        name=user_data.name,
+        username=user_data.username,
+        tg_user_id=user_data.tg_user_id,
+        second_name=user_data.second_name,
+        phone_number=user_data.phone_number,
+        tg_link= f"https://t.me/{user_data.username}" if user_data.username else None,
+        is_verified=user_data.is_verified,
+        is_scam=user_data.is_scam,
+        is_fake=user_data.is_fake,
+        is_premium=user_data.is_premium,
+        last_online_date=user_data.last_online_date,
+        language_code=user_data.language_code,
+
+        )

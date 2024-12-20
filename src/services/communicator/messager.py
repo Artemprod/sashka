@@ -139,9 +139,6 @@ class BaseMessageHandler:
             raise
 
 
-
-
-
     async def get_user_ids(self, research_id) -> Optional[List[int]]:
         users = await self.repository.user_in_research_repo.short.get_users_by_research_id(research_id=research_id)
         return [int(user.tg_user_id) for user in users] if users else None
@@ -167,11 +164,13 @@ class BaseMessageHandler:
         research = await self.repository.research_repo.short.get_research_by_id(research_id=research_id)
         return research.start_date
 
-    async def form_single_request(self, research_id=None, assistant_id=None) -> SingleRequestDTO:
+    async def form_single_request(self,telegram_user_id:int, research_id=None,) -> SingleRequestDTO:
 
-        prompt: PromptDTO = await (self.prompt_generator.generate_first_message_prompt(
-            research_id=research_id) if research_id else self.prompt_generator.generate_common_prompt(assistant_id))
-        return SingleRequestDTO(user_prompt=prompt.user_prompt, system_prompt=prompt.system_prompt,
+        prompt: PromptDTO = await self.prompt_generator.generate_first_message_prompt(research_id=research_id,
+                                                                                      telegram_user_id=telegram_user_id)
+
+        return SingleRequestDTO(user_prompt=prompt.user_prompt,
+                                system_prompt=prompt.system_prompt,
                                 assistant_message=prompt.assistant_message)
 
     async def save_assistant_message(self,
@@ -212,7 +211,7 @@ class BaseMessageHandler:
                 media=is_media,
                 voice=is_voice,
                 text=content
-            ).dict())
+            ).model_dump())
 
 
 class MessageFirstSend(BaseMessageHandler):
@@ -250,7 +249,7 @@ class MessageFirstSend(BaseMessageHandler):
 
     async def _process_user(self, user: UserDTOBase, send_time: datetime, research_id: int, client: 'TelegramClientDTOGet', assistant_id: int, destination_configs: 'NatsDestinationDTO'):
         try:
-            single_request_object = await self.form_single_request(research_id)
+            single_request_object = await self.form_single_request(telegram_user_id=user.tg_user_id, research_id=research_id )
             content = await self.single_request.get_response(single_obj=single_request_object)
             await self.save_assistant_message(
                 research_id=research_id,
@@ -259,9 +258,11 @@ class MessageFirstSend(BaseMessageHandler):
                 assistant_id=assistant_id,
                 client_id=client.client_id
             )
-            await self._publish_message(content, user, send_time, client, destination_configs)
 
+            logger.warning(f"СООБЩЕНИЕ К ОТПРАВКЕ  {content}")
+            await self._publish_message(content, user, send_time, client, destination_configs)
             await self._update_user_status(user.tg_user_id)
+
         except Exception as e:
             logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
             raise e
@@ -273,7 +274,7 @@ class MessageFirstSend(BaseMessageHandler):
     async def _create_publish_message(self, content: 'SingleResponseDTO', user: UserDTOBase, send_time: datetime, client: 'TelegramClientDTOGet', destination_configs: 'NatsDestinationDTO') -> 'NatsQueueMessageDTOStreem':
         headers = TelegramTimeDelaHeadersDTO(
             tg_client_name=str(client.name),
-            user=json.dumps(user.dict()),
+            user=json.dumps(user.model_dump()),
             send_time_msg_timestamp=str(datetime.now(tz=timezone.utc).timestamp()),
             send_time_next_message_timestamp=str(send_time.timestamp())
         )
@@ -281,7 +282,7 @@ class MessageFirstSend(BaseMessageHandler):
             message=content.response,
             subject=destination_configs.subject,
             stream=destination_configs.stream,
-            headers=headers.dict()
+            headers=headers.model_dump()
         )
 
     async def _update_user_status(self, telegram_id: int) -> bool:
@@ -321,7 +322,9 @@ class ScheduledFirstMessage(MessageFirstSend):
                             assistant_id: int,
                             destination_configs: 'NatsDestinationDTO'):
         try:
-            single_request_object = await self.form_single_request(research_id)
+            single_request_object = await self.form_single_request(telegram_user_id=user.tg_user_id, research_id=research_id)
+            logger.debug(f"ВОТ ТАКОЙ ПРОМПТ {single_request_object}")
+
             content:SingleResponseDTO = await self.single_request.get_response(single_obj=single_request_object)
 
             await self.save_assistant_message(
@@ -340,7 +343,7 @@ class ScheduledFirstMessage(MessageFirstSend):
                 args=[publish_message],
                 trigger=DateTrigger(run_date=send_time+timedelta(seconds=20),timezone=pytz.utc)
             )
-
+            logger.debug("CООБЩЕНИЕ ЗАПЛАНИРОВАНО К ОТПРОАВКЕ ")
             #TODO делать апдейт статуса когда ? когда отпралися  ?
             await self._update_user_status(user.tg_user_id)
 
@@ -453,14 +456,14 @@ class ResearchMessageAnswer(MessageAnswer):
 
         # Формирование контекста и генерация промпта
         context = await self._form_context(message_object, research_id, client.client_id, assistant)
-        prompt = await self._generate_prompt(research_id)
+        prompt = await self._generate_prompt(research_id,telegram_user_id=message_object.from_user)
 
         # Получение ответа от контекста
-        response = await self._get_context_response(prompt, context, message_object.from_user)
+        response = await self._get_context_response(prompt=prompt, context=context, user_telegram_id=message_object.from_user)
 
         # Сохранение сообщения ассистента
         await self._save_assistant_message(response, message_object, research_id, client, assistant)
-
+        logger.warning(f"СООБЩЕНИЕ К ОТПРАВКЕ  {response}")
         # Публикация ответного сообщения
         await self._publish_response(response, client, message_object, destination_configs)
 
@@ -489,21 +492,23 @@ class ResearchMessageAnswer(MessageAnswer):
         )
         return await context.load_from_repo(self.repository)
 
-    async def _generate_prompt(self, research_id: int) -> PromptDTO:
-        return await self.prompt_generator.research_prompt_generator.generate_prompt(research_id=research_id)
+    async def _generate_prompt(self, research_id: int, telegram_user_id:int) -> PromptDTO:
+        return await self.prompt_generator.generate_research_prompt(research_id=research_id,telegram_user_id=telegram_user_id)
 
     async def _get_context_response(
             self,
             prompt: PromptDTO,
             context: List[Dict[str, str]],
-            client_telegram_id: int
+            user_telegram_id: int
     ) -> ContextResponseDTO:
+
         response = await self.context_request.get_response(
-            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt, user_prompt=prompt.user_prompt,
+            context_obj=ContextRequestDTO(system_prompt=prompt.system_prompt,
+                                          user_prompt=prompt.user_prompt,
                                           context=context)
         )
         response.response = await self.stop_word_checker.monitor_stop_words(
-            telegram_id=client_telegram_id,
+            telegram_id=user_telegram_id,
             response_message=response.response
         )
         return response
@@ -526,7 +531,7 @@ class ResearchMessageAnswer(MessageAnswer):
             )
             logger.info(f'Обновил таймер на {timeout_before_publish} секунд перед отправкой сообщения')
             raise NotLastMessageError()
-
+        #TODO вынести вейтер в инициализацию DepInj
         self._message_waiters[client_telegram_id] = MessageWaiter()
 
         logger.info(f'Начинаю ожидать {timeout_before_publish} секунд перед отправкой сообщения')

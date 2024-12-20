@@ -31,4 +31,5 @@ async def new_message_handler(
         return
 
     task = asyncio.create_task(run_research(processor, research_id))
+    logger.debug("ВЫЗВАЛАСЬ ТАСКА НАЧАЛЬНОГО ЗАПУСКА ИСЛЕДОВАНИЯ ")
     task.add_done_callback(lambda t: task_completion_callback(t, research_id))
