@@ -169,7 +169,8 @@ class BaseMessageHandler:
         prompt: PromptDTO = await self.prompt_generator.generate_first_message_prompt(research_id=research_id,
                                                                                       telegram_user_id=telegram_user_id)
 
-        return SingleRequestDTO(user_prompt=prompt.user_prompt, system_prompt=prompt.system_prompt,
+        return SingleRequestDTO(user_prompt=prompt.user_prompt,
+                                system_prompt=prompt.system_prompt,
                                 assistant_message=prompt.assistant_message)
 
     async def save_assistant_message(self,
@@ -322,6 +323,8 @@ class ScheduledFirstMessage(MessageFirstSend):
                             destination_configs: 'NatsDestinationDTO'):
         try:
             single_request_object = await self.form_single_request(telegram_user_id=user.tg_user_id, research_id=research_id)
+            logger.debug(f"ВОТ ТАКОЙ ПРОМПТ {single_request_object}")
+
             content:SingleResponseDTO = await self.single_request.get_response(single_obj=single_request_object)
 
             await self.save_assistant_message(
@@ -340,7 +343,7 @@ class ScheduledFirstMessage(MessageFirstSend):
                 args=[publish_message],
                 trigger=DateTrigger(run_date=send_time+timedelta(seconds=20),timezone=pytz.utc)
             )
-
+            logger.debug("CООБЩЕНИЕ ЗАПЛАНИРОВАНО К ОТПРОАВКЕ ")
             #TODO делать апдейт статуса когда ? когда отпралися  ?
             await self._update_user_status(user.tg_user_id)
 

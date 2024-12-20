@@ -43,7 +43,6 @@ class Prompter(BasePromptGenerator):
         else:
             user_prompt = f"{user_prompt_part} {assistant.user_prompt}  {args} {kwargs}"
         return PromptDTO(
-            assistant_message=assistant.user_prompt,
             user_prompt=user_prompt,
             system_prompt=assistant.system_prompt
         )
@@ -58,7 +57,7 @@ class FirstMessagePromptGenerator(BasePromptGenerator):
         user_prompt_part = assistant.first_message_prompt if assistant.first_message_prompt else ""
         if "{name}" in user_prompt_part:
             name = await self.get_user_name(user_telegram_id)
-            user_prompt = str(f"{user_prompt_part}  {args} {kwargs}").format(name=name)
+            user_prompt = str(f"{user_prompt_part}").format(name=name)
 
         else:
             user_prompt = f"{user_prompt_part}  {args} {kwargs}"

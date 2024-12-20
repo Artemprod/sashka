@@ -92,8 +92,9 @@ async def get_data_from_body(body: str) -> MessageToSendData:
         validated_data = MessageToSendData(**data)
 
         if not validated_data.message:
-            logger.error("Missing Message")
-            raise ValueError("Missing Message")
+            logger.warning("Missing Message")
+            validated_data.message = ""
+
         if not validated_data.user:
             logger.error("Missing user data.")
             raise ValueError("Missing user data")
@@ -102,7 +103,7 @@ async def get_data_from_body(body: str) -> MessageToSendData:
 
     except (ValueError, TypeError, json.JSONDecodeError) as e:
         logger.error(f"Error processing body: {e}")
-        raise ValueError("Invalid data in body.") from e
+
 
 
 async def get_telegram_client(body: str, context: Context = Context()) -> TelegramClient:
