@@ -21,7 +21,10 @@ from src.services.analitcs.models.analitic import AnalyticFileDTO
 
 
 class Analytic(ABC):
-    def __init__(self, research_id: int, session_manager, metric_calculator):
+    def __init__(self,
+                 research_id: int,
+                 session_manager,
+                 metric_calculator):
         self.research_id = research_id
         self._session_manager = session_manager
         self.metric_calculator: MetricCalculator = metric_calculator(
@@ -84,7 +87,7 @@ class Analytic(ABC):
             raise ValueError(f"Unknown format of objects in dialogs: {[type(dialog) for dialog in dialogs]}")
 
 
-@AnalyticCollector
+
 class AnalyticCSV(Analytic):
     type = 'csv'
     """Возвращает серию файлов: отдельные файлы для диалогов, отдельный файл для аналитики в формате csv."""
@@ -95,7 +98,7 @@ class AnalyticCSV(Analytic):
         return await self._process_dialogs(dialogs_objects.dialogs, folder_path, CsvExporter, 'csv')
 
 
-@AnalyticCollector
+
 class AnalyticExcel(Analytic):
     type = 'excel'
     """Возвращает серию файлов: отдельные файлы для диалогов, отдельный файл для аналитики в формате excel."""
