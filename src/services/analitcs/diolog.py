@@ -22,38 +22,40 @@ class Dialogs:
 
 
 class UserMessages(Dialogs):
-    def __init__(self, telegram_id, session_manager):
+    def __init__(self, telegram_id, research_id, session_manager):
         super().__init__(session_manager)
         self.telegram_id = telegram_id
+        self.research_id = research_id
 
     async def get_user_messages(self) -> pandas.DataFrame:
         async with self.session_manager.async_session_factory() as session:
-            result = await session.execute(text(self.sql_query.user_messages(self.telegram_id)))
+            result = await session.execute(text(self.sql_query.user_messages(self.telegram_id, self.research_id)))
             data = result.fetchall()  # получаем данные в виде списка
             columns = result.keys()  # получаем названия столбцов
 
             # Создаем DataFrame
             df = pd.DataFrame(data, columns=columns)
-            df.set_index("from_user", inplace=True)
+            df.set_index("user_telegram_id", inplace=True)
             df["created_at"] = pd.to_datetime(df["created_at"])
             df['is_user'] = True
             return df
 
 
 class AssistantMessages(Dialogs):
-    def __init__(self, telegram_id, session_manager):
+    def __init__(self, telegram_id, research_id, session_manager):
         super().__init__(session_manager)
         self.telegram_id = telegram_id
+        self.research_id = research_id
 
     async def get_assistant_messages(self) -> pandas.DataFrame:
         # Генерация SQL-запроса для ассистентских сообщений
         async with self.session_manager.async_session_factory() as session:
-            result = await session.execute(text(self.sql_query.assistant_messages(self.telegram_id)))
+            result = await session.execute(text(self.sql_query.assistant_messages(self.telegram_id, self.research_id)))
             data = result.fetchall()  # Получаем данные в виде списка
             columns = result.keys()  # Получаем названия столбцов
             # Создаем DataFrame
             df = pd.DataFrame(data, columns=columns)
-            df.set_index("to_user_id", inplace=True)
+            df.set_index("user_telegram_id", inplace=True)
             df["created_at"] = pd.to_datetime(df["created_at"])
             df['is_user'] = False
             return df
@@ -61,11 +63,13 @@ class AssistantMessages(Dialogs):
 
 class UserDialog(Dialogs):
 
-    def __init__(self, telegram_id, session_manager):
+    def __init__(self, telegram_id, research_id, session_manager):
         super().__init__(session_manager)
+
         self.telegram_id = telegram_id
-        self.user_messages = UserMessages(telegram_id=telegram_id, session_manager=session_manager)
-        self.assistant_messages = AssistantMessages(telegram_id=telegram_id, session_manager=session_manager)
+        self.research_id = research_id
+        self.user_messages = UserMessages(telegram_id=telegram_id, research_id=self.research_id,session_manager=session_manager)
+        self.assistant_messages = AssistantMessages(telegram_id=telegram_id, research_id=self.research_id,session_manager=session_manager)
         self.dialog: Optional[pd.DataFrame] = None
 
     async def get_dialog(self):
@@ -166,7 +170,7 @@ class ResearchDialogs(Dialogs):
 
         # Создаем диалоги для каждого пользователя
         for telegram_id in user_ids:
-            dialog = UserDialog(telegram_id=telegram_id, session_manager=self.session_manager)
+            dialog = UserDialog(telegram_id=telegram_id,research_id=self.research_id, session_manager=self.session_manager)
             tasks.append(dialog.get_dialog())
 
         try:
