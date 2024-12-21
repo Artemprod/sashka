@@ -232,8 +232,11 @@ class MessageFirstSend(BaseMessageHandler):
         start_date = await self.get_research_start_date(research_id)
         print("START DATE______", start_date)
 
-        if not users or not client:
-            raise ValueError("No users found or client not available for the given research ID")
+        if not users :
+            raise ValueError("No users found for the given research ID")
+
+        if not client:
+            raise ValueError("No client available for the given research ID")
 
         tasks = [
             self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)

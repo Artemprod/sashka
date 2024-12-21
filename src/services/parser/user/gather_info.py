@@ -8,11 +8,10 @@ from typing import Optional
 from loguru import logger
 
 from configs.nats_queues import nats_distributor_settings
-from src.distributor.app.schemas.response import ErrorResponse
 from src.schemas.service.client import TelegramClientDTOGet
 from src.schemas.service.queue import NatsReplyRequestQueueMessageDTOStreem
 from src.schemas.service.queue import TelegramObjectHeadersDTO
-from src.schemas.service.response import ResponseModel
+from src.schemas.service.response import ResponseModel, ErrorResponse
 from src.schemas.service.user import UserDTO
 from src.schemas.service.user import UserDTOBase
 from src.schemas.service.user import UserDTOQueue
@@ -34,16 +33,25 @@ class TelegramUserInformationCollector(UserInformationCollector):
 
     async def collect_users_information(self, users: List[UserDTOBase], client: TelegramClientDTOGet) -> Optional[
         List[UserDTO]]:
+        """
+        Собирает данные о пользоватле
+        """
         message = self._create_nats_message(users, client)
         try:
             response = await self.publisher.request_reply(nats_message=message)
+
             if response:
                 logger.info("Ответ от сервера получен")
                 response_model = ResponseModel.model_validate_json(response)
-                if not isinstance(response_model, ErrorResponse):
-                    return await self._parse_users_info(response_model)
-                else:
-                    logger.warning(f"Error in response {response_model.error_message}")
+
+                if not isinstance(response_model.response, ErrorResponse):
+                    parsed_users = await self._parse_users_info(response_model)
+                    return parsed_users
+
+                elif isinstance(response_model.response, ErrorResponse):
+                    logger.warning(f"Error in response {response_model.response.error_message}")
+
+
         except Exception as e:
             logger.error(f"Ошибка при сборе информации о пользователях: {e}")
             raise
@@ -52,16 +60,16 @@ class TelegramUserInformationCollector(UserInformationCollector):
 
     def _create_nats_message(self, users: List[UserDTOBase],
                              client: TelegramClientDTOGet) -> NatsReplyRequestQueueMessageDTOStreem:
-        user_dicts = [user.dict() for user in users]
+        user_dicts = [user.model_dump() for user in users]
 
         headers = TelegramObjectHeadersDTO(
-            tg_client=client.json(),
+            tg_client=client.model_dump_json(),
             user=json.dumps(user_dicts)
         )
 
         return NatsReplyRequestQueueMessageDTOStreem(
             subject=self.PARSE_SUBJECT,
-            headers=headers.dict(),
+            headers=headers.model_dump(),
         )
 
     async def _parse_users_info(self, response: ResponseModel) -> Optional[List[UserDTO]]:
@@ -73,7 +81,7 @@ class TelegramUserInformationCollector(UserInformationCollector):
 
     @staticmethod
     async def _user_generator(response: ResponseModel) -> AsyncGenerator[UserDTOQueue, None]:
-        if not isinstance(response, ErrorResponse):
+        if not isinstance(response.response, ErrorResponse):
             for user_data in response.response.data:
                 yield user_data
 
