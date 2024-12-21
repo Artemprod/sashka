@@ -50,7 +50,10 @@ class TelegramResearchManager(BaseResearchManager):
             db_research: ResearchDTOFull = await self._save_new_research(research_dto)
             # Установить статус для исследования
             await self._set_research_status(db_research)
-            await self._add_users_to_research(research, telegram_client=telegram_client)
+            # Собираем данные о пользователях
+            user_info: Optional[List[UserDTO]] = await self._collect_user_info(telegram_client, research)
+            # Добавляем пользователей в исследование
+            await self._add_users_to_research(users_dto=user_info)
             # Установить статусы для пользователей
             await self._set_user_status(research=research)
             # Связать пользователей с исследованием
@@ -58,6 +61,7 @@ class TelegramResearchManager(BaseResearchManager):
             # Возврат DTO с сохраненным исследованием
             saved_research: ResearchDTORel = await self._get_saved_research(db_research.research_id)
             return saved_research
+
         except Exception as e:
             logger.error(f"Error during research creation: {e} \n {e.args}")
             raise
@@ -133,28 +137,33 @@ class TelegramResearchManager(BaseResearchManager):
         return ResearchDTOBeDb(
 
             owner_id=owner.owner_id,
-            **research.dict()
+            **research.model_dump()
         )
 
     async def _save_new_research(self, research_dto: ResearchDTOBeDb) -> ResearchDTOFull:
         return await self._database_repository.research_repo.short.save_new_research(
-            values=research_dto.dict(exclude={'examinees_user_names'})
+            values=research_dto.model_dump(exclude={'examinees_user_names'})
         )
 
     async def _get_saved_research(self, research_id: int) -> ResearchDTORel:
         return await self._database_repository.research_repo.full.get_research_by_id(research_id=research_id)
 
-    async def _add_users_to_research(self, research, telegram_client: TelegramClientDTOGet) -> Optional[
-        List[UserDTOFull]]:
+    async def _collect_user_info(self,telegram_client, research):
         users_dto = []
+        try:
+            # Если есть `examinees_user_names`, получить информацию о пользователях
+            if research.examinees_user_names is not None:
+                print()
+                user_info: Optional[List[UserDTO]] = await self._collect_user_information_ids(telegram_client, research)
+                if user_info:
+                    # Создаем объекты UserDTO, используя полученную информацию
+                    users_dto.extend(user_info)
+            return users_dto
+        except Exception as e:
+            raise e
 
-        # Если есть `examinees_user_names`, получить информацию о пользователях
-        if research.examinees_user_names is not None:
-            user_info:Optional[List[UserDTO]] = await self._collect_user_information_ids(telegram_client, research)
-            if user_info:
-                # Создаем объекты UserDTO, используя полученную информацию
-                users_dto.extend(user_info)
-
+    async def _add_users_to_research(self, users_dto:[List[UserDTO]]) -> Optional[
+        List[UserDTOFull]]:
 
         # Добавляем пользователей в базу данных
         try:
@@ -180,8 +189,6 @@ class TelegramResearchManager(BaseResearchManager):
     async def _bind_users_to_research(self, research_id: int, research: ResearchDTOPost) -> None:
         db_users_ids = []  # Список для хранения user_id
 
-
-
         if research.examinees_user_names:
             users_by_usernames = await self._database_repository.user_in_research_repo.short.get_many_user_ids_by_usernames(
                 usernames=research.examinees_user_names
@@ -194,3 +201,4 @@ class TelegramResearchManager(BaseResearchManager):
                 user_id=user_id,
                 research_id=research_id
             )
+
