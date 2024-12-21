@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from loguru import logger
 
 from configs.nats_queues import nats_subscriber_researcher_settings
+from src.schemas.information.start_research import UserInfo
 from src.schemas.service.owner import ResearchOwnerDTO
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.schemas.service.research import ResearchDTOPost
@@ -20,6 +21,7 @@ from src.services.research.telegram.manager import TelegramResearchManager
 from src.web.dependencies.researcher.start import get_publisher, get_apscheduler
 from src.web.dependencies.researcher.start import get_research_manager
 from src.web.dependencies.researcher.validation import validate_data
+from src.web.utils.funcs import count_users_in_research
 
 router = APIRouter(prefix="/research/telegram", tags=["Research"])
 
@@ -37,7 +39,6 @@ async def start_research(
     """Запускает новый процесс исследования."""
 
 
-
     try:
         validated_research = await validate_data(research)
         # Создание нового исследования
@@ -48,6 +49,7 @@ async def start_research(
             subject=nats_subscriber_researcher_settings.researches.start_telegram_research,
             headers={"research_id": str(created_research.research_id)}
         )
+
         #FIXME Тут скорее вынести в сервис начала иследования разделение ответсвенности представление не должно знать бизнес логику
         # Запланировать публикацию сообщения через 5 минут после начала исследования
         apscheduler.add_job(
@@ -55,10 +57,13 @@ async def start_research(
             args=[subject_message],
             trigger=DateTrigger(run_date=created_research.start_date, timezone=pytz.utc)
         )
+        user_info:UserInfo = await count_users_in_research(users_dto=created_research.users,research=research)
 
+        #TODO переписать в модель DTO
         return {
             "message": f"Research '{created_research.name}' has been planed to start at {created_research.start_date}",
-            "research_id": created_research.research_id
+            "research_id": created_research.research_id,
+            "users_info":user_info.model_dump()
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
