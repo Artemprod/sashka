@@ -26,6 +26,10 @@ class BasePromptGenerator(ABC):
     async def _get_assistant(self, research_id) -> Optional[AssistantDTOGet]:
         return await self.repository.assistant_repo.get_assistant_by_research(research_id=research_id)
 
+    async def _get_stop_word_message_for_assistant(self) -> str:
+        configuration = await self.repository.configuration_repo.get()
+        return (f"Если ты найдешь в сообщении негатив, оскорбления, нежелание собеседника поддерживать разговор,"
+                f"то в конце своего ответа просто добавь {configuration.stop_word}")
 
 class Prompter(BasePromptGenerator):
 
@@ -42,9 +46,10 @@ class Prompter(BasePromptGenerator):
 
         else:
             user_prompt = f"{user_prompt_part} {assistant.user_prompt}  {args} {kwargs}"
+        stop_word_message = await self._get_stop_word_message_for_assistant()
         return PromptDTO(
             user_prompt=user_prompt,
-            system_prompt=assistant.system_prompt
+            system_prompt=f"{assistant.system_prompt} {stop_word_message}"
         )
 
 
@@ -61,10 +66,12 @@ class FirstMessagePromptGenerator(BasePromptGenerator):
 
         else:
             user_prompt = f"{user_prompt_part}  {args} {kwargs}"
+
+        stop_word_message = await self._get_stop_word_message_for_assistant()
         return PromptDTO(
             assistant_message=assistant.user_prompt,
             user_prompt=user_prompt,
-            system_prompt=assistant.system_prompt
+            system_prompt=f"{assistant.system_prompt} {stop_word_message}"
         )
 
 
@@ -76,9 +83,10 @@ class ResearchMessagePromptGenerator(BasePromptGenerator):
             raise
         user_prompt_part = assistant.middle_part_prompt if assistant.middle_part_prompt else ""
         user_prompt = f"{user_prompt_part} {assistant.user_prompt} {args} {kwargs}"
+        stop_word_message = await self._get_stop_word_message_for_assistant()
         return PromptDTO(
             user_prompt=user_prompt,
-            system_prompt=assistant.system_prompt
+            system_prompt=f"{assistant.system_prompt} {stop_word_message}"
         )
 
 
@@ -91,9 +99,10 @@ class CommonMessagePromptGenerator(BasePromptGenerator):
             raise
         user_prompt_part = assistant.middle_part_prompt if assistant.middle_part_prompt else ""
         user_prompt = f"{user_prompt_part} {assistant.user_prompt} {args} {kwargs}"
+        stop_word_message = await self._get_stop_word_message_for_assistant()
         return PromptDTO(
             user_prompt=user_prompt,
-            system_prompt=assistant.system_prompt
+            system_prompt=f"{assistant.system_prompt} {stop_word_message}"
         )
 
 
@@ -103,7 +112,11 @@ class PingPromptGenerator(BasePromptGenerator):
         try:
             prompt: PingPromptDTO = await self.repository.ping_prompt_repo.get_ping_prompt_by_order_number(
                 ping_order_number=message_number)
-            return PromptDTO(user_prompt=prompt.prompt, system_prompt=prompt.system_prompt)
+            stop_word_message = await self._get_stop_word_message_for_assistant()
+            return PromptDTO(
+                user_prompt=prompt.prompt,
+                system_prompt=f"{prompt.system_prompt} {stop_word_message}"
+            )
         except Exception as e:
             raise e
 

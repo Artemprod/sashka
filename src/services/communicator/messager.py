@@ -239,7 +239,7 @@ class MessageFirstSend(BaseMessageHandler):
 
         tasks = [
             self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
-            for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date)
+            async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date)
         ]
         await asyncio.gather(*tasks)
 

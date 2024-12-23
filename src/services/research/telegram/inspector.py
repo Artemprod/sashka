@@ -298,7 +298,7 @@ class StopWordChecker:
 
             logger.info(f"Найдена стоп-фраза в сообщении для исследования {telegram_id}: '{response_message}'")
 
-            cleared_message =  self._delete_stop_word(
+            cleared_message = await self._delete_stop_word(
                 message=response_message,
                 pattern=pattern
             )
