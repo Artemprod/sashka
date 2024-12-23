@@ -10,6 +10,7 @@ from src.database.postgres.models.services import Services
 from src.database.postgres.models.status import UserStatus, ResearchStatus
 from src.database.postgres.models.storage import S3VoiceStorage
 from src.database.postgres.models.user import User
+from src.database.postgres.models.configuration import Configuration
 from src.database.postgres.models.base import ModelBase
 
 

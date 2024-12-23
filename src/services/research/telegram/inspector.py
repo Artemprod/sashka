@@ -28,6 +28,7 @@ from src.services.publisher.publisher import NatsPublisher
 from src.services.research.models import PingDataQueueDTO
 from src.services.research.telegram.decorators.finish_reserch import move_users_to_archive
 from src.services.research.utils import CyclePingAttemptCalculator
+from src.web.models.configuration import ConfigurationSchema
 
 #TODO Вынести во всех классах reserch id в инициализхатор классса потому что классы являются частю фасада
 class BaseStopper:
@@ -339,30 +340,26 @@ class PingDelayCalculator:
 
 class UserPingator:
 
-
     def __init__(self, repo, publisher):
         self.repo = repo
         self.publisher = publisher
-        self.config = research_pingator_settings
         self._attempt_calculator = CyclePingAttemptCalculator
         self._ping_calculator = PingDelayCalculator()
 
-        self.settings = self._load_settings()
-
-    @staticmethod
-    def _load_settings() -> Dict[str, int]:
-        return {"delay_check_interval": 60}
+    async def get_config(self) -> ConfigurationSchema:
+        return await self.repo.configuration_repo.get()
 
     async def ping_users(self, research_id: int):
         """Пинг пользователей до тех пор, пока есть активные пользователи."""
         logger.info(f"Start ping for research {research_id} ")
 
         research_info: ResearchDTOFull = await self.repo.research_repo.short.get_research_by_id(research_id=research_id)
+        config = await self.get_config()
 
         while True:
             users = await self.get_active_users(research_id)
             await self.ping_users_concurrently(users, research_info)
-            await asyncio.sleep(self.config.ping_interval)
+            await asyncio.sleep(config.ping_interval)
 
 
 
@@ -385,7 +382,8 @@ class UserPingator:
             if unresponded_messages == 0:
                 return
 
-            if unresponded_messages > self.config.max_pings_messages:
+            config = await self.get_config()
+            if unresponded_messages > config.ping_max_messages:
                 logger.info(f"Превышено максимальное количество пингов для пользователя {user.tg_user_id}.")
                 return
 

@@ -1,6 +1,7 @@
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.assistant import AssistantRepository
 from src.database.repository.client import ClientRepository
+from src.database.repository.configuration import ConfigurationRepository
 from src.database.repository.message_repo import MessageRepository
 from src.database.repository.owner import OwnerRepo
 from src.database.repository.ping import PingPromptRepository
@@ -28,6 +29,7 @@ class RepoStorage(BaseRepoStorage):
         self._message_repo = MessageRepository(self._db_manager)
         self._ping_prompt_repo = PingPromptRepository(self._db_manager)
         self._in_research_repo = InResearchRepo(self._db_manager)
+        self._configuration_repo = ConfigurationRepository(self._db_manager)
 
     @property
     def client_repo(self):
@@ -63,3 +65,7 @@ class RepoStorage(BaseRepoStorage):
     @property
     def in_research_repo(self):
         return self._in_research_repo
+
+    @property
+    def configuration_repo(self):
+        return self._configuration_repo
