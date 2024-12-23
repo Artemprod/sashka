@@ -1,3 +1,5 @@
+import asyncio
+
 from faststream import Context
 from faststream import Depends
 from faststream.nats import NatsMessage
@@ -25,7 +27,8 @@ async def command_dialog_start(
     communicator: TelegramCommunicator = context.get("communicator")
     try:
         # Обработка сообщения с использованием TelegramCommunicator
-        await communicator.make_first_message_distribution(command_data.research_id, command_data.users)
+        task = asyncio.create_task(communicator.make_first_message_distribution(command_data.research_id, command_data.users))
+        logger.debug("ВЫЗВАЛАСЬ ТАСКА С ОЗДАНИЕМ ИСЛЕДОВНИЯ  ")
         logger.info("reply to message ")
     except Exception as e:
         logger.error("Failed to send first message ")

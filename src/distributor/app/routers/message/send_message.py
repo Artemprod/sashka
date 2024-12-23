@@ -43,14 +43,19 @@ async def send_first_message_subscriber(body: str, msg: NatsMessage, context=Con
                    subject=nats_distributor_settings.message.send_message.subject,
                    deliver_policy=DeliverPolicy.ALL,
                    no_ack=True)
-async def send_message_subscriber(body: str, msg: NatsMessage, context=Context(), data=Depends(get_data_from_body), client=Depends(get_telegram_client)):
+async def send_message_subscriber(body: str, msg: NatsMessage, context=Context(),
+                                  data=Depends(get_data_from_body),
+                                  client=Depends(get_telegram_client)):
     """Send a conversation message."""
     await msg.ack()
     logger.warning("message acked")
     try:
         logger.info("Sending message...")
-        msg_data = await send_message(client=client,user=data.user,message=data.message)
-        logger.info(f"Message sent: {msg_data}")
+        if not data.message:
+            logger.warning(f"There is no message to send, i will not send anything")
+        else:
+            msg_data = await send_message(client=client,user=data.user,message=data.message)
+            logger.info(f"Message sent: {msg_data}")
 
     except Exception as e:
         logger.error(f"Failed to send message: {e}")

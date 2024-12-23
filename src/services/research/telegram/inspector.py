@@ -10,6 +10,8 @@ from typing import List
 from typing import Optional
 import pytz
 from loguru import logger
+from mako.testing.helpers import result_lines
+
 from configs.nats_queues import nats_subscriber_communicator_settings
 from configs.research import research_pingator_settings
 from re import Pattern
@@ -29,6 +31,8 @@ from src.services.research.models import PingDataQueueDTO
 from src.services.research.telegram.decorators.finish_reserch import move_users_to_archive
 from src.services.research.utils import CyclePingAttemptCalculator
 from src.web.models.configuration import ConfigurationSchema
+from src.utils.wrappers import async_wrap
+
 
 #TODO Вынести во всех классах reserch id в инициализхатор классса потому что классы являются частю фасада
 class BaseStopper:
@@ -81,6 +85,7 @@ class ResearchStarter:
         )
         try:
             await self.publisher.publish_message_to_subject(subject_message=subject_message)
+            logger.debug("ОТПРАВЛЕНО СООБЩЕНИЕ НА САБДЖЕКТ НАЧАТЬ ИСЛЕДОВАНИЕ ДЖИАЛОГ")
         except Exception as e:
             raise e
 
@@ -255,7 +260,6 @@ class ResearchOverChecker(BaseStopper):
         return research.end_date.astimezone(pytz.utc).replace(tzinfo=None)
 
 
-
 class StopWordChecker:
     """
     Класс для поиска стоп-слова в сообщениях и завершения диалога при его нахождении.
@@ -274,7 +278,7 @@ class StopWordChecker:
     async def _get_stop_pattern(self) -> Pattern:
         stop_phrase = await self._get_stop_phrase()
         return re.compile(rf'\b{re.escape(stop_phrase)}\b', re.IGNORECASE)
-        
+
     async def monitor_stop_words(self, telegram_id: int, response_message: str) -> str:
         """
         Проверяет сообщение на наличие стоп-фраз и при их обнаружении завершает исследование.
@@ -302,12 +306,17 @@ class StopWordChecker:
             return cleared_message
 
         except Exception as e:
-            logger.error(f"Ошибка при проверке стоп-слов для исследования {telegram_id}: {str(e)}")
+            logger.error(f"Ошибка при проверке стоп-слов для исследования у пользователя {telegram_id}: {str(e)}")
             raise
 
     # TODO refactor
+    @async_wrap
     def _delete_stop_word(self, message: str, pattern: Pattern) -> str:
-        return re.sub(pattern, "", message)
+        try:
+            return re.sub(pattern, "", message)
+        except Exception as e:
+            logger.error("Ошибка в удалении стоп слова")
+            raise e
 
     def _is_contains_stop_phrase(self, message: str, pattern: Pattern) -> bool:
         """
@@ -362,7 +371,6 @@ class UserPingator:
             await asyncio.sleep(config.ping_interval)
 
 
-
     async def ping_users_concurrently(self, users: List[UserDTOFull], research_info: ResearchDTOFull):
         """Пингует пользователей параллельно с обработкой исключений."""
         tasks = [self.handle_user_ping(user, research_info) for user in users]
@@ -379,6 +387,7 @@ class UserPingator:
                                                                                   research_id=research_info.research_id,
                                                                                   telegram_client_id=research_info.telegram_client_id,
                                                                                   assistant_id=research_info.assistant_id)
+            print("______________UNREPOND_MESSAGES__________",unresponded_messages)
             if unresponded_messages == 0:
                 return
 
@@ -392,7 +401,9 @@ class UserPingator:
 
             # Время в UTC стандарте
             current_time_utc = datetime.now(pytz.utc)
-            if send_time <= current_time_utc:
+
+
+            if send_time and send_time <= current_time_utc:
                 await self.send_command_message_ping_user(user=user,
                                                           message_number=unresponded_messages,
                                                           research_id=research_info.research_id)
@@ -427,12 +438,6 @@ class UserPingator:
             return research_status.status_name
         raise ValueError("No status name value")
 
-    # async def count_unresponded_assistant_message(self, telegram_id: int) -> int:
-    #     """Получение всех неотвеченных сообщений от ассистента."""
-    #     unresponded_messages = await self.repo.message_repo.assistant.fetch_assistant_messages_after_user(
-    #         telegram_id=telegram_id)
-    #     return len(unresponded_messages)
-
 
     async def count_unresponded_assistant_message(self, telegram_id: int,research_id:int, telegram_client_id:int, assistant_id:int) -> int:
         """Получение всех неотвеченных сообщений от ассистента."""
@@ -442,20 +447,33 @@ class UserPingator:
             telegram_client_id=telegram_client_id,
             assistant_id=assistant_id)
 
+        print("НЕОТВЕЧЕНЫЕ СООБЩЕНИЯ_____________",len(unresponded_messages)," ", unresponded_messages)
         return len(unresponded_messages)
 
-    async def calculate_send_time(self, telegram_id: int, time_delay: int) -> datetime:
+    async def calculate_send_time(self, telegram_id: int,research_id:int, telegram_client_id:int, assistant_id:int, time_delay: int) -> Optional[datetime]:
         """Расчёт времени отправки следующего пинга."""
         try:
-            last_user_message = await self.repo.message_repo.user.get_last_user_message_by_user_telegram_id(telegram_id)
+            last_message = await self.repo.message_repo.user.get_last_user_message_in_context_by_user_telegram_id(telegram_id,
+                                                                                                                       research_id,
+                                                                                                                       telegram_client_id,
+                                                                                                                       assistant_id)
             # Конвертируем точно в UTC
-            last_message_time = (
-                last_user_message.created_at.replace(tzinfo=pytz.utc)
-                if last_user_message.created_at.tzinfo is None
-                else last_user_message.created_at.astimezone(pytz.utc)
-            )
-            #TODO сделать изменение атрибута секунды часы минуты
-            return last_message_time + timedelta(hours=time_delay)
+            if not last_message:
+                last_message = await self.repo.message_repo.assistant.get_last_assistant_message_in_context_by_user_telegram_id(
+                    telegram_id,
+                    research_id,
+                    telegram_client_id,
+                    assistant_id)
+
+            if last_message:
+                last_message_time = (
+                    last_message.created_at.replace(tzinfo=pytz.utc)
+                    if last_message.created_at.tzinfo is None
+                    else last_message.created_at.astimezone(pytz.utc)
+                )
+                #TODO сделать изменение атрибута секунды часы минуты
+                return last_message_time + timedelta(hours=time_delay)
+            else:return
 
         except Exception as e:
             logger.error("Error with calculation time send time")

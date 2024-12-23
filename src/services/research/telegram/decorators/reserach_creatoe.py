@@ -32,7 +32,7 @@ def unique_users_in_research(func):
             raise EmptyUniqueNamesForNewResearchError("Список уникальных пользователей для нового исследования пуст.")
 
         # Обновление исследования с уникальными пользователями
-        research.examinees_user_names = unique_users_names
+        research.examinees_user_names = list(unique_users_names)
         logger.info(f"Уникальные пользователи: {unique_users_names}")
 
         # TODO: добавить отправку уведомлений о пользователях, уже участвующих в исследовании

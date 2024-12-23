@@ -2,7 +2,7 @@ import uuid
 from dataclasses import field
 from datetime import datetime
 from datetime import timedelta
-from typing import List
+from typing import List, Union
 from typing import Optional
 
 import pytz
@@ -23,7 +23,7 @@ class ResearchDTOPost(BaseModel):
     name: Optional[str] = Field(None, example="Research Name")
     title: Optional[str] = Field(None, example="Research Title")
     theme: Optional[str] = Field(None, example="Research Theme")
-    start_date: datetime = Field(default_factory=lambda: datetime.now().replace(tzinfo=None))
+    start_date: Union[datetime, str] = Field(default_factory=lambda: datetime.now().replace(tzinfo=None))
     end_date: datetime = Field(default_factory=lambda: (datetime.now() + timedelta(days=10)).replace(tzinfo=None))
     timezone_info: Optional[str] = Field(default_factory=lambda: datetime.now().astimezone().tzinfo, example="UTC")
     descriptions: Optional[str] = Field(None, example="Some descriptions")
