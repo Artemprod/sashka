@@ -14,6 +14,7 @@ from mako.testing.helpers import result_lines
 
 from configs.nats_queues import nats_subscriber_communicator_settings
 from configs.research import research_pingator_settings
+from re import Pattern
 
 from src.database.postgres.models.enum_types import ResearchStatusEnum
 from src.database.postgres.models.enum_types import UserStatusEnum
@@ -29,6 +30,7 @@ from src.services.publisher.publisher import NatsPublisher
 from src.services.research.models import PingDataQueueDTO
 from src.services.research.telegram.decorators.finish_reserch import move_users_to_archive
 from src.services.research.utils import CyclePingAttemptCalculator
+from src.web.models.configuration import ConfigurationSchema
 from src.utils.wrappers import async_wrap
 
 
@@ -259,19 +261,23 @@ class ResearchOverChecker(BaseStopper):
 
 
 class StopWordChecker:
-    """Класс для поиска как точного, так и частичного стоп-слов в сообщениях, завершение исследования при их нахождении."""
+    """
+    Класс для поиска стоп-слова в сообщениях и завершения диалога при его нахождении.
+    """
 
-    def __init__(self,
-                 repo: 'RepoStorage',
-                 stop_phrases: Optional[str] = None):
+    def __init__(self,repo: 'RepoStorage'):
         """
-        :param stopper: Объект класса ResearchStopper, который выполняет завершение исследования.
         :param repo: Репозиторий для работы с данными.
-        :param stop_phrases: Cтоп-фраза для проверки. Если не передан, используются стандартная фраза.
         """
         self.repo = repo
-        self.stop_phrase = stop_phrases or 'STOP_DIALOG'
-        self.stop_pattern = re.compile(rf'\b{re.escape(self.stop_phrase)}\b', re.IGNORECASE)
+
+    async def _get_stop_phrase(self) -> str:
+        configuraion = await self.repo.configuration_repo.get()
+        return configuraion.stop_word
+
+    async def _get_stop_pattern(self) -> Pattern:
+        stop_phrase = await self._get_stop_phrase()
+        return re.compile(rf'\b{re.escape(stop_phrase)}\b', re.IGNORECASE)
 
     async def monitor_stop_words(self, telegram_id: int, response_message: str) -> str:
         """
@@ -282,11 +288,20 @@ class StopWordChecker:
         :return: True, если была обнаружена стоп-фраза и исследование завершено, иначе False.
         """
         try:
-            if not await self._contains_stop_phrase(response_message):
+            pattern = await self._get_stop_pattern()
+
+            if not self._is_contains_stop_phrase(
+                    message=response_message,
+                    pattern=pattern
+            ):
                 return response_message
 
             logger.info(f"Найдена стоп-фраза в сообщении для исследования {telegram_id}: '{response_message}'")
-            cleared_message =  await self._delete_stop_word(response_message)
+
+            cleared_message = await self._delete_stop_word(
+                message=response_message,
+                pattern=pattern
+            )
             await self.repo.user_in_research_repo.short.update_user_status(telegram_id, UserStatusEnum.DONE)
             return cleared_message
 
@@ -296,37 +311,20 @@ class StopWordChecker:
 
     # TODO refactor
     @async_wrap
-    def _delete_stop_word(self, message: str) -> str:
+    def _delete_stop_word(self, message: str, pattern: Pattern) -> str:
         try:
-            result = re.sub(self.stop_pattern, "", message)
-            return result
+            return re.sub(pattern, "", message)
         except Exception as e:
             logger.error("Ошибка в удалении стоп слова")
             raise e
 
-
-    async def _contains_stop_phrase(self, message: str) -> bool:
+    def _is_contains_stop_phrase(self, message: str, pattern: Pattern) -> bool:
         """
         Выполняет поиск стоп-слов в сообщении с использованием регулярных выражений.
         :param message: Сообщение для проверки.
         :return: True, если найдена стоп-фраза, иначе False.
         """
-        return self.stop_pattern.search(message) is not None
-
-
-    async def update_stop_phrases(self, new_word: str):
-        """
-        Обновляет список стоп-фраз и пересоздает регулярные выражения для нового набора фраз.
-
-        :param new_word: Новый список стоп-фраз.
-        """
-        self.stop_phrase = new_word
-        self.stop_pattern = re.compile(rf'\b{re.escape(self.stop_phrase)}\b', re.IGNORECASE)
-        logger.info("Стоп-фраза обновлена")
-
-    async def log_stop_phrases(self):
-        """Логирует текущий список стоп-фраз."""
-        logger.info(f"Текущая стоп-фраза: {self.stop_phrase}")
+        return pattern.search(message) is not None
 
 
 class PingDelayCalculator:
@@ -351,30 +349,26 @@ class PingDelayCalculator:
 
 class UserPingator:
 
-
     def __init__(self, repo, publisher):
         self.repo = repo
         self.publisher = publisher
-        self.config = research_pingator_settings
         self._attempt_calculator = CyclePingAttemptCalculator
         self._ping_calculator = PingDelayCalculator()
 
-        self.settings = self._load_settings()
-
-    @staticmethod
-    def _load_settings() -> Dict[str, int]:
-        return {"delay_check_interval": 60}
+    async def get_config(self) -> ConfigurationSchema:
+        return await self.repo.configuration_repo.get()
 
     async def ping_users(self, research_id: int):
         """Пинг пользователей до тех пор, пока есть активные пользователи."""
         logger.info(f"Start ping for research {research_id} ")
 
         research_info: ResearchDTOFull = await self.repo.research_repo.short.get_research_by_id(research_id=research_id)
+        config = await self.get_config()
 
         while True:
             users = await self.get_active_users(research_id)
             await self.ping_users_concurrently(users, research_info)
-            await asyncio.sleep(self.config.ping_interval)
+            await asyncio.sleep(config.ping_interval)
 
 
     async def ping_users_concurrently(self, users: List[UserDTOFull], research_info: ResearchDTOFull):
@@ -397,16 +391,13 @@ class UserPingator:
             if unresponded_messages == 0:
                 return
 
-            if unresponded_messages > self.config.max_pings_messages:
+            config = await self.get_config()
+            if unresponded_messages > config.ping_max_messages:
                 logger.info(f"Превышено максимальное количество пингов для пользователя {user.tg_user_id}.")
                 return
 
             time_delay = self._ping_calculator.calculate(n=unresponded_messages)
-            send_time = await self.calculate_send_time(telegram_id=user.tg_user_id,
-                                                       research_id=research_info.research_id,
-                                                       telegram_client_id=research_info.telegram_client_id,
-                                                       assistant_id=research_info.assistant_id,
-                                                       time_delay=time_delay)
+            send_time = await self.calculate_send_time(user.tg_user_id, time_delay)
 
             # Время в UTC стандарте
             current_time_utc = datetime.now(pytz.utc)

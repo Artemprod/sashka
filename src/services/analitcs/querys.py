@@ -7,7 +7,7 @@ class SQLQueryBuilder:
         SELECT tg_user_id	
         FROM public.users
         WHERE user_id in (SELECT user_id 
-                            FROM public.user_research 
+                            FROM public.archived_user_research 
                             WHERE research_id = {research_id})
         """
 
@@ -17,11 +17,11 @@ class SQLQueryBuilder:
     def assistant_messages(telegram_user_id,research_id):
         query = """
         SELECT 
-            am.to_user_id,
+            am.user_telegram_id,
             am.text,
             am.created_at
         FROM assistant_messages am
-        WHERE to_user_id = {telegram_user_id} and research_id = {research_id}
+        WHERE user_telegram_id = {telegram_user_id} and research_id = {research_id}
         """
         return query.format(telegram_user_id=telegram_user_id,research_id=research_id)
 
@@ -29,11 +29,11 @@ class SQLQueryBuilder:
     def user_messages(telegram_user_id,research_id):
         query = """
         SELECT
-            um.from_user,
+            um.user_telegram_id,
             um.text,
             um.created_at
         FROM user_messages um
-        WHERE from_user = {telegram_user_id} and research_id = {research_id}
+        WHERE user_telegram_id = {telegram_user_id} and research_id = {research_id}
         """
         return query.format(telegram_user_id=telegram_user_id,research_id=research_id)
 

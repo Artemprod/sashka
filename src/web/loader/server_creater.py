@@ -12,6 +12,7 @@ from src.services.publisher.publisher import NatsPublisher
 from src.web.loader.on_startup import initialize_research_manager, initialize_apscheduler
 from src.web.routers.account.client import router as client_router
 from src.web.routers.analitics.dialog import router as dialog_router
+from src.web.routers.configuration.configuration import router as configuration_router
 from src.web.routers.reserach.telegram import router as research_router
 
 
@@ -47,5 +48,6 @@ def create_server(lifespan_func=lifespan):
     server.include_router(research_router)
     server.include_router(client_router)
     server.include_router(dialog_router)
+    server.include_router(configuration_router)
 
     return server

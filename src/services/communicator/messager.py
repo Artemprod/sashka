@@ -47,30 +47,27 @@ from src.services.communicator.request import ContextRequest
 from src.services.communicator.request import SingleRequest
 from src.services.communicator.message_waiter import MessageWaiter
 from src.services.publisher.publisher import NatsPublisher
-from src.services.exceptions.messager import NotLastMessageError
 from src.services.research.telegram.inspector import StopWordChecker
+from src.web.models.configuration import ConfigurationSchema
 
 
 # TODO сделать рефактор и вынести все что можно вынести в модуль
 class MessageGeneratorTimeDelay:
 
-    def __init__(self, settings: dict = None):
-        self.settings = settings if settings else self._load_settings()
+    def __init__(self, repository: 'RepoStorage'):
+        self.repository = repository
 
-    @staticmethod
-    def _load_settings():
-        return {
-            "send_policy": communicator_first_message_policy.people_in_bunch,
-            "delay_between_bunch": communicator_first_message_policy.delay_between_bunch,
-            "delay_between_messages": communicator_first_message_policy.delay_between_messages,
-        }
+    async def get_configuration(self) -> ConfigurationSchema:
+        return await self.repository.configuration_repo.get()
 
-    def generate(self, users: List[UserDTOBase], start_time:datetime):
+    async def generate(self, users: List[UserDTOBase], start_time:datetime):
         current_time = start_time
 
-        people_per_day = self.settings.get("send_policy", 10)
-        delay_between_messages = self.settings.get("delay_between_messages", timedelta(minutes=4))
-        delay_between_bunch = self.settings.get("delay_between_bunch", timedelta(hours=24))
+        configuration = await self.get_configuration()
+
+        people_per_day = configuration.communicator_people_in_bunch
+        delay_between_bunch = timedelta(minutes=configuration.communicator_delay_between_bunch_hours)
+        delay_between_messages = timedelta(hours=configuration.communicator_delay_between_message_in_bunch_minutes)
 
         right_border = 0
 
@@ -220,7 +217,9 @@ class MessageFirstSend(BaseMessageHandler):
     def __init__(self, publisher: 'NatsPublisher', repository: 'RepoStorage', single_request: 'SingleRequest', prompt_generator):
         super().__init__(publisher, repository, prompt_generator)
 
-        self.message_delay_generator = MessageGeneratorTimeDelay()
+        self.message_delay_generator = MessageGeneratorTimeDelay(
+            repository=repository
+        )
         self.single_request = single_request
 
     async def handle(self, users: List[UserDTOBase],
@@ -240,7 +239,7 @@ class MessageFirstSend(BaseMessageHandler):
 
         tasks = [
             self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
-            for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date)
+            async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date)
         ]
         await asyncio.gather(*tasks)
 
@@ -453,9 +452,11 @@ class ResearchMessageAnswer(MessageAnswer):
         await self._save_user_message(message_object, research_id, client, assistant)
 
         # Запуск таймера на ожидание новых сообщений перед отправкой
-        await self._wait_another_messages(
+        if not await self._wait_for_new_messages(
             client_telegram_id=message_object.client_telegram_id
-        )
+        ):
+            logger.info(f'This is not first message: {message_object.from_user}')
+            return
 
         # Формирование контекста и генерация промпта
         context = await self._form_context(message_object, research_id, client.client_id, assistant)
@@ -525,7 +526,11 @@ class ResearchMessageAnswer(MessageAnswer):
             client_id=client.client_id,
         )
 
-    async def _wait_another_messages(self, client_telegram_id: int):
+    async def _wait_for_new_messages(self, client_telegram_id: int) -> bool:
+        """
+        Ожидает в течении заданного промежутка времени дополнительные сообщения от пользоватеся.
+        если сообщение первое, то возвращает true. Иначе - false
+        """
         timeout_before_publish = await self._get_random_timeout_before_publish()
 
         if client_telegram_id in self._message_waiters:
@@ -533,8 +538,8 @@ class ResearchMessageAnswer(MessageAnswer):
                 timeout=timeout_before_publish
             )
             logger.info(f'Обновил таймер на {timeout_before_publish} секунд перед отправкой сообщения')
-            raise NotLastMessageError()
-        #TODO вынести вейтер в инициализацию DepInj
+            return False
+        # TODO вынести вейтер в инициализацию DepInj
         self._message_waiters[client_telegram_id] = MessageWaiter()
 
         logger.info(f'Начинаю ожидать {timeout_before_publish} секунд перед отправкой сообщения')
@@ -543,10 +548,12 @@ class ResearchMessageAnswer(MessageAnswer):
             timeout=timeout_before_publish
         )
         self._message_waiters.pop(client_telegram_id)
+        return True
 
     async def _get_random_timeout_before_publish(self) -> int:
         # Выбор рандомной задержки перед отправкой
-        return randint(5, 15)
+        configuration: ConfigurationSchema = await self.repository.configuration_repo.get()
+        return randint(configuration.min_response_time, configuration.max_response_time)
 
     async def _publish_response(self, response: ContextResponseDTO, client: TelegramClientDTOGet, message_object: IncomeUserMessageDTOQueue, destination_configs: NatsDestinationDTO):
         await self._publish_message(
