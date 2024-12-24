@@ -37,7 +37,7 @@ class ConfigurationRepository(BaseRepository):
                 .where(Configuration.configuration_id == 1)
             )
             config_instance = existing_config.scalars().first()
-
+            #TODO вынести в API
             if not config_instance:
                 raise HTTPException(status_code=404, detail="Configuration not found")
 
