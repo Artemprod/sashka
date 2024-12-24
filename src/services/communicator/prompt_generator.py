@@ -28,8 +28,7 @@ class BasePromptGenerator(ABC):
 
     async def _get_stop_word_message_for_assistant(self) -> str:
         configuration = await self.repository.configuration_repo.get()
-        return (f"Если ты найдешь в сообщении негатив, оскорбления, нежелание собеседника поддерживать разговор,"
-                f"то в конце своего ответа просто добавь {configuration.stop_word}")
+        return configuration.stop_word
 
 class Prompter(BasePromptGenerator):
 
@@ -37,57 +36,69 @@ class Prompter(BasePromptGenerator):
         assistant = await self._get_assistant(research_id=research_id)
         if not assistant:
             raise
+
         user_prompt_part = assistant.first_message_prompt if assistant.first_message_prompt else ""
+        user_prompt = str(f"{user_prompt_part} {assistant.user_prompt}")
 
-        if "{name}" in assistant.user_prompt:
+        if "{name}" in assistant.system_prompt:
             name = await self.get_user_name(user_telegram_id)
-            user_prompt = str(f"{user_prompt_part} {assistant.user_prompt}").format(name=name)
-            print("USER PROMT_______", user_prompt)
+            assistant.system_prompt = assistant.system_prompt.format(name=name)
 
-        else:
-            user_prompt = f"{user_prompt_part} {assistant.user_prompt}  {args} {kwargs}"
-        stop_word_message = await self._get_stop_word_message_for_assistant()
+        if "{stop_word}"  in assistant.system_prompt:
+            stop_word = await self._get_stop_word_message_for_assistant()
+            assistant.system_prompt = assistant.system_prompt.format(name=stop_word)
+
         return PromptDTO(
             user_prompt=user_prompt,
-            system_prompt=f"{assistant.system_prompt} {stop_word_message}"
+            system_prompt=assistant.system_prompt
         )
 
+#TODO Почистить коменты неиспользуемы код
 
-class FirstMessagePromptGenerator(BasePromptGenerator):
+# class FirstMessagePromptGenerator(BasePromptGenerator):
+#
+#     async def generate_prompt(self, research_id, user_telegram_id, *args, **kwargs) -> PromptDTO:
+#         assistant = await self._get_assistant(research_id=research_id)
+#         if not assistant:
+#             raise
+#         user_prompt_part = assistant.first_message_prompt if assistant.first_message_prompt else ""
+#         user_prompt = str(f"{user_prompt_part} {assistant.user_prompt}")
+#
+#         if "{name}" in assistant.system_prompt:
+#             name = await self.get_user_name(user_telegram_id)
+#             assistant.system_prompt = assistant.system_prompt.format(name=name)
+#
+#         if "{stop_word}"  in assistant.system_prompt:
+#             stop_word = await self._get_stop_word_message_for_assistant()
+#             assistant.system_prompt = assistant.system_prompt.format(name=stop_word)
+#
+#         return PromptDTO(
+#             assistant_message=assistant.user_prompt,
+#             user_prompt=user_prompt,
+#             system_prompt=assistant.system_prompt
+#         )
 
-    async def generate_prompt(self, research_id, user_telegram_id, *args, **kwargs) -> PromptDTO:
-        assistant = await self._get_assistant(research_id=research_id)
-        if not assistant:
-            raise
-        user_prompt_part = assistant.first_message_prompt if assistant.first_message_prompt else ""
-        if "{name}" in user_prompt_part:
-            name = await self.get_user_name(user_telegram_id)
-            user_prompt = str(f"{user_prompt_part}").format(name=name)
 
-        else:
-            user_prompt = f"{user_prompt_part}  {args} {kwargs}"
-
-        stop_word_message = await self._get_stop_word_message_for_assistant()
-        return PromptDTO(
-            assistant_message=assistant.user_prompt,
-            user_prompt=user_prompt,
-            system_prompt=f"{assistant.system_prompt} {stop_word_message}"
-        )
-
-
-class ResearchMessagePromptGenerator(BasePromptGenerator):
-
-    async def generate_prompt(self, research_id, *args, **kwargs) -> PromptDTO:
-        assistant = await self._get_assistant(research_id=research_id)
-        if not assistant:
-            raise
-        user_prompt_part = assistant.middle_part_prompt if assistant.middle_part_prompt else ""
-        user_prompt = f"{user_prompt_part} {assistant.user_prompt} {args} {kwargs}"
-        stop_word_message = await self._get_stop_word_message_for_assistant()
-        return PromptDTO(
-            user_prompt=user_prompt,
-            system_prompt=f"{assistant.system_prompt} {stop_word_message}"
-        )
+# class ResearchMessagePromptGenerator(BasePromptGenerator):
+#
+#     async def generate_prompt(self, research_id,user_telegram_id, *args, **kwargs) -> PromptDTO:
+#         assistant = await self._get_assistant(research_id=research_id)
+#         if not assistant:
+#             raise
+#         user_prompt_part = assistant.first_message_prompt if assistant.first_message_prompt else ""
+#         user_prompt = str(f"{user_prompt_part} {assistant.user_prompt}")
+#
+#         if "{name}" in assistant.system_prompt:
+#             name = await self.get_user_name(user_telegram_id)
+#             assistant.system_prompt = assistant.system_prompt.format(name=name)
+#
+#         if "{stop_word}"  in assistant.system_prompt:
+#             stop_word = await self._get_stop_word_message_for_assistant()
+#             assistant.system_prompt = assistant.system_prompt.format(name=stop_word)
+#         return PromptDTO(
+#             user_prompt=user_prompt,
+#             system_prompt=assistant.system_prompt
+#         )
 
 
 class CommonMessagePromptGenerator(BasePromptGenerator):
