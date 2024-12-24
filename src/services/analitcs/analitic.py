@@ -108,3 +108,13 @@ class AnalyticExcel(Analytic):
         dialogs_objects = await self.dialogs
         return await self._process_dialogs(dialogs_objects.dialogs, folder_path, ExcelExporter, 'excel')
 
+class AnalyticJsonDialogs(Analytic):
+    type = 'json'
+
+    async def provide_data(self, folder_path: str = None):
+        """Возвращает список диалогов по иследованию."""
+        dialogs_objects:ResearchDialogs = await self.dialogs
+        result = await dialogs_objects.to_json()
+        return result
+
+

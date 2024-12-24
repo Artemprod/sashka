@@ -1,5 +1,7 @@
 import asyncio
 import io
+import json
+from datetime import datetime
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -102,7 +104,7 @@ class UserDialog(Dialogs):
         output = io.BytesIO()
         try:
             # Записываем DataFrame в CSV-формат, указывая в качестве аргумента BytesIO
-            self.dialog.to_csv(output, index=False, encoding='utf-8')
+            self.dialog.to_csv(output, index=True, encoding='utf-8')
             logger.info("CSV file created successfully in buffer")
         except Exception as e:
             logger.error("Failed to create CSV file in buffer: %s", e)
@@ -119,7 +121,6 @@ class UserDialog(Dialogs):
             # Используем ExcelWriter с объектом BytesIO через менеджер контекста
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 self.dialog.to_excel(writer, sheet_name=str(self.telegram_id), index=False)
-
             logger.info("Excel file created successfully in buffer")
 
         except Exception as e:
@@ -162,6 +163,7 @@ class ResearchDialogs(Dialogs):
             # Преобразуем результат в DataFrame
             df = pd.DataFrame(data, columns=result.keys())
             users = df['tg_user_id'].tolist()  # Извлекаем список user_id
+            print()
             return users
 
     async def get_dialogs(self):
@@ -183,6 +185,28 @@ class ResearchDialogs(Dialogs):
             return self
         except Exception as e:
             raise e
+
+    async def to_json(self):
+        dialogs_json = {}
+
+        for user_id, dialog in self.dialogs.items():
+            # Преобразуем DataFrame в словарь
+            dialog_dict = dialog.dialog.to_dict(orient="index")
+
+            # Обновляем ключи, преобразуя их из Timestamp в строку даты и времени
+            formatted_dialog = {
+                (index.to_pydatetime().strftime('%Y-%m-%d %H:%M:%S') if isinstance(index, pd.Timestamp)
+                 else datetime.fromtimestamp(int(index) / 1000).strftime('%Y-%m-%d %H:%M:%S')): value
+                for index, value in dialog_dict.items()
+            }
+
+            dialogs_json[user_id] = formatted_dialog
+
+        # Преобразуем полный словарь в JSON-строку
+        result_json = json.dumps(dialogs_json, ensure_ascii=False, indent=2)
+        return result_json
+
+
 
     def __getitem__(self, user_telegram_id):
         return self.dialogs[user_telegram_id].dialog

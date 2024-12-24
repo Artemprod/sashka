@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from fastapi import Depends
 
 from src.database.postgres.engine.session import DatabaseSessionManager
-from src.services.analitcs.analitic import AnalyticExcel, AnalyticCSV
+from src.services.analitcs.analitic import AnalyticExcel, AnalyticCSV, AnalyticJsonDialogs
 from src.services.analitcs.metrics import BasicMetricCalculator
 from src.web.dependencies.researcher.start import get_db_session
 from src.web.utils.file import ZIPFileHandler
@@ -46,10 +46,18 @@ async def get_excel_research_data(
     file_handler = ZIPFileHandler(data, "xlsx")
     return file_handler.create_response()
 
-# @router.get("/excel/zip", status_code=200)
-# async def get_dialogs_by_research(
-#         research_id: int,
-#         db_session: DatabaseSessionManager = Depends(get_db_session),
-#         analytic: dict = Depends(get_analytic_instruments),
-# ):
-#     ...
+@router.get("/research/json", status_code=200)
+async def get_dialogs_by_research(
+        research_id: int,
+        db_session: DatabaseSessionManager = Depends(get_db_session),
+
+):
+    json_analytic = AnalyticJsonDialogs(
+        research_id=research_id,
+        session_manager=db_session,
+        metric_calculator=BasicMetricCalculator,
+    )
+    data = await json_analytic.provide_data()
+    if data:
+        return data
+
