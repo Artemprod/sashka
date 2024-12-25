@@ -57,7 +57,7 @@ class ResearchStarter:
 
     def _load_seatings(self):
         return {
-            "command_subject": "command.dialog.start"
+            "command_subject": nats_subscriber_communicator_settings.commands.start_dialog
         }
 
     async def start_up_research(self, research_id: int) -> None:
@@ -71,7 +71,7 @@ class ResearchStarter:
         await self.repository.status_repo.user_status.update_status_group_of_user(
             user_group=[user.tg_user_id for user in user_group], status=UserStatusEnum.IN_PROGRESS
         )
-        users_dto = [UserDTOBase(username=user.username, tg_user_id=user.tg_user_id).dict() for user in user_group]
+        users_dto = [UserDTOBase(username=user.username, tg_user_id=user.tg_user_id).model_dump() for user in user_group]
         await self._publish_star_dialog_command(users=users_dto, research_id=research_id)
 
         logger.info("Команда отправлена ")
@@ -85,7 +85,7 @@ class ResearchStarter:
         )
         try:
             await self.publisher.publish_message_to_subject(subject_message=subject_message)
-            logger.debug("ОТПРАВЛЕНО СООБЩЕНИЕ НА САБДЖЕКТ НАЧАТЬ ИСЛЕДОВАНИЕ ДЖИАЛОГ")
+
         except Exception as e:
             raise e
 
@@ -232,9 +232,6 @@ class ResearchOverChecker(BaseStopper):
         while True:
             current_time = datetime.now(pytz.utc).replace(tzinfo=None)
 
-            print("CURRENT TIME ____ ",current_time)
-            print("END DATE ____ ", end_date)
-
             # Проверка на конечную дату
             if current_time >= end_date:
                 logger.info(f"Завершаю исследование {research_id} по истечению времени, время завершения {current_time}")
@@ -273,6 +270,7 @@ class StopWordChecker:
 
     async def _get_stop_phrase(self) -> str:
         configuraion = await self.repo.configuration_repo.get()
+        logger.debug(f"________________CONFIG_stop {configuraion}")
         return configuraion.stop_word
 
     async def _get_stop_pattern(self) -> Pattern:
@@ -364,11 +362,13 @@ class UserPingator:
 
         research_info: ResearchDTOFull = await self.repo.research_repo.short.get_research_by_id(research_id=research_id)
         config = await self.get_config()
+        logger.debug(f"________________CONFIG {config}")
 
         while True:
             users = await self.get_active_users(research_id)
             await self.ping_users_concurrently(users, research_info)
             await asyncio.sleep(config.ping_interval)
+
 
 
     async def ping_users_concurrently(self, users: List[UserDTOFull], research_info: ResearchDTOFull):
@@ -387,7 +387,7 @@ class UserPingator:
                                                                                   research_id=research_info.research_id,
                                                                                   telegram_client_id=research_info.telegram_client_id,
                                                                                   assistant_id=research_info.assistant_id)
-            print("______________UNREPOND_MESSAGES__________",unresponded_messages)
+
             if unresponded_messages == 0:
                 return
 
@@ -397,7 +397,12 @@ class UserPingator:
                 return
 
             time_delay = self._ping_calculator.calculate(n=unresponded_messages)
-            send_time = await self.calculate_send_time(user.tg_user_id, time_delay)
+            #TODO Добавить переменные
+            send_time = await self.calculate_send_time(telegram_id=user.tg_user_id,
+                                                       research_id=research_info.research_id,
+                                                       telegram_client_id=research_info.telegram_client_id,
+                                                       assistant_id=research_info.assistant_id,
+                                                       time_delay=time_delay)
 
             # Время в UTC стандарте
             current_time_utc = datetime.now(pytz.utc)
@@ -427,6 +432,7 @@ class UserPingator:
         try:
             await self.publisher.publish_message_to_subject(subject_message=subject_message)
             logger.info(f"Отправил в паблишер сообщение {subject_message}")
+
         except Exception as e:
             logger.error(f"Ошибка при отправке пинг-сообщения: {str(e)}")
 
@@ -447,7 +453,6 @@ class UserPingator:
             telegram_client_id=telegram_client_id,
             assistant_id=assistant_id)
 
-        print("НЕОТВЕЧЕНЫЕ СООБЩЕНИЯ_____________",len(unresponded_messages)," ", unresponded_messages)
         return len(unresponded_messages)
 
     async def calculate_send_time(self, telegram_id: int,research_id:int, telegram_client_id:int, assistant_id:int, time_delay: int) -> Optional[datetime]:
