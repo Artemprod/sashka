@@ -76,7 +76,7 @@ class MessageGeneratorTimeDelay:
                 right_border = len(users)
             else:
                 right_border = left_border + people_per_day
-            logger.info(f"_______USER___GROUP__{i}________")
+            logger.debug(f"_______USER___GROUP__{i}________")
             for j, user in enumerate(users[left_border:right_border]):
                 next_time_message = current_time + (j * delay_between_messages) + (i * delay_between_bunch)
                 logger.info(f'User ID: {user}, Next Time Message: {next_time_message}')
@@ -229,7 +229,7 @@ class MessageFirstSend(BaseMessageHandler):
         client = await self._get_client(research_id)
         assistant_id = await self.get_assistant(research_id)
         start_date = await self.get_research_start_date(research_id)
-        print("START DATE______", start_date)
+
 
         if not users :
             raise ValueError("No users found for the given research ID")
@@ -253,6 +253,7 @@ class MessageFirstSend(BaseMessageHandler):
         try:
             single_request_object = await self.form_single_request(telegram_user_id=user.tg_user_id, research_id=research_id )
             content = await self.single_request.get_response(single_obj=single_request_object)
+
             await self.save_assistant_message(
                 research_id=research_id,
                 content=content.response,
@@ -261,7 +262,7 @@ class MessageFirstSend(BaseMessageHandler):
                 client_id=client.client_id
             )
 
-            logger.warning(f"СООБЩЕНИЕ К ОТПРАВКЕ  {content}")
+            logger.debug(f"СООБЩЕНИЕ К ОТПРАВКЕ  {content}")
             await self._publish_message(content, user, send_time, client, destination_configs)
             await self._update_user_status(user.tg_user_id)
 
@@ -338,13 +339,13 @@ class ScheduledFirstMessage(MessageFirstSend):
             )
             publish_message = await self._create_publish_message_(content, user, client, destination_configs)
 
-            print("_____SEND TIME_____", send_time)
             # Добавляем асинхронную корутину в планировщик
             self.scheduler.add_job(
                 self.publisher.publish_message_to_stream,
                 args=[publish_message],
                 trigger=DateTrigger(run_date=send_time+timedelta(seconds=20),timezone=pytz.utc)
             )
+
             logger.debug("CООБЩЕНИЕ ЗАПЛАНИРОВАНО К ОТПРОАВКЕ ")
             #TODO делать апдейт статуса когда ? когда отпралися  ?
             await self._update_user_status(user.tg_user_id)
