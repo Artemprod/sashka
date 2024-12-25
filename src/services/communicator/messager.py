@@ -66,8 +66,8 @@ class MessageGeneratorTimeDelay:
         configuration = await self.get_configuration()
 
         people_per_day = configuration.communicator_people_in_bunch
-        delay_between_bunch = timedelta(minutes=configuration.communicator_delay_between_bunch_hours)
-        delay_between_messages = timedelta(hours=configuration.communicator_delay_between_message_in_bunch_minutes)
+        delay_between_bunch = timedelta(hours=configuration.communicator_delay_between_bunch_hours)
+        delay_between_messages = timedelta(minutes=configuration.communicator_delay_between_message_in_bunch_minutes)
 
         right_border = 0
 
