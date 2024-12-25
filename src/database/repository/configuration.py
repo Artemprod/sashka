@@ -28,7 +28,7 @@ class ConfigurationRepository(BaseRepository):
             await session.commit()
             await session.refresh(config_instance)
 
-            return ConfigurationSchema.from_orm(config_instance)
+            return ConfigurationSchema.model_validate(config_instance,from_attributes=True)
 
     async def get(self) -> ConfigurationSchema:
         async with self.db_session_manager.async_session_factory() as session:
@@ -37,8 +37,8 @@ class ConfigurationRepository(BaseRepository):
                 .where(Configuration.configuration_id == 1)
             )
             config_instance = existing_config.scalars().first()
-
+            #TODO вынести в API
             if not config_instance:
                 raise HTTPException(status_code=404, detail="Configuration not found")
 
-            return ConfigurationSchema.from_orm(config_instance)
+            return ConfigurationSchema.model_validate(config_instance,from_attributes=True)
