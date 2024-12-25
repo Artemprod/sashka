@@ -13,7 +13,8 @@ from src.schemas.service.prompt import PingPromptDTO
 
 class BasePromptGenerator(ABC):
     # TODO Добавить кэширование промпта чтобы каждый раз не обращаться в бвзу за промптом к одному и тому же иследованию
-    def __init__(self, repository: RepoStorage):
+    def __init__(self,
+                 repository: RepoStorage):
         self.repository = repository
 
     @abstractmethod
@@ -29,24 +30,26 @@ class BasePromptGenerator(ABC):
     async def _get_stop_word_message_for_assistant(self) -> str:
         configuration = await self.repository.configuration_repo.get()
         return configuration.stop_word
-
+#TODO набор параметров которые необходимо передать в промпт вынести в базу
 class Prompter(BasePromptGenerator):
 
     async def generate_prompt(self, research_id, user_telegram_id, *args, **kwargs) -> PromptDTO:
         assistant = await self._get_assistant(research_id=research_id)
+
         if not assistant:
-            raise
+            raise ValueError("Assistant not found")
 
-        user_prompt_part = assistant.first_message_prompt if assistant.first_message_prompt else ""
-        user_prompt = str(f"{user_prompt_part} {assistant.user_prompt}")
+        user_prompt_part = assistant.first_message_prompt or ""
+        user_prompt = f"{user_prompt_part} {assistant.user_prompt}".strip()
 
+        placeholders = {}
         if "{name}" in assistant.system_prompt:
-            name = await self.get_user_name(user_telegram_id)
-            assistant.system_prompt = assistant.system_prompt.format(name=name)
+            placeholders['name'] = await self.get_user_name(user_telegram_id)
+        if "{stop_word}" in assistant.system_prompt:
+            placeholders['stop_word'] = await self._get_stop_word_message_for_assistant()
 
-        if "{stop_word}"  in assistant.system_prompt:
-            stop_word = await self._get_stop_word_message_for_assistant()
-            assistant.system_prompt = assistant.system_prompt.format(name=stop_word)
+        if placeholders:
+            assistant.system_prompt = assistant.system_prompt.format(**placeholders)
 
         return PromptDTO(
             user_prompt=user_prompt,
@@ -154,3 +157,4 @@ class ExtendedPingPromptGenerator(PromptGenerator):
 
     async def generate_ping_prompt(self, message_number: int) -> PromptDTO:
         return await self.ping_prompt_generator.generate_prompt(message_number=message_number)
+
