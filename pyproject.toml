@@ -39,6 +39,11 @@ ruff = "^0.7.3"
 aiocache = "^0.12.3"
 apscheduler = "^3.10.4"
 pytest-mock = "^3.14.0"
+aiofiles = "^24.1.0"
+aiobotocore = "^2.16.1"
+botocore = "^1.35.88"
+types-aiobotocore-s3 = "^2.16.1"
+boto3 = "^1.35.88"
 
 
 [build-system]

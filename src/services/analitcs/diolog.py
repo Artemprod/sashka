@@ -150,20 +150,38 @@ class UserDialog(Dialogs):
 
 class ResearchDialogs(Dialogs):
 
-    def __init__(self, research_id, session_manager):
+
+
+    def __init__(self, research_id, session_manager,research_status:str):
         super().__init__(session_manager)
+
+        self._research_status:str = research_status
         self.dialogs: Dict[int, UserDialog] = {}
         self.research_id = research_id
 
+    async def _generate_query(self):
+        query_container = {
+            "done": text(self.sql_query.users_in_done_research(research_id=self.research_id)),
+            "in_progress": text(self.sql_query.users_in_progress_research(research_id=self.research_id))
+        }
+
+        query = query_container.get(self._research_status, None)
+        if query is None:
+            raise ValueError(f"No research with status {self._research_status}")
+        else:
+            return query
+
     async def _get_users_in_research(self) -> List[int]:
         async with self.session_manager.async_session_factory() as session:  # Создаем сессию
-            query = text(self.sql_query.users_in_research(research_id=self.research_id))
+
+            # Генерируем запрос на оснвое статуса иследования
+            query = await self._generate_query()
+
             result = await session.execute(query)  # Асинхронное выполнение запроса
             data = result.fetchall()  # Получаем все строки
             # Преобразуем результат в DataFrame
             df = pd.DataFrame(data, columns=result.keys())
             users = df['tg_user_id'].tolist()  # Извлекаем список user_id
-            print()
             return users
 
     async def get_dialogs(self):
