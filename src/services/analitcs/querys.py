@@ -49,4 +49,12 @@ class SQLQueryBuilder:
         """
         return query.format(telegram_user_id=telegram_user_id,research_id=research_id)
 
+    @staticmethod
+    def users_tg_link(user_telegram_id):
+        query = """
+            SELECT tg_link	
+            FROM public.users
+            WHERE tg_user_id = {user_telegram_id}
+            """
 
+        return query.format(user_telegram_id=user_telegram_id)

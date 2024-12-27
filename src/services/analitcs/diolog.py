@@ -28,6 +28,17 @@ class UserMessages(Dialogs):
         super().__init__(session_manager)
         self.telegram_id = telegram_id
         self.research_id = research_id
+        self._telegram_link = None
+
+    @property
+    async def telegram_link(self):
+        if self._telegram_link is None:
+            async with self.session_manager.async_session_factory() as session:
+                result = await session.execute(text(self.sql_query.users_tg_link(self.telegram_id)))
+                data = result.first()
+                if data is not None:
+                    self._telegram_link = data[0]  # Если data — это кортеж, нужно обращаться к первому элементу.
+        return self._telegram_link  # Возвращает или _telegram_link, если найден, или None.
 
     async def get_user_messages(self) -> pandas.DataFrame:
         async with self.session_manager.async_session_factory() as session:
@@ -79,13 +90,22 @@ class UserDialog(Dialogs):
         user_messages_df = await self.user_messages.get_user_messages()
         assistant_messages_df = await self.assistant_messages.get_assistant_messages()
 
+
         # Объединяем сообщения в один DataFrame
         combined_df = pd.concat([user_messages_df, assistant_messages_df], ignore_index=True)
 
         # Фильтруем и структурируем данные по дате создания
         messages_by_date = combined_df[["text", "created_at", "is_user"]].set_index("created_at")
         dialog_df = messages_by_date.sort_index()
-        self.dialog = dialog_df
+
+        telegram_link = pd.DataFrame({
+            "text": [f"{await self.user_messages.telegram_link}"],
+            "created_at": [pd.Timestamp.min],
+            "is_user": [None]
+        })
+
+        final_df = pd.concat([telegram_link, dialog_df], ignore_index=True)
+        self.dialog = final_df
         return self
 
     async def get_csv_file(self, path: str) -> str:
