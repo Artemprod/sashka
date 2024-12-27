@@ -4,8 +4,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import utc
 
-
+from configs.cloud_storage import s3_selectel_settings
 from src.database.repository.storage import RepoStorage
+from src.services.cloud_storage.s3.clietn import S3Client
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.manager import TelegramResearchManager
@@ -19,6 +20,7 @@ def initialize_research_manager(repository: RepoStorage,
     telegram_researcher_manger = TelegramResearchManager(repository=repository,
                                                          information_collector=information_collector)
     return telegram_researcher_manger
+
 
 
 

@@ -21,12 +21,14 @@ class MetricCalculator(ABC):
 
 class BasicMetricCalculator(MetricCalculator):
     def __init__(self,
+                 research_status: str,
                  research_id: int,
                  session_manager,
                  dialogs: Optional[ResearchDialogs] = None):
 
         self.research_id = research_id
         self._session_manager = session_manager
+        self._research_status:str = research_status
         self._dialogs: Optional[ResearchDialogs] = dialogs
 
     @property
@@ -40,6 +42,7 @@ class BasicMetricCalculator(MetricCalculator):
         """Загрузка диалогов для исследования."""
         try:
             dialogs_object = ResearchDialogs(
+                research_status=self._research_status,
                 research_id=self.research_id,
                 session_manager=self._session_manager
             )

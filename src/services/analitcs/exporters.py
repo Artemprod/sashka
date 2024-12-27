@@ -77,6 +77,7 @@ class CsvExporter(Exporter):
 
 
 class ExcelExporter(Exporter):
+
     @staticmethod
     def export(data: List['DialogMetrics'], filepath: Union[str, Path]) -> None:
         """Экспорт списка объектов DialogMetrics в Excel файл."""

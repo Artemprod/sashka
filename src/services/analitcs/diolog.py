@@ -28,6 +28,17 @@ class UserMessages(Dialogs):
         super().__init__(session_manager)
         self.telegram_id = telegram_id
         self.research_id = research_id
+        self._telegram_link = None
+
+    @property
+    async def telegram_link(self):
+        if self._telegram_link is None:
+            async with self.session_manager.async_session_factory() as session:
+                result = await session.execute(text(self.sql_query.users_tg_link(self.telegram_id)))
+                data = result.first()
+                if data is not None:
+                    self._telegram_link = data[0]  # Если data — это кортеж, нужно обращаться к первому элементу.
+        return self._telegram_link  # Возвращает или _telegram_link, если найден, или None.
 
     async def get_user_messages(self) -> pandas.DataFrame:
         async with self.session_manager.async_session_factory() as session:
@@ -79,13 +90,22 @@ class UserDialog(Dialogs):
         user_messages_df = await self.user_messages.get_user_messages()
         assistant_messages_df = await self.assistant_messages.get_assistant_messages()
 
+
         # Объединяем сообщения в один DataFrame
         combined_df = pd.concat([user_messages_df, assistant_messages_df], ignore_index=True)
 
         # Фильтруем и структурируем данные по дате создания
         messages_by_date = combined_df[["text", "created_at", "is_user"]].set_index("created_at")
         dialog_df = messages_by_date.sort_index()
-        self.dialog = dialog_df
+
+        telegram_link = pd.DataFrame({
+            "text": [f"{await self.user_messages.telegram_link}"],
+            "created_at": [pd.Timestamp.min],
+            "is_user": [None]
+        })
+
+        final_df = pd.concat([telegram_link, dialog_df], ignore_index=True)
+        self.dialog = final_df
         return self
 
     async def get_csv_file(self, path: str) -> str:
@@ -150,20 +170,38 @@ class UserDialog(Dialogs):
 
 class ResearchDialogs(Dialogs):
 
-    def __init__(self, research_id, session_manager):
+
+
+    def __init__(self, research_id, session_manager,research_status:str):
         super().__init__(session_manager)
+
+        self._research_status:str = research_status
         self.dialogs: Dict[int, UserDialog] = {}
         self.research_id = research_id
 
+    async def _generate_query(self):
+        query_container = {
+            "done": text(self.sql_query.users_in_done_research(research_id=self.research_id)),
+            "in_progress": text(self.sql_query.users_in_progress_research(research_id=self.research_id))
+        }
+
+        query = query_container.get(self._research_status, None)
+        if query is None:
+            raise ValueError(f"No research with status {self._research_status}")
+        else:
+            return query
+
     async def _get_users_in_research(self) -> List[int]:
         async with self.session_manager.async_session_factory() as session:  # Создаем сессию
-            query = text(self.sql_query.users_in_research(research_id=self.research_id))
+
+            # Генерируем запрос на оснвое статуса иследования
+            query = await self._generate_query()
+
             result = await session.execute(query)  # Асинхронное выполнение запроса
             data = result.fetchall()  # Получаем все строки
             # Преобразуем результат в DataFrame
             df = pd.DataFrame(data, columns=result.keys())
             users = df['tg_user_id'].tolist()  # Извлекаем список user_id
-            print()
             return users
 
     async def get_dialogs(self):

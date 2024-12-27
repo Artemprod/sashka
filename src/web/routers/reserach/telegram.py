@@ -2,9 +2,7 @@ from datetime import datetime
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
-from asyncpg.pgproto.pgproto import timedelta
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
