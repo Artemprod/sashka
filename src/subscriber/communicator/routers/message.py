@@ -30,3 +30,5 @@ async def new_message_handler(
         communicator.reply_message(message_object=income_message_data)
     )
     await asyncio.sleep(0.1)
+
+

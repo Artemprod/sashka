@@ -2,7 +2,7 @@
 class SQLQueryBuilder:
 
     @staticmethod
-    def users_in_research(research_id):
+    def users_in_done_research(research_id):
         query = """
         SELECT tg_user_id	
         FROM public.users
@@ -10,6 +10,18 @@ class SQLQueryBuilder:
                             FROM public.archived_user_research 
                             WHERE research_id = {research_id})
         """
+
+        return query.format(research_id=research_id)
+
+    @staticmethod
+    def users_in_progress_research(research_id):
+        query = """
+          SELECT tg_user_id	
+          FROM public.users
+          WHERE user_id in (SELECT user_id 
+                              FROM public.user_research 
+                              WHERE research_id = {research_id})
+          """
 
         return query.format(research_id=research_id)
 
@@ -37,4 +49,12 @@ class SQLQueryBuilder:
         """
         return query.format(telegram_user_id=telegram_user_id,research_id=research_id)
 
+    @staticmethod
+    def users_tg_link(user_telegram_id):
+        query = """
+            SELECT tg_link	
+            FROM public.users
+            WHERE tg_user_id = {user_telegram_id}
+            """
 
+        return query.format(user_telegram_id=user_telegram_id)

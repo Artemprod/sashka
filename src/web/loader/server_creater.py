@@ -1,8 +1,10 @@
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
 from loguru import logger
+from starlette.staticfiles import StaticFiles
 
 from configs.database import database_postgres_settings
 from src.database.postgres.engine.session import DatabaseSessionManager
@@ -49,5 +51,14 @@ def create_server(lifespan_func=lifespan):
     server.include_router(client_router)
     server.include_router(dialog_router)
     server.include_router(configuration_router)
+    # Путь к директории для статических файлов
+    static_directory_path = "static"
 
+    # Проверка и создание директории, если она не существует
+    if not os.path.exists(static_directory_path):
+        os.makedirs(static_directory_path)
+        print(f"Directory {static_directory_path} was created.")
+
+    # Подключение директории статических файлов
+    server.mount("/static", StaticFiles(directory=static_directory_path), name="static")
     return server
