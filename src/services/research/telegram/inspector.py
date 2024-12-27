@@ -136,9 +136,12 @@ class ResearchStopper:
         elif research_status != ResearchStatusEnum.DONE.value:
             logger.warning("Некорректное завершение. Статус исследования не сменён на DONE")
             raise ResearchStatusInProgressError()
-
-        logger.info(f"Исследование {research_id} завершено успешно")
-        return 1
+        try:
+            await self.repository.in_research_repo.transfer_service.transfer_users(research_id)
+            logger.info(f"Исследование {research_id} завершено успешно")
+            return 1
+        except Exception as e:
+            raise
 
 
 
