@@ -1,4 +1,3 @@
-
 from environs import Env
 from loguru import logger
 from telethon import events
@@ -13,7 +12,7 @@ from src.distributor.telegram_client.telethoncl.filters.model import SourceType
 from src.services.publisher.publisher import NatsPublisher
 
 env = Env()
-env.read_env('.env')
+env.read_env(".env")
 publisher = NatsPublisher()
 
 

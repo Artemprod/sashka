@@ -7,16 +7,18 @@ from configs.redis import RedisTelegramGetterConfigs
 from src.dispatcher.models import DataType
 
 
-class CodeGetter: pass
+class CodeGetter:
+    pass
 
 
-class TelegramGetter(CodeGetter): pass
+class TelegramGetter(CodeGetter):
+    pass
 
 
 # TODO задасть таймауты и отсальные конфиги в ENV
 class RedisTelegramGetter:
     BASE_TIMEOUT = 60 * 5  # Базовый тайм-аут ожидания данных в секундах
-    BASE_TABLE_NAME = 'telegram'
+    BASE_TABLE_NAME = "telegram"
     REDIS_URL = 'redis://"localhost":6379/10'
 
     def __init__(self, settings: RedisTelegramGetterConfigs = None):
@@ -27,7 +29,7 @@ class RedisTelegramGetter:
         if not self.settings:
             logger.warning("No settings load from env")
             env = Env()
-            env.read_env('.env')
+            env.read_env(".env")
             try:
                 redis_url = env("REDIS_URL")
                 logger.debug("Redis URL successfully loaded")
@@ -45,7 +47,7 @@ class RedisTelegramGetter:
             data = await redis.blpop(key, timeout=self.BASE_TIMEOUT)
 
             if data and data[1]:
-                return data[0].decode('utf-8'), data[1].decode('utf-8')
+                return data[0].decode("utf-8"), data[1].decode("utf-8")
             else:
                 logger.warning(f"Timeout reached or no data received for key '{key}'")
                 raise TimeoutError(f"No data received for key '{key}' within the timeout period")

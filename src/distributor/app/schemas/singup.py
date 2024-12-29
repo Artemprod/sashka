@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel
 
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
@@ -6,7 +5,6 @@ from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 
 class ServiceData(BaseModel):
     user_id: int
-
 
 
 class TelegramServiceClientSignupDTO(BaseModel):

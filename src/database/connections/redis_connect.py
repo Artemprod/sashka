@@ -4,6 +4,7 @@ import redis.asyncio as redis
 
 # TODO разделить на разные классы
 
+
 # TODO Загружать сюда url из env
 class RedisClient:
     REDIS_URL = f'redis://{"localhost"}:{6379}/{1}'
@@ -30,7 +31,6 @@ class RedisClient:
 
     # TODO Добавить класс DTO для отдельного коннекта
     async def get_client_connection_info(self, connection_name, client_name: str):
-
         redis_connection = await self.get_connection()
         statuses_bytes = await redis_connection.get(connection_name)
         if statuses_bytes:
@@ -66,7 +66,6 @@ class RedisCash(RedisClient):
 
 
 class RedisPing(RedisClient):
-
     REDIS_URL = f'redis://{"localhost"}:{6379}/{3}'
 
     async def get_ping_status(self, user_id):

@@ -20,12 +20,10 @@ router = APIRouter(prefix="/analytic/dialog", tags=["Analytic"])
 
 @router.post("/csv/zip", status_code=200)
 async def get_csv_research_data(
-        request_dto: AnalyticDTO,
-        db_session: DatabaseSessionManager = Depends(get_db_session),
-        s3_client:S3Client= Depends(get_s3_report_storage),
-
+    request_dto: AnalyticDTO,
+    db_session: DatabaseSessionManager = Depends(get_db_session),
+    s3_client: S3Client = Depends(get_s3_report_storage),
 ):
-
     csv_analytic = AnalyticCSV(
         research_status=request_dto.research_status,
         research_id=request_dto.research_id,
@@ -45,10 +43,9 @@ async def get_csv_research_data(
 
 @router.post("/excel/zip", status_code=200)
 async def get_excel_research_data(
-        request_dto: AnalyticDTO,
-        db_session: DatabaseSessionManager = Depends(get_db_session),
-        s3_client:S3Client= Depends(get_s3_report_storage),
-
+    request_dto: AnalyticDTO,
+    db_session: DatabaseSessionManager = Depends(get_db_session),
+    s3_client: S3Client = Depends(get_s3_report_storage),
 ):
     excel_analytic = AnalyticExcel(
         research_status=request_dto.research_status,
@@ -68,11 +65,11 @@ async def get_excel_research_data(
     else:
         return HTTPException(status_code=204, detail=f"No content")
 
+
 @router.post("/research/json", status_code=200)
 async def get_dialogs_by_research(
-        request_dto: AnalyticDTO,
-        db_session: DatabaseSessionManager = Depends(get_db_session),
-
+    request_dto: AnalyticDTO,
+    db_session: DatabaseSessionManager = Depends(get_db_session),
 ):
     json_analytic = AnalyticJsonDialogs(
         research_status=request_dto.research_status,
@@ -83,4 +80,3 @@ async def get_dialogs_by_research(
     data = await json_analytic.provide_data()
     if data:
         return data
-

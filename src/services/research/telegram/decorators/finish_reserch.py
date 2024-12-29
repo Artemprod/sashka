@@ -3,10 +3,9 @@ from functools import wraps
 from loguru import logger
 
 
-
-
 def move_users_to_archive(func):
     """Декоратор для переноса пользователей в архив и их последующего удаления."""
+
     @wraps(func)
     async def wrapper(self, research_id: int):
         logger.info(f"Начало переноса пользователей для исследования {research_id}")

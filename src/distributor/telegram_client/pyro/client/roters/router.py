@@ -53,17 +53,13 @@ class Router:
         if spec.varkw:
             return kwargs
 
-        return {
-            k: v
-            for k, v in kwargs.items()
-            if k in spec.args or k in spec.kwonlyargs
-        }
+        return {k: v for k, v in kwargs.items() if k in spec.args or k in spec.kwonlyargs}
 
     def inject(self, fn) -> Callable:
         @wraps(fn)
         async def wrapper(client: Client, update: Update):
             kwargs = self.dp_kwargs
-            kwargs.update({'client': client, 'logger': self.logger})
+            kwargs.update({"client": client, "logger": self.logger})
 
             return await fn(update, **self.prepare_kwargs(fn, kwargs))
 
@@ -74,9 +70,7 @@ class Router:
             func = self.inject(func)
             self.__handlers.append(
                 (
-                    handlers.MessageHandler(
-                        func, self.__check_filters(filters)
-                    ),
+                    handlers.MessageHandler(func, self.__check_filters(filters)),
                     group,
                 )
             )
@@ -90,9 +84,7 @@ class Router:
             func = self.inject(func)
             self.__handlers.append(
                 (
-                    handlers.EditedMessageHandler(
-                        func, self.__check_filters(filters)
-                    ),
+                    handlers.EditedMessageHandler(func, self.__check_filters(filters)),
                     group,
                 )
             )
@@ -106,9 +98,7 @@ class Router:
             func = self.inject(func)
             self.__handlers.append(
                 (
-                    handlers.DeletedMessagesHandler(
-                        func, self.__check_filters(filters)
-                    ),
+                    handlers.DeletedMessagesHandler(func, self.__check_filters(filters)),
                     group,
                 )
             )
@@ -122,9 +112,7 @@ class Router:
             func = self.inject(func)
             self.__handlers.append(
                 (
-                    handlers.CallbackQueryHandler(
-                        func, self.__check_filters(filters)
-                    ),
+                    handlers.CallbackQueryHandler(func, self.__check_filters(filters)),
                     group,
                 )
             )
@@ -137,9 +125,7 @@ class Router:
             func = self.inject(func)
             self.__handlers.append(
                 (
-                    handlers.InlineQueryHandler(
-                        func, self.__check_filters(filters)
-                    ),
+                    handlers.InlineQueryHandler(func, self.__check_filters(filters)),
                     group,
                 )
             )
@@ -153,9 +139,7 @@ class Router:
             func = self.inject(func)
             self.__handlers.append(
                 (
-                    handlers.ChosenInlineResultHandler(
-                        func, self.__check_filters(filters)
-                    ),
+                    handlers.ChosenInlineResultHandler(func, self.__check_filters(filters)),
                     group,
                 )
             )
@@ -169,9 +153,7 @@ class Router:
             func = self.inject(func)
             self.__handlers.append(
                 (
-                    handlers.ChatMemberUpdatedHandler(
-                        func, self.__check_filters(filters)
-                    ),
+                    handlers.ChatMemberUpdatedHandler(func, self.__check_filters(filters)),
                     group,
                 )
             )
@@ -185,9 +167,7 @@ class Router:
             func = self.inject(func)
             self.__handlers.append(
                 (
-                    handlers.UserStatusHandler(
-                        func, self.__check_filters(filters)
-                    ),
+                    handlers.UserStatusHandler(func, self.__check_filters(filters)),
                     group,
                 )
             )
@@ -201,9 +181,7 @@ class Router:
             func = self.inject(func)
             self.__handlers.append(
                 (
-                    handlers.PollHandler(
-                        func, self.__check_filters(filters)
-                    ),
+                    handlers.PollHandler(func, self.__check_filters(filters)),
                     group,
                 )
             )
@@ -224,9 +202,7 @@ class Router:
     def raw_update(self, group=0):
         def decorator(func: Callable) -> Callable:
             func = self.inject(func)
-            self.__handlers.append(
-                (handlers.RawUpdateHandler(func), group)
-            )
+            self.__handlers.append((handlers.RawUpdateHandler(func), group))
 
             return func
 
@@ -236,9 +212,4 @@ class Router:
         if exclude_handlers is None:
             return self.__handlers
         else:
-            return [
-                handler
-                for handler in self.__handlers
-                if handler[0].callback.__name__
-                not in exclude_handlers
-            ]
+            return [handler for handler in self.__handlers if handler[0].callback.__name__ not in exclude_handlers]

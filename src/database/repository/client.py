@@ -20,9 +20,8 @@ from src.schemas.service.client import TelegramClientDTOGet
 
 # TODO Добавить обработчик try excrpt
 class ClientRepository(BaseRepository):
-
     async def save(self, values: dict) -> Optional[TelegramClientDTOGet]:
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             stmt = insert(ClientModel).values(**values).returning(ClientModel)
             execution = await session.execute(stmt)
             await session.commit()
@@ -31,9 +30,9 @@ class ClientRepository(BaseRepository):
             if new_client:
                 return TelegramClientDTOGet.model_validate(new_client, from_attributes=True)
             else:
-                raise ObjectWasNotCreated(orm_object=ClientModel.__name__,
-                                          msg=f"object with this values {values} was not created")
-
+                raise ObjectWasNotCreated(
+                    orm_object=ClientModel.__name__, msg=f"object with this values {values} was not created"
+                )
 
     async def get_client_by_id(self, client_id: int) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
@@ -46,7 +45,6 @@ class ClientRepository(BaseRepository):
             else:
                 raise ObjectDoesNotExist(orm_object=ClientModel.__name__, msg=f"client with id {client_id} not found")
 
-
     async def get_client_by_research_id(self, research_id: str) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(ClientModel).where(ClientModel.researches.any(Research.research_id == research_id))
@@ -55,8 +53,9 @@ class ClientRepository(BaseRepository):
             if result:
                 return TelegramClientDTOGet.model_validate(result, from_attributes=True)
             else:
-                raise ObjectDoesNotExist(orm_object=ClientModel.__name__,
-                                         msg=f"client with research_id {research_id} not found")
+                raise ObjectDoesNotExist(
+                    orm_object=ClientModel.__name__, msg=f"client with research_id {research_id} not found"
+                )
 
     async def get_client_by_name(self, name: str) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
@@ -68,7 +67,6 @@ class ClientRepository(BaseRepository):
             else:
                 raise ObjectDoesNotExist(orm_object=ClientModel.__name__, msg=f"client with name {name} not found")
 
-
     async def get_client_by_telegram_id(self, telegram_id: int) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(ClientModel).where(ClientModel.telegram_client_id == telegram_id)
@@ -77,8 +75,9 @@ class ClientRepository(BaseRepository):
             if result:
                 return TelegramClientDTOGet.model_validate(result, from_attributes=True)
             else:
-                raise ObjectDoesNotExist(orm_object=ClientModel.__name__,
-                                         msg=f"client with research_id {telegram_id} not found")
+                raise ObjectDoesNotExist(
+                    orm_object=ClientModel.__name__, msg=f"client with research_id {telegram_id} not found"
+                )
 
     async def get_all(self) -> List[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
@@ -105,16 +104,12 @@ class ClientRepository(BaseRepository):
             clients_in_research = set(in_research_result.scalars().all())
 
             # Запрос клиентов, не участвующих в исследованиях
-            clients_query = (
-                select(ClientModel)
-                .where(ClientModel.client_id.notin_(clients_in_research))
-            )
+            clients_query = select(ClientModel).where(ClientModel.client_id.notin_(clients_in_research))
 
             # Выполняем запрос всех клиентов, не участвующих в исследованиях
             all_clients_result = await session.execute(clients_query)
             ready_clients = [
-                TelegramClientDTOGet.model_validate(client)
-                for client in all_clients_result.scalars().all()
+                TelegramClientDTOGet.model_validate(client) for client in all_clients_result.scalars().all()
             ]
 
             if not ready_clients:
@@ -122,18 +117,15 @@ class ClientRepository(BaseRepository):
 
             return ready_clients
 
-
-
-
-
     async def update(self, telegram_client_id, values: dict) -> TelegramClientDTOGet:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
-                stmt = (update(ClientModel)
-                        .where(ClientModel.telegram_client_id == telegram_client_id)
-                        .values(**values)
-                        .returning(ClientModel)
-                        )
+                stmt = (
+                    update(ClientModel)
+                    .where(ClientModel.telegram_client_id == telegram_client_id)
+                    .values(**values)
+                    .returning(ClientModel)
+                )
                 execution = await session.execute(stmt)
                 client = execution.scalar_one_or_none()
                 # DONE Возвращать модель
@@ -142,14 +134,10 @@ class ClientRepository(BaseRepository):
     async def delete(self, name: str) -> bool:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
-                stmt = (delete(ClientModel)
-                        .where(ClientModel.name == name)
-                        .returning(ClientModel)
-                        )
+                stmt = delete(ClientModel).where(ClientModel.name == name).returning(ClientModel)
                 deleted = await session.execute(stmt).scalar_one()
                 session.commit()
                 return deleted
 
 
-class ClientRepositoryFullModel(BaseRepository):
-    ...
+class ClientRepositoryFullModel(BaseRepository): ...

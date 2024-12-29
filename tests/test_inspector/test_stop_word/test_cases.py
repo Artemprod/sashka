@@ -6,7 +6,7 @@ from typing import Union, Any
 @dataclass
 class StopWordTestCase:
     income_message: str
-    return_message:str
+    return_message: str
     stop_word: str
     expected: Union[Exception, Any]
 

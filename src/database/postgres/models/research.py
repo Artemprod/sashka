@@ -14,10 +14,10 @@ from src.database.postgres.models.base import updated_at
 
 
 class Research(ModelBase):
-    __tablename__ = 'researches'
+    __tablename__ = "researches"
     research_id: Mapped[intpk]
-    research_uuid:Mapped[Optional[str]]
-    owner_id: Mapped[int] = mapped_column(BigInteger,ForeignKey("research_owners.owner_id"))
+    research_uuid: Mapped[Optional[str]]
+    owner_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("research_owners.owner_id"))
     name: Mapped[Optional[str]]
     title: Mapped[Optional[str]]
     theme: Mapped[Optional[str]]
@@ -28,34 +28,19 @@ class Research(ModelBase):
     descriptions: Mapped[Optional[str]]
     additional_information: Mapped[Optional[str]]
 
+    assistant_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("assistants.assistant_id"))
+    telegram_client_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("telegram_clients.client_id"))
 
-    assistant_id: Mapped[int] = mapped_column(BigInteger,ForeignKey('assistants.assistant_id'))
-    telegram_client_id: Mapped[int] = mapped_column(BigInteger,ForeignKey('telegram_clients.client_id'))
+    owner: Mapped["ResearchOwner"] = relationship(back_populates="researches")
 
-    owner:Mapped["ResearchOwner"] = relationship(
-        back_populates="researches"
-    )
+    users: Mapped[list["User"]] = relationship(back_populates="researches", secondary="user_research")
 
-    users: Mapped[list["User"]] = relationship(
-        back_populates="researches",
-        secondary="user_research"
-    )
+    assistant: Mapped["Assistant"] = relationship(back_populates="research")
 
-    assistant: Mapped["Assistant"] = relationship(
-        back_populates="research"
-    )
+    status: Mapped["ResearchStatus"] = relationship(back_populates="researches")
 
-    status: Mapped["ResearchStatus"] = relationship(
-        back_populates="researches")
+    telegram_client: Mapped["TelegramClient"] = relationship(back_populates="researches")
 
-    telegram_client: Mapped["TelegramClient"] = relationship(
-        back_populates="researches"
-    )
+    user_messages: Mapped[list["UserMessage"]] = relationship(back_populates="research")
 
-    user_messages: Mapped[list["UserMessage"]] = relationship(
-        back_populates="research")
-
-    assistant_messages:Mapped[list["AssistantMessage"]] = relationship(
-        back_populates="research")
-
-
+    assistant_messages: Mapped[list["AssistantMessage"]] = relationship(back_populates="research")

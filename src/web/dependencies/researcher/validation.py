@@ -5,7 +5,7 @@ import pytz
 from src.schemas.service.research import ResearchDTOPost
 from dateutil import parser
 
-#TODO сделать более адекватную валидацию это костыль лучше перенсти возмоджность
+# TODO сделать более адекватную валидацию это костыль лучше перенсти возмоджность
 # добавлять слова типа now в отделоную категории
 
 

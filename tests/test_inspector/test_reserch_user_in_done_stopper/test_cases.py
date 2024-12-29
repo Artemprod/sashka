@@ -5,13 +5,13 @@ from pathlib import Path
 from typing import Union, Any
 from contextlib import nullcontext as does_not_raise
 
+
 @dataclass
 class TestDataCases:
     _id: str
-    research_id:int
-    users:int
+    research_id: int
+    users: int
     expectation: Union[Exception, Any]
-
 
 
 one_hundred_users = TestDataCases(
@@ -20,7 +20,6 @@ one_hundred_users = TestDataCases(
     users=100,
     expectation=does_not_raise(),
 )
-
 
 
 TEST_CASES = [one_hundred_users]

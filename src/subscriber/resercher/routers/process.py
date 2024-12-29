@@ -15,13 +15,9 @@ from src.subscriber.resercher.utils.reserach import task_completion_callback
 router = NatsRouter()
 
 
-
 @router.subscriber(subject=nats_subscriber_researcher_settings.researches.start_telegram_research)
 async def new_message_handler(
-    body: str,
-    msg: NatsMessage,
-    context: Context = Context(),
-    research_id: int = Depends(get_data_from_headers)
+    body: str, msg: NatsMessage, context: Context = Context(), research_id: int = Depends(get_data_from_headers)
 ):
     """Обрабатывает новые входящие сообщения для запуска исследования."""
     processor: ResearchProcess = context.get("processor")

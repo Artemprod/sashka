@@ -11,5 +11,6 @@ async def streams_checking():
     nats_checker = NatsChecker(nats_url=url, nats_streams=streams)
     await nats_checker.check()
     # await nats_checker.check_connection()
-asyncio.run(streams_checking())
 
+
+asyncio.run(streams_checking())

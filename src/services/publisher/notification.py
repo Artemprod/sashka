@@ -13,7 +13,6 @@ class BaseNotificator(ABC):
 
 
 class TelegramNotificator(BaseNotificator):
-
     async def notify_completion(self, *args, **kwargs):
         print("Отправил уведомление в телеграм ")
         pass

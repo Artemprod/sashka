@@ -6,7 +6,7 @@ from src.database.postgres.models.base import intpk
 
 
 class Configuration(ModelBase):
-    __tablename__ = 'configuration'
+    __tablename__ = "configuration"
 
     configuration_id: Mapped[intpk]
 

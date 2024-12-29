@@ -16,9 +16,10 @@ from src.schemas.service.status import ResearchStatusName
 from src.schemas.service.user import UserDTO
 
 
-
 class ResearchDTOPost(BaseModel):
-    research_uuid: str = Field(default_factory=lambda: str(uuid.uuid4()), example="123e4567-e89b-12d3-a456-426614174000")
+    research_uuid: str = Field(
+        default_factory=lambda: str(uuid.uuid4()), example="123e4567-e89b-12d3-a456-426614174000"
+    )
     telegram_client_id: int = Field(..., example=1234)
     name: Optional[str] = Field(None, example="Research Name")
     title: Optional[str] = Field(None, example="Research Title")
@@ -37,7 +38,6 @@ class ResearchDTOPost(BaseModel):
 
 
 class ResearchDTOGet(BaseModel):
-
     research_uuid: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
     name: Optional[str] = None
     title: Optional[str] = None
@@ -52,20 +52,17 @@ class ResearchDTOGet(BaseModel):
         arbitrary_types_allowed = True
         from_attributes = True
 
-class ResearchDTOBeDb(ResearchDTOGet):
 
+class ResearchDTOBeDb(ResearchDTOGet):
     owner_id: int
     telegram_client_id: Optional[int]
-
 
 
 class ResearchDTOFull(ResearchDTOBeDb):
     research_id: int
 
 
-
 class ResearchDTORel(ResearchDTOFull):
-
     owner: "ResearchOwnerDTO"
     telegram_client: "TelegramClientDTOGet"
     assistant: AssistantDTOGet
@@ -74,7 +71,3 @@ class ResearchDTORel(ResearchDTOFull):
 
     class Config:
         from_attributes = True
-
-
-
-

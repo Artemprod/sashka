@@ -86,7 +86,9 @@ class UserResearchTransferService:
                     logger.info("Забираю пользователей и начинаю перенос")
 
                     # Проверяем, есть ли пользователи в исследовании
-                    count_stmt = select(func.count()).select_from(UserResearch).where(UserResearch.research_id == research_id)
+                    count_stmt = (
+                        select(func.count()).select_from(UserResearch).where(UserResearch.research_id == research_id)
+                    )
                     result = await session.execute(count_stmt)
                     user_count = result.scalar_one_or_none()
 
@@ -96,17 +98,21 @@ class UserResearchTransferService:
 
                     # Создаем INSERT ... SELECT запрос для переноса данных одной операцией
                     insert_stmt = insert(ArchivedUserResearch).from_select(
-                        [UserResearch.user_id, UserResearch.research_id, UserResearch.created_at, ],  # Колонки для вставки
-                        select(UserResearch.user_id, UserResearch.research_id, UserResearch.created_at).where(UserResearch.research_id == research_id)
+                        [
+                            UserResearch.user_id,
+                            UserResearch.research_id,
+                            UserResearch.created_at,
+                        ],  # Колонки для вставки
+                        select(UserResearch.user_id, UserResearch.research_id, UserResearch.created_at).where(
+                            UserResearch.research_id == research_id
+                        ),
                     )
 
                     # Выполняем INSERT и DELETE в рамках одной транзакции
                     await session.execute(insert_stmt)
                     logger.info("Перенос пользователей успешно завершен")
 
-                    delete_stmt = delete(UserResearch).where(
-                        UserResearch.research_id == research_id
-                    )
+                    delete_stmt = delete(UserResearch).where(UserResearch.research_id == research_id)
                     logger.info("Удаление пользователей из активного исследования")
                     result = await session.execute(delete_stmt)
 
@@ -117,15 +123,8 @@ class UserResearchTransferService:
                     )
 
                 except SQLAlchemyError as e:
-                    logger.error(
-                        f"Failed to transfer users for research {research_id}: {str(e)}", exc_info=True
-                    )
+                    logger.error(f"Failed to transfer users for research {research_id}: {str(e)}", exc_info=True)
                     raise
-
-
-
-
-
 
 
 class InResearchRepo:

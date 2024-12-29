@@ -2,8 +2,6 @@ from pyrogram import filters
 from pyrogram.types import Message
 
 
-
-
 def dynamic_data_filter(data):
     async def func(flt, _, query):
         return flt.data == query.data

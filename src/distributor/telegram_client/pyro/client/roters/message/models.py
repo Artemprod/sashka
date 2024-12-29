@@ -2,7 +2,6 @@ from pydantic import BaseModel
 
 
 class HeaderUserMessageDTOQueue(BaseModel):
-
     from_user: str
     user_name: str
     chat: str

@@ -12,7 +12,7 @@ from src.database.postgres.models.base import intpk
 
 
 class Assistant(ModelBase):
-    __tablename__ = 'assistants'
+    __tablename__ = "assistants"
 
     assistant_id: Mapped[intpk]
     name: Mapped[str] = mapped_column(String)
@@ -28,12 +28,8 @@ class Assistant(ModelBase):
 
     created_at: Mapped[created_at]
 
-    research: Mapped["Research"] = relationship(
-        back_populates="assistant"
-    )
+    research: Mapped["Research"] = relationship(back_populates="assistant")
 
-    messages: Mapped[list["AssistantMessage"]] = relationship(
-        back_populates="assistant")
+    messages: Mapped[list["AssistantMessage"]] = relationship(back_populates="assistant")
 
-    user_messages: Mapped[list["UserMessage"]] = relationship(
-        back_populates="assistant")
+    user_messages: Mapped[list["UserMessage"]] = relationship(back_populates="assistant")

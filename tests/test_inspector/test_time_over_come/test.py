@@ -6,21 +6,15 @@ from utils import time_generator
 from test_cases import TEST_CASES, TestDataCases
 
 
-
-
 @pytest.mark.parametrize(
-"test_case",
-    [
-        pytest.param(test_case, id=test_case._id)
-        for test_case in TEST_CASES
-    ],
+    "test_case",
+    [pytest.param(test_case, id=test_case._id) for test_case in TEST_CASES],
 )
 async def test_research_end(
-        test_case:TestDataCases,
-        load_time_stopper,
-        mocker,
+    test_case: TestDataCases,
+    load_time_stopper,
+    mocker,
 ):
-
     test_time = test_case.end_date - timedelta(seconds=5)
     generator = time_generator(test_time)
     # Используем side_effect для изменения времени в каждом вызове
@@ -33,4 +27,4 @@ async def test_research_end(
 
     result = await time_stopper.monitor_time_completion(research_id=test_case.research_id)
     with test_case.expectation:
-        assert result==1, "The error:Cant stop with time over"
+        assert result == 1, "The error:Cant stop with time over"

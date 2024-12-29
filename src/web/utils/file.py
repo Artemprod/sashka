@@ -44,6 +44,7 @@ from src.services.cloud_storage.s3.clietn import S3Client
 #         zip_buffer.seek(0)
 #         return zip_buffer
 
+
 class ZIPFileHandler:
     def __init__(self, storage: S3Client, data: Union[AnalyticDataBufferDTO, AnalyticFileDTO], file_extension: str):
         self.data = data

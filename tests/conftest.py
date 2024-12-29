@@ -9,14 +9,31 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.util import await_only
 
 from configs.database import database_postgres_settings
-from src.database.postgres import AssistantMessage, UserMessage, ModelBase, Assistant, TelegramClient, UserResearch, \
-    PingPrompt, Research, ResearchOwner, Services, UserStatus, ResearchStatus, User
+from src.database.postgres import (
+    AssistantMessage,
+    UserMessage,
+    ModelBase,
+    Assistant,
+    TelegramClient,
+    UserResearch,
+    PingPrompt,
+    Research,
+    ResearchOwner,
+    Services,
+    UserStatus,
+    ResearchStatus,
+    User,
+)
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
 from src.schemas.service.message import AssistantMessageDTOGet
 from src.services.publisher.publisher import NatsPublisher
-from src.services.research.telegram.inspector import ResearchOverChecker, ResearchStopper, ResearchStatusStopper, \
-    UserPingator
+from src.services.research.telegram.inspector import (
+    ResearchOverChecker,
+    ResearchStopper,
+    ResearchStatusStopper,
+    UserPingator,
+)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -29,9 +46,8 @@ async def prepare_database():
         await conn.execute(text("ALTER TABLE user_research DROP CONSTRAINT IF EXISTS user_research_user_id_key"))
         await conn.commit()
 
-
-    def open_mock_json(model:str):
-        #TODO заменить на нормальный путь
+    def open_mock_json(model: str):
+        # TODO заменить на нормальный путь
         with open(rf"D:\PROJECTS\AIPO\CUSTDEVER\sashka\tests\mock_models\mock_{model}.json", "r") as file:
             return json.load(file)
 
@@ -57,8 +73,9 @@ async def prepare_database():
     # Преобразование дат в research_owners
     for research_owner in research_owners:
         if research_owner["last_online_date"]:
-            research_owner["last_online_date"] = datetime.strptime(research_owner["last_online_date"],
-                                                                   "%Y-%m-%dT%H:%M:%S")
+            research_owner["last_online_date"] = datetime.strptime(
+                research_owner["last_online_date"], "%Y-%m-%dT%H:%M:%S"
+            )
         if research_owner["created_at"]:
             research_owner["created_at"] = datetime.strptime(research_owner["created_at"], "%Y-%m-%dT%H:%M:%S")
 
@@ -118,7 +135,6 @@ async def prepare_database():
             message["created_at"] = datetime.strptime(message["created_at"], "%Y-%m-%dT%H:%M:%S")
 
     async with session.async_session_factory() as session:
-
         add_users = insert(User).values(users)
         add_service = insert(Services).values(services)
         add_research_owner = insert(ResearchOwner).values(research_owners)
@@ -149,14 +165,15 @@ async def prepare_database():
         await session.commit()
 
 
-@pytest.fixture(scope='session', autouse=True)
-async def load_database_session()->DatabaseSessionManager:
+@pytest.fixture(scope="session", autouse=True)
+async def load_database_session() -> DatabaseSessionManager:
     return DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url_test)
 
 
-@pytest.fixture(scope='session', autouse=True)
-async def load_repository(load_database_session)->RepoStorage:
-   return RepoStorage(database_session_manager=load_database_session)
+@pytest.fixture(scope="session", autouse=True)
+async def load_repository(load_database_session) -> RepoStorage:
+    return RepoStorage(database_session_manager=load_database_session)
+
 
 @pytest.fixture(scope="session", autouse=True)
 def event_loop(request):

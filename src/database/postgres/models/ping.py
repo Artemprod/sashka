@@ -11,11 +11,10 @@ from src.database.postgres.models.base import intpk
 
 
 class PingPrompt(ModelBase):
-    __tablename__ = 'ping_prompt'
+    __tablename__ = "ping_prompt"
 
     prompt_id: Mapped[intpk]
     ping_order_number: Mapped[int] = mapped_column(Integer)
     system_prompt: Mapped[Optional[str]] = mapped_column(Text)
     prompt: Mapped[str] = mapped_column(Text)
     created_at: Mapped[created_at]
-

@@ -23,7 +23,6 @@ class TestCommunicator(BaseCommunicator):
 
 
 class TestManager:
-
     async def test_connection(self, init_client, session_folder):
         assert isinstance(init_client, Client)
         manager: Manager = Manager(init_client)
@@ -41,18 +40,19 @@ class TestManager:
 
     @pytest.mark.parametrize(
         "test_case",
-        [
-            pytest.param(test_case, id=test_case._id)
-            for test_case in TEST_CASES
-        ],
+        [pytest.param(test_case, id=test_case._id) for test_case in TEST_CASES],
     )
-    async def test_authorization(self,
-                                 test_case: TestDataCases,
-                                 session_folder
-                                 ):
+    async def test_authorization(self, test_case: TestDataCases, session_folder):
         session_path = os.path.normpath(str(os.path.join(session_folder, test_case.name)))
-        app = Client(name=session_path, api_id=test_case.api_id, api_hash=test_case.api_hash, test_mode=True,
-                     phone_number=test_case.test_phone, password=test_case.test_password, autorization_callback=None)
+        app = Client(
+            name=session_path,
+            api_id=test_case.api_id,
+            api_hash=test_case.api_hash,
+            test_mode=True,
+            phone_number=test_case.test_phone,
+            password=test_case.test_password,
+            autorization_callback=None,
+        )
         manager: Manager = Manager(app)
         manager.auth_attempts = 1
         with test_case.expectation:

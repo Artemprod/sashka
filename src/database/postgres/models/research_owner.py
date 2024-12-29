@@ -14,13 +14,13 @@ from src.database.postgres.models.services import Services
 
 
 class ResearchOwner(ModelBase):
-    __tablename__ = 'research_owners'
+    __tablename__ = "research_owners"
 
     owner_id: Mapped[intpk]
     name: Mapped[str]
     second_name: Mapped[Optional[str]]
     phone_number: Mapped[Optional[str]]
-    service_owner_id: Mapped[int] = mapped_column(BigInteger) # id пользователя в сервисе
+    service_owner_id: Mapped[int] = mapped_column(BigInteger)  # id пользователя в сервисе
 
     tg_link: Mapped[Optional[str]]
     last_online_date: Mapped[Optional[datetime]]
@@ -29,10 +29,6 @@ class ResearchOwner(ModelBase):
 
     service_id: Mapped[int] = mapped_column(ForeignKey("services.service_id"))
 
-    service: Mapped["Services"] = relationship(
-        back_populates="owners"
-    )
+    service: Mapped["Services"] = relationship(back_populates="owners")
 
-    researches: Mapped[list["Research"]] = relationship(
-        back_populates="owner"
-    )
+    researches: Mapped[list["Research"]] = relationship(back_populates="owner")

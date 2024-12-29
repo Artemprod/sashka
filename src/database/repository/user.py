@@ -48,8 +48,8 @@ class UserRepository(BaseRepository):
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
                 # Извлекаем все  username и tg_user_id из входных данных
-                usernames_to_check = [value['username'] for value in values if 'username' in value]
-                tg_user_ids_to_check = [value['tg_user_id'] for value in values if 'tg_user_id' in value]
+                usernames_to_check = [value["username"] for value in values if "username" in value]
+                tg_user_ids_to_check = [value["tg_user_id"] for value in values if "tg_user_id" in value]
 
                 # Получаем всех существующих пользователей по username
                 existing_users_by_username = await session.execute(
@@ -68,8 +68,8 @@ class UserRepository(BaseRepository):
                 new_users = [
                     User(**value)
                     for value in values
-                    if value.get('username') not in existing_usernames and
-                       value.get('tg_user_id') not in existing_tg_user_ids
+                    if value.get("username") not in existing_usernames
+                    and value.get("tg_user_id") not in existing_tg_user_ids
                 ]
 
                 # Если новых пользователей нет, возвращаем None
@@ -83,7 +83,6 @@ class UserRepository(BaseRepository):
                 # Возвращаем список добавленных пользователей
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in new_users]
 
-
     async def get_user_by_telegram_id(self, telegram_id: int) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
@@ -92,7 +91,6 @@ class UserRepository(BaseRepository):
                 user = result.scalars().first()
                 return UserDTOFull.model_validate(user, from_attributes=True) if user else None
 
-
     async def get_users_by_research_id(self, research_id: int) -> Optional[List[UserDTOFull]]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
@@ -100,7 +98,6 @@ class UserRepository(BaseRepository):
                 result = await session.execute(stmt)
                 users = result.scalars().all()
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
-
 
     async def get_user_by_username(self, username: str) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
@@ -111,8 +108,6 @@ class UserRepository(BaseRepository):
                 user = result.scalar_one()
                 return UserDTOFull.model_validate(user, from_attributes=True)
 
-
-
     async def check_user(self, telegram_id: int) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
             stmt = select(User).filter(User.tg_user_id == telegram_id)
@@ -120,9 +115,8 @@ class UserRepository(BaseRepository):
             user = result.scalars().one_or_none()
             return UserDTOFull.model_validate(user, from_attributes=True) if user else None
 
-
     async def get_users_with_status(self, status: UserStatusEnum) -> Optional[List[UserDTOFull]]:
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 execution = await session.execute(
                     select(User).filter(User.status.has(UserStatus.status_name == status))
@@ -131,14 +125,18 @@ class UserRepository(BaseRepository):
                 # DONE Конгвертация в DTO
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
 
-
-    async def get_users_by_research_with_status(self, research_id: int, status: UserStatusEnum) -> Optional[
-        List[UserDTOFull]]:
-        async with (self.db_session_manager.async_session_factory() as session):
+    async def get_users_by_research_with_status(
+        self, research_id: int, status: UserStatusEnum
+    ) -> Optional[List[UserDTOFull]]:
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 execution = await session.execute(
-                    select(User).filter(and_(User.researches.any(Research.research_id == research_id),
-                                             User.status.has(UserStatus.status_name == status)))
+                    select(User).filter(
+                        and_(
+                            User.researches.any(Research.research_id == research_id),
+                            User.status.has(UserStatus.status_name == status),
+                        )
+                    )
                 )
                 users = execution.scalars().all()
                 # DONE Конгвертация в DTO
@@ -148,12 +146,7 @@ class UserRepository(BaseRepository):
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 # Обновляем информацию о пользователе
-                stmt = (
-                    update(User)
-                    .where(User.tg_user_id == telegram_id)
-                    .values(**values)
-                    .returning(User)
-                )
+                stmt = update(User).where(User.tg_user_id == telegram_id).values(**values).returning(User)
                 update_result = await session.execute(stmt)
                 updated_user = update_result.scalar_one_or_none()
 
@@ -164,16 +157,17 @@ class UserRepository(BaseRepository):
                 logger.info(f"User information updated for user with telegram_id {telegram_id}")
                 return UserDTOFull.model_validate(updated_user, from_attributes=True)
 
-    async def update_user_status(self, telegram_id, status: UserStatusEnum)->Optional[UserStatusEnum]:
-        async with (self.db_session_manager.async_session_factory() as session):
+    async def update_user_status(self, telegram_id, status: UserStatusEnum) -> Optional[UserStatusEnum]:
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 try:
                     sub_user = select(User.user_id).where(User.tg_user_id == telegram_id).scalar_subquery()
-                    stmt = (update(UserStatus)
-                            .values(status_name=status, updated_at=datetime.datetime.now())
-                            .where(UserStatus.user_id == sub_user)
-                            .returning(UserStatus)
-                            )
+                    stmt = (
+                        update(UserStatus)
+                        .values(status_name=status, updated_at=datetime.datetime.now())
+                        .where(UserStatus.user_id == sub_user)
+                        .returning(UserStatus)
+                    )
                     updated = await session.execute(stmt)
                     await session.commit()
                     logger.info(f"User status updated {updated}")
@@ -183,17 +177,13 @@ class UserRepository(BaseRepository):
                     logger.error(f"error in update status {updated}")
                     raise e
 
-
     async def get_user_status(self, telegram_id: int) -> UserStatusEnum:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
                 try:
                     sub_user = select(User.user_id).where(User.tg_user_id == telegram_id).scalar_subquery()
 
-                    stmt = (
-                        select(UserStatus)
-                        .where(UserStatus.user_id == sub_user)
-                    )
+                    stmt = select(UserStatus).where(UserStatus.user_id == sub_user)
 
                     user_status = await session.execute(stmt)
                     logger.info(f"Getting user status with telegram_id {telegram_id}")
@@ -202,7 +192,6 @@ class UserRepository(BaseRepository):
                 except sqlalchemy.exc.SQLAlchemyError as e:
                     logger.error(f"Error getting user status with telegram_id {telegram_id}: {str(e)}")
                     raise e
-
 
     async def delete_user(self, telegram_id: int) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
@@ -220,7 +209,6 @@ class UserRepository(BaseRepository):
                 await session.execute(stmt)
                 await session.commit()
 
-
     async def get_user_id_by_telegram_id(self, telegram_id: int) -> Optional[int]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
@@ -228,7 +216,6 @@ class UserRepository(BaseRepository):
                 result = await session.execute(stmt)
                 user_id = result.first()
                 return user_id[0] if user_id else None
-
 
     async def get_user_id_by_username(self, username: str) -> Optional[int]:
         async with self.db_session_manager.async_session_factory() as session:  # Тип: AsyncSession
@@ -239,7 +226,6 @@ class UserRepository(BaseRepository):
                 # Если пользователь найден, возвращаем его ID, иначе None
                 return user_id[0] if user_id else None
 
-
     async def get_many_user_ids_by_telegram_ids(self, telegram_ids: List[int]) -> List[int]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
@@ -247,14 +233,12 @@ class UserRepository(BaseRepository):
                 result = await session.execute(stmt)
                 return [row[0] for row in result.fetchall()]
 
-
     async def get_many_user_ids_by_usernames(self, usernames: List[str]) -> List[int]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
                 stmt = select(User.user_id).where(User.username.in_(usernames))
                 result = await session.execute(stmt)
                 return [row[0] for row in result.fetchall()]
-
 
     async def get_users_info_status(self, user_telegram_id: int = None, username: str = None) -> bool:
         if not user_telegram_id and not username:
@@ -295,10 +279,10 @@ class UserRepository(BaseRepository):
 
                 return usernames
 
-    async def get_first_name_by_telegram_id(self,telegram_id) -> Optional[List[str]]:
+    async def get_first_name_by_telegram_id(self, telegram_id) -> Optional[List[str]]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
-                stmt = select(User.name).where(User.tg_user_id==telegram_id)
+                stmt = select(User.name).where(User.tg_user_id == telegram_id)
                 # Выполнение запроса и получение результатов
                 result = await session.execute(stmt)
                 # Получение всех значений из скаляров как список
@@ -311,7 +295,6 @@ class UserRepositoryFullModel(BaseRepository):
     Репозиторий для сложных операций с пользователями с использованием join.
     """
 
-
     async def get_user_by_id(self, telegram_id: int) -> Optional[UserDTORel]:
         """
         Возвращает пользователя по его Telegram ID с полной информацией о нем.
@@ -322,7 +305,6 @@ class UserRepositoryFullModel(BaseRepository):
                 result = await session.execute(query)
                 user = result.unique().scalars().first()
                 return UserDTORel.model_validate(user, from_attributes=True) if user else None
-
 
     async def get_users_with_status(self, status: UserStatusEnum) -> Optional[List[UserDTORel]]:
         """
@@ -340,22 +322,16 @@ class UserRepositoryFullModel(BaseRepository):
         """
         Общее описание запроса для пользователя.
         """
-        return (
-            select(User)
-            .options(
-                selectinload(User.status).load_only(UserStatus.status_name),
-
-                # Assuming to use selectinload & join only if necessary.
-                joinedload(User.messages).selectinload(UserMessage.voice_message),
-
-                # Select-inload each item separately
-                selectinload(User.assistant_messages).selectinload(AssistantMessage.telegram_client),
-                selectinload(User.assistant_messages).selectinload(AssistantMessage.assistant),
-
-                selectinload(User.researches).selectinload(Research.assistant),
-                selectinload(User.researches).selectinload(Research.status),
-                selectinload(User.researches).selectinload(Research.telegram_client),
-            )
+        return select(User).options(
+            selectinload(User.status).load_only(UserStatus.status_name),
+            # Assuming to use selectinload & join only if necessary.
+            joinedload(User.messages).selectinload(UserMessage.voice_message),
+            # Select-inload each item separately
+            selectinload(User.assistant_messages).selectinload(AssistantMessage.telegram_client),
+            selectinload(User.assistant_messages).selectinload(AssistantMessage.assistant),
+            selectinload(User.researches).selectinload(Research.assistant),
+            selectinload(User.researches).selectinload(Research.status),
+            selectinload(User.researches).selectinload(Research.telegram_client),
         )
 
 
