@@ -16,4 +16,4 @@ class EmptyTableError(ExistenceError):
 
 class NoFreeClientsError(ExistenceError):
     def __repr__(self):
-        return f"There are not any free clients for researches in database. All clients are busy"
+        return "There are not any free clients for researches in database. All clients are busy"

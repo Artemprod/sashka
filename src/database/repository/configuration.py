@@ -3,7 +3,8 @@ from sqlalchemy import select
 
 from src.database.postgres import Configuration
 from src.database.repository.base import BaseRepository
-from src.web.models.configuration import ConfigurationCreateSchema, ConfigurationSchema
+from src.web.models.configuration import ConfigurationCreateSchema
+from src.web.models.configuration import ConfigurationSchema
 
 
 class ConfigurationRepository(BaseRepository):

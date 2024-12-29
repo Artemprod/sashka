@@ -1,7 +1,8 @@
 from typing import List
 from typing import Optional
 
-from sqlalchemy import desc, and_
+from sqlalchemy import and_
+from sqlalchemy import desc
 from sqlalchemy import insert
 from sqlalchemy import select
 

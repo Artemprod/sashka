@@ -2,7 +2,6 @@ import datetime
 from typing import List
 from typing import Optional
 
-
 from sqlalchemy import insert
 from sqlalchemy import select
 from sqlalchemy import update

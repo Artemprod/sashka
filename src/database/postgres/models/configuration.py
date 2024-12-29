@@ -1,3 +1,4 @@
+from sqlalchemy import Index
 from sqlalchemy.orm import Mapped
 
 from src.database.postgres.models.base import ModelBase
@@ -7,6 +8,7 @@ from src.database.postgres.models.base import intpk
 
 class Configuration(ModelBase):
     __tablename__ = "configuration"
+    __table_args__ = (Index("idx_configuration_stop_word", "stop_word"),)
 
     configuration_id: Mapped[intpk]
 

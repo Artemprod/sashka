@@ -1,6 +1,7 @@
 from aiocache import Cache
 from aiocache import cached
-from sqlalchemy import insert, and_
+from sqlalchemy import and_
+from sqlalchemy import insert
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import selectinload

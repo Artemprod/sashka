@@ -52,14 +52,22 @@
 #         self.actual = UserInResearchRepository(db_session_manager)
 #         self.archived = UserInArchivedResearchRepository(db_session_manager)
 from functools import wraps
-from typing import List, Dict, Any, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+
 from loguru import logger
 from pyrogram.errors.exceptions.all import count
-from sqlalchemy import select, insert, delete, func
+from sqlalchemy import delete
+from sqlalchemy import func
+from sqlalchemy import insert
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database.postgres import UserResearch, ArchivedUserResearch
+from src.database.postgres import ArchivedUserResearch
+from src.database.postgres import UserResearch
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.schemas.service.user import UserDTOFull
 

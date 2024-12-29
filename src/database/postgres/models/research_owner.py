@@ -3,6 +3,7 @@ from typing import Optional
 
 from sqlalchemy import BigInteger
 from sqlalchemy import ForeignKey
+from sqlalchemy import Index
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
@@ -15,6 +16,12 @@ from src.database.postgres.models.services import Services
 
 class ResearchOwner(ModelBase):
     __tablename__ = "research_owners"
+    __table_args__ = (
+        Index("idx_research_owner_service_owner_id", "service_owner_id"),
+        Index("idx_research_owner_phone_number", "phone_number"),
+        Index("idx_research_owner_tg_link", "tg_link"),
+        Index("idx_research_owner_created_at", "created_at"),
+    )
 
     owner_id: Mapped[intpk]
     name: Mapped[str]

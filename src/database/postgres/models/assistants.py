@@ -1,6 +1,7 @@
 from typing import Optional
 
 from sqlalchemy import Boolean
+from sqlalchemy import Index
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -13,6 +14,10 @@ from src.database.postgres.models.base import intpk
 
 class Assistant(ModelBase):
     __tablename__ = "assistants"
+    __table_args__ = (
+        Index("idx_assistant_name", "name"),
+        Index("idx_assistant_for_conversation", "for_conversation"),
+    )
 
     assistant_id: Mapped[intpk]
     name: Mapped[str] = mapped_column(String)

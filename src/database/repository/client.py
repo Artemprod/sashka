@@ -1,17 +1,17 @@
 from typing import List
 from typing import Optional
 
-
 from sqlalchemy import delete
 from sqlalchemy import insert
 from sqlalchemy import select
 from sqlalchemy import update
 
-
 from src.database.exceptions.create import ObjectWasNotCreated
-from src.database.exceptions.read import EmptyTableError, NoFreeClientsError
+from src.database.exceptions.read import EmptyTableError
+from src.database.exceptions.read import NoFreeClientsError
 from src.database.exceptions.read import ObjectDoesNotExist
-from src.database.postgres import ResearchStatus, ResearchStatusEnum
+from src.database.postgres import ResearchStatus
+from src.database.postgres import ResearchStatusEnum
 from src.database.postgres.models.client import TelegramClient as ClientModel
 from src.database.postgres.models.research import Research
 from src.database.repository.base import BaseRepository

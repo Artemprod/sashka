@@ -3,6 +3,7 @@ from typing import Optional
 
 from sqlalchemy import BigInteger
 from sqlalchemy import ForeignKey
+from sqlalchemy import Index
 from sqlalchemy import Text
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -16,6 +17,12 @@ from src.database.postgres.models.storage import S3VoiceStorage
 
 class UserMessage(ModelBase):
     __tablename__ = "user_messages"
+    __table_args__ = (
+        Index("idx_message_chat_id", "chat_id"),
+        Index("idx_message_research_id", "research_id"),
+        Index("idx_message_telegram_client_id", "telegram_client_id"),
+        Index("idx_message_assistant_id", "assistant_id"),
+    )
 
     message_id: Mapped[intpk]
 
@@ -49,6 +56,14 @@ class UserMessage(ModelBase):
 
 class AssistantMessage(ModelBase):
     __tablename__ = "assistant_messages"
+    __table_args__ = (
+        Index("idx_message_user_telegram_id", "user_telegram_id"),
+        Index("idx_assistant_message_assistant_id", "assistant_id"),
+        Index("idx_assistant_message_chat_id", "chat_id"),
+        Index("idx_assistant_message_research_id", "research_id"),
+        Index("idx_assistant_message_telegram_client_id", "telegram_client_id"),
+        Index("idx_assistant_message_created_at", "created_at"),
+    )
 
     message_id: Mapped[intpk]
 
@@ -73,6 +88,11 @@ class AssistantMessage(ModelBase):
 
 class VoiceMessage(ModelBase):
     __tablename__ = "voice_messages"
+    __table_args__ = (
+        Index("idx_voice_message_user_message_id", "user_message_id"),
+        Index("idx_voice_message_created_at", "created_at"),
+    )
+
     voice_message_id: Mapped[intpk]
     file_id: Mapped[str]
     file_unique_id: Mapped[str]
