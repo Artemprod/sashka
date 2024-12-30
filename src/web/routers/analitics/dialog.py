@@ -81,6 +81,8 @@ async def get_dialogs_by_research(
         metric_calculator=BasicMetricCalculator,
     )
     data = await json_analytic.provide_data()
-    if data:
-        return data
+    if data is not None:
+        return JSONResponse(content=data)
+    else:
+        return HTTPException(status_code=204, detail=f"No dialogs in  research: {request_dto.research_id} with the status: '{request_dto.research_status.value}'")
 
