@@ -17,7 +17,6 @@ from src.services.analitcs.querys import SQLQueryBuilder
 
 # TODO можно подумать над тем чтобы внести инциализацию сесии менеджера внутрь
 class Dialogs:
-
     def __init__(self, session_manager: DatabaseSessionManager):
         self.session_manager = session_manager
         self.sql_query = SQLQueryBuilder()
@@ -50,7 +49,7 @@ class UserMessages(Dialogs):
             df = pd.DataFrame(data, columns=columns)
             df.set_index("user_telegram_id", inplace=True)
             df["created_at"] = pd.to_datetime(df["created_at"])
-            df['is_user'] = True
+            df["is_user"] = True
             return df
 
 
@@ -70,26 +69,28 @@ class AssistantMessages(Dialogs):
             df = pd.DataFrame(data, columns=columns)
             df.set_index("user_telegram_id", inplace=True)
             df["created_at"] = pd.to_datetime(df["created_at"])
-            df['is_user'] = False
+            df["is_user"] = False
             return df
 
 
 class UserDialog(Dialogs):
-
     def __init__(self, telegram_id, research_id, session_manager):
         super().__init__(session_manager)
 
         self.telegram_id = telegram_id
         self.research_id = research_id
-        self.user_messages = UserMessages(telegram_id=telegram_id, research_id=self.research_id,session_manager=session_manager)
-        self.assistant_messages = AssistantMessages(telegram_id=telegram_id, research_id=self.research_id,session_manager=session_manager)
+        self.user_messages = UserMessages(
+            telegram_id=telegram_id, research_id=self.research_id, session_manager=session_manager
+        )
+        self.assistant_messages = AssistantMessages(
+            telegram_id=telegram_id, research_id=self.research_id, session_manager=session_manager
+        )
         self.dialog: Optional[pd.DataFrame] = None
 
     async def get_dialog(self):
         # Получаем сообщения от пользователя и ассистента
         user_messages_df = await self.user_messages.get_user_messages()
         assistant_messages_df = await self.assistant_messages.get_assistant_messages()
-
 
         # Объединяем сообщения в один DataFrame
         combined_df = pd.concat([user_messages_df, assistant_messages_df], ignore_index=True)
@@ -101,17 +102,16 @@ class UserDialog(Dialogs):
         telegram_link = pd.DataFrame({
             "text": [f"{await self.user_messages.telegram_link}"],
             "created_at": [pd.Timestamp.min],
-            "is_user": [None]
-        })
-
-        final_df = pd.concat([telegram_link, dialog_df], ignore_index=True)
+            "is_user": "None"
+        }).set_index("created_at")
+        final_df = pd.concat([telegram_link, dialog_df], ignore_index=False)
         self.dialog = final_df
         return self
 
     async def get_csv_file(self, path: str) -> str:
         await self.__def_validate_dialog()
         try:
-            file = self.dialog.to_csv(path_or_buf=path, encoding='utf-8')
+            file = self.dialog.to_csv(path_or_buf=path, encoding="utf-8")
             logger.info(f"csv File {file} saved")
         except Exception as e:
             logger.error(" Faild to save csv file ")
@@ -124,7 +124,7 @@ class UserDialog(Dialogs):
         output = io.BytesIO()
         try:
             # Записываем DataFrame в CSV-формат, указывая в качестве аргумента BytesIO
-            self.dialog.to_csv(output, index=True, encoding='utf-8')
+            self.dialog.to_csv(output, index=True, encoding="utf-8")
             logger.info("CSV file created successfully in buffer")
         except Exception as e:
             logger.error("Failed to create CSV file in buffer: %s", e)
@@ -139,7 +139,7 @@ class UserDialog(Dialogs):
 
         try:
             # Используем ExcelWriter с объектом BytesIO через менеджер контекста
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
                 self.dialog.to_excel(writer, sheet_name=str(self.telegram_id), index=False)
             logger.info("Excel file created successfully in buffer")
 
@@ -169,20 +169,17 @@ class UserDialog(Dialogs):
 
 
 class ResearchDialogs(Dialogs):
-
-
-
-    def __init__(self, research_id, session_manager,research_status:str):
+    def __init__(self, research_id, session_manager, research_status: str):
         super().__init__(session_manager)
 
-        self._research_status:str = research_status
+        self._research_status: str = research_status
         self.dialogs: Dict[int, UserDialog] = {}
         self.research_id = research_id
 
     async def _generate_query(self):
         query_container = {
             "done": text(self.sql_query.users_in_done_research(research_id=self.research_id)),
-            "in_progress": text(self.sql_query.users_in_progress_research(research_id=self.research_id))
+            "in_progress": text(self.sql_query.users_in_progress_research(research_id=self.research_id)),
         }
 
         query = query_container.get(self._research_status, None)
@@ -193,7 +190,6 @@ class ResearchDialogs(Dialogs):
 
     async def _get_users_in_research(self) -> List[int]:
         async with self.session_manager.async_session_factory() as session:  # Создаем сессию
-
             # Генерируем запрос на оснвое статуса иследования
             query = await self._generate_query()
 
@@ -201,7 +197,7 @@ class ResearchDialogs(Dialogs):
             data = result.fetchall()  # Получаем все строки
             # Преобразуем результат в DataFrame
             df = pd.DataFrame(data, columns=result.keys())
-            users = df['tg_user_id'].tolist()  # Извлекаем список user_id
+            users = df["tg_user_id"].tolist()  # Извлекаем список user_id
             return users
 
     async def get_dialogs(self):
@@ -210,7 +206,9 @@ class ResearchDialogs(Dialogs):
 
         # Создаем диалоги для каждого пользователя
         for telegram_id in user_ids:
-            dialog = UserDialog(telegram_id=telegram_id,research_id=self.research_id, session_manager=self.session_manager)
+            dialog = UserDialog(
+                telegram_id=telegram_id, research_id=self.research_id, session_manager=self.session_manager
+            )
             tasks.append(dialog.get_dialog())
 
         try:
@@ -227,14 +225,20 @@ class ResearchDialogs(Dialogs):
     async def to_json(self):
         dialogs_json = {}
 
-        for user_id, dialog in self.dialogs.items():
-            # Преобразуем DataFrame в словарь
-            dialog_dict = dialog.dialog.to_dict(orient="index")
-
+        for user_id, dialog in  self.dialogs.items():
+            # Удаляем ссылку на tg если есть
+            filtered_dialog = self.dialogs[user_id].dialog[~self.dialogs[user_id].dialog["text"].str.contains(r"https://t\.me/", na=False)]
+            # Преобразуем Serias в словарь
+            dialog_dict = filtered_dialog.to_dict(orient="index")
+            print()
             # Обновляем ключи, преобразуя их из Timestamp в строку даты и времени
+
             formatted_dialog = {
-                (index.to_pydatetime().strftime('%Y-%m-%d %H:%M:%S') if isinstance(index, pd.Timestamp)
-                 else datetime.fromtimestamp(int(index) / 1000).strftime('%Y-%m-%d %H:%M:%S')): value
+                (
+                    index.to_pydatetime().strftime("%Y-%m-%d %H:%M:%S")
+                    if isinstance(index, pd.Timestamp)
+                    else datetime.fromtimestamp(int(index) / 1000).strftime("%Y-%m-%d %H:%M:%S")
+                ): value
                 for index, value in dialog_dict.items()
             }
 
@@ -242,11 +246,10 @@ class ResearchDialogs(Dialogs):
 
         # Преобразуем полный словарь в JSON-строку
         result_json = json.dumps(dialogs_json, ensure_ascii=False, indent=2)
-        return result_json
-
-
+        if dialogs_json is not None and  len(dialogs_json) > 0:
+            return result_json
+        else:
+            return None
 
     def __getitem__(self, user_telegram_id):
         return self.dialogs[user_telegram_id].dialog
-
-

@@ -27,13 +27,9 @@ from src.services.research.telegram.decorators.reserach_creatoe import unique_us
 
 # TODO переделать класс вынести в отдельные классы сущности ресерч создатель иследования и тд разные стратегии
 class TelegramResearchManager(BaseResearchManager):
-    def __init__(self,
-                 repository: RepoStorage,
-                 information_collector: TelegramUserInformationCollector):
+    def __init__(self, repository: RepoStorage, information_collector: TelegramUserInformationCollector):
         self._database_repository = repository
         self._information_collector = information_collector
-
-
 
     # TODO оптимизировать метод
     # TODO Вытащить создание овнера наружу из класса
@@ -44,7 +40,9 @@ class TelegramResearchManager(BaseResearchManager):
             # Создаем овнера в базе, если нет
             owner = await self._create_new_owner(owner_dto=owner)
             # Получаем telegram клиента
-            telegram_client: TelegramClientDTOGet = await self._get_telegram_client(client_id=research.telegram_client_id)
+            telegram_client: TelegramClientDTOGet = await self._get_telegram_client(
+                client_id=research.telegram_client_id
+            )
             # Создать и сохранить исследование
             research_dto: ResearchDTOBeDb = self._create_research_dto(research, owner)
             db_research: ResearchDTOFull = await self._save_new_research(research_dto)
@@ -68,7 +66,8 @@ class TelegramResearchManager(BaseResearchManager):
 
     async def get_research_info(self, research: ResearchDTOPost):
         full_info = await self._database_repository.research_repo.full.get_research_by_id(
-            research_id=research.research_id)
+            research_id=research.research_id
+        )
         logger.info(f"Вот полная инфа {full_info}")
         return full_info
 
@@ -77,14 +76,13 @@ class TelegramResearchManager(BaseResearchManager):
             values={
                 "research_id": db_research.research_id,
                 "status_name": ResearchStatusEnum.WAIT,
-                "created_at": datetime.datetime.now()
+                "created_at": datetime.datetime.now(),
             }
         )
 
     async def _set_user_status(self, research: ResearchDTOPost) -> None:
         """Устанавливает статус пользователей и возвращает список пользователей, для которых статус не был установлен."""
         db_users = set()
-
 
         # Получаем список user_id из базы данных для указанных имен пользователей
         if research.examinees_user_names:
@@ -119,7 +117,8 @@ class TelegramResearchManager(BaseResearchManager):
 
     async def _create_new_owner(self, owner_dto: ResearchOwnerDTO) -> ResearchOwnerFullDTO:
         owner = await self._database_repository.owner_repo().short.get_owner_by_service_id(
-            service_id=owner_dto.service_owner_id)
+            service_id=owner_dto.service_owner_id
+        )
 
         # TODO Сделать нормальную авторизациб и аутентификацию для того тчобы создовать иследования
         # ЕЩПроблема с созданием овнера получение его сервиса
@@ -129,26 +128,22 @@ class TelegramResearchManager(BaseResearchManager):
 
     # TODO Выдвать клиента только в случае если нет данных от пользователя какого клиента выдовать
     async def _get_telegram_client(self, client_id) -> TelegramClientDTOGet:
-        client:TelegramClientDTOGet = await self._database_repository.client_repo.get_client_by_id(client_id=client_id)
+        client: TelegramClientDTOGet = await self._database_repository.client_repo.get_client_by_id(client_id=client_id)
         return client
 
     @staticmethod
     def _create_research_dto(research: ResearchDTOPost, owner: Any) -> ResearchDTOBeDb:
-        return ResearchDTOBeDb(
-
-            owner_id=owner.owner_id,
-            **research.model_dump()
-        )
+        return ResearchDTOBeDb(owner_id=owner.owner_id, **research.model_dump())
 
     async def _save_new_research(self, research_dto: ResearchDTOBeDb) -> ResearchDTOFull:
         return await self._database_repository.research_repo.short.save_new_research(
-            values=research_dto.model_dump(exclude={'examinees_user_names'})
+            values=research_dto.model_dump(exclude={"examinees_user_names"})
         )
 
     async def _get_saved_research(self, research_id: int) -> ResearchDTORel:
         return await self._database_repository.research_repo.full.get_research_by_id(research_id=research_id)
 
-    async def _collect_user_info(self,telegram_client, research):
+    async def _collect_user_info(self, telegram_client, research):
         users_dto = []
         try:
             # Если есть `examinees_user_names`, получить информацию о пользователях
@@ -162,9 +157,7 @@ class TelegramResearchManager(BaseResearchManager):
         except Exception as e:
             raise e
 
-    async def _add_users_to_research(self, users_dto:[List[UserDTO]]) -> Optional[
-        List[UserDTOFull]]:
-
+    async def _add_users_to_research(self, users_dto: [List[UserDTO]]) -> Optional[List[UserDTOFull]]:
         # Добавляем пользователей в базу данных
         try:
             return await self._database_repository.user_in_research_repo.short.add_many_users(
@@ -173,16 +166,15 @@ class TelegramResearchManager(BaseResearchManager):
         except Exception as e:
             raise e
 
-    async def _collect_user_information_ids(self, telegram_client: TelegramClientDTOGet, research: ResearchDTOPost) -> \
-            Optional[List[UserDTO]]:
-
+    async def _collect_user_information_ids(
+        self, telegram_client: TelegramClientDTOGet, research: ResearchDTOPost
+    ) -> Optional[List[UserDTO]]:
         if not research.examinees_user_names:
             return
 
         users: List[UserDTOBase] = [UserDTOBase(username=name) for name in research.examinees_user_names]
-        users_info:Optional[List[UserDTO]] = await self._information_collector.collect_users_information(
-            users=users,
-            client=telegram_client
+        users_info: Optional[List[UserDTO]] = await self._information_collector.collect_users_information(
+            users=users, client=telegram_client
         )
         return users_info
 
@@ -190,15 +182,15 @@ class TelegramResearchManager(BaseResearchManager):
         db_users_ids = []  # Список для хранения user_id
 
         if research.examinees_user_names:
-            users_by_usernames = await self._database_repository.user_in_research_repo.short.get_many_user_ids_by_usernames(
-                usernames=research.examinees_user_names
+            users_by_usernames = (
+                await self._database_repository.user_in_research_repo.short.get_many_user_ids_by_usernames(
+                    usernames=research.examinees_user_names
+                )
             )
             db_users_ids.extend(users_by_usernames)
 
         # Привязываем пользователей к исследованию
         for user_id in db_users_ids:
             await self._database_repository.user_in_research_repo.short.bind_research(
-                user_id=user_id,
-                research_id=research_id
+                user_id=user_id, research_id=research_id
             )
-

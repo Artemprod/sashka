@@ -21,13 +21,15 @@ from src.distributor.telegram_client.telethoncl.manager.container import Teletho
 
 @asynccontextmanager
 async def lifespan(context: ContextRepo):
-    repository = RepoStorage(database_session_manager=DatabaseSessionManager(
-        database_url=database_postgres_settings.async_postgres_url))
+    repository = RepoStorage(
+        database_session_manager=DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url)
+    )
 
     redis_connection_manager: RedisClient = RedisClient()
     telethon_container: TelethonClientsContainer = initialize_telethon_container(repository=repository)
-    pyrogram_container = initialize_pyrogram_container(repository=repository,
-                                                       redis_connection_manager=redis_connection_manager)
+    pyrogram_container = initialize_pyrogram_container(
+        repository=repository, redis_connection_manager=redis_connection_manager
+    )
 
     context.set_global("telethon_container", telethon_container)
     context.set_global("pyrogram_container", pyrogram_container)

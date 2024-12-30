@@ -15,8 +15,9 @@ from src.distributor.telegram_client.pyro.client.container import ClientsManager
 from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
 
 
-def get_container(context: Context, container_type: str = "telethon_container") -> Optional[
-    Union[ClientsManager, TelethonClientsContainer]]:
+def get_container(
+    context: Context, container_type: str = "telethon_container"
+) -> Optional[Union[ClientsManager, TelethonClientsContainer]]:
     """Возвращает контейнер нужного типа из переданного контекста."""
     container = context.get(container_type)
     if container:
@@ -42,7 +43,7 @@ async def _extract_user_from_headers(headers: dict) -> UserDTOBase:
         raise ValueError("Invalid user header format.")
 
 
-async def _get_data_from_headers(body:str, msg: NatsMessage, context: Context = Context()) -> Datas:
+async def _get_data_from_headers(body: str, msg: NatsMessage, context: Context = Context()) -> Datas:
     """Извлекает данные из заголовков сообщения."""
 
     logger.debug(f"Message headers: {msg.headers}")
@@ -53,18 +54,17 @@ async def _get_data_from_headers(body:str, msg: NatsMessage, context: Context = 
         logger.error("Missing client name in headers.")
         raise ValueError("Missing client name in headers.")
 
-    container: 'TelethonClientsContainer' = context.get("telethon_container")
+    container: "TelethonClientsContainer" = context.get("telethon_container")
 
     if container is None:
         raise ValueError("Container not found ")
 
-    client: 'TelegramClient' = container.get_telethon_client_by_name(name=client_name)
+    client: "TelegramClient" = container.get_telethon_client_by_name(name=client_name)
 
     current_time = datetime.now(tz=timezone.utc)
-    send_time_timestamp = msg.headers.get('send_time_next_message_timestamp')
+    send_time_timestamp = msg.headers.get("send_time_next_message_timestamp")
     send_time = datetime.fromtimestamp(
-        float(send_time_timestamp) if send_time_timestamp else current_time.timestamp(),
-        tz=timezone.utc
+        float(send_time_timestamp) if send_time_timestamp else current_time.timestamp(), tz=timezone.utc
     )
     return Datas(
         user=user,
@@ -101,10 +101,7 @@ async def get_data_from_body(body: str) -> MessageToSendData:
         return validated_data
 
     except (ValueError, TypeError, json.JSONDecodeError) as e:
-
         logger.error(f"Error processing body: {e}")
-
-
 
 
 async def get_telegram_client(body: str, context: Context = Context()) -> TelegramClient:
@@ -120,12 +117,12 @@ async def get_telegram_client(body: str, context: Context = Context()) -> Telegr
         logger.error("Client name not provided in the body.")
         raise ValueError("Client name is missing in the JSON body.")
 
-    container: 'TelethonClientsContainer' = context.get("telethon_container")
+    container: "TelethonClientsContainer" = context.get("telethon_container")
     if container is None:
         logger.error("Container not found in context.")
         raise ValueError("Container not found in context.")
 
-    client: 'TelegramClient' = container.get_telethon_client_by_name(name=client_name)
+    client: "TelegramClient" = container.get_telethon_client_by_name(name=client_name)
     if not client:
         logger.error(f"No Telegram client found with the name: {client_name}")
         raise ValueError("No Telegram client found.")

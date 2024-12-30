@@ -1,5 +1,6 @@
 from typing import Optional
 
+from sqlalchemy import Index
 from sqlalchemy import Integer
 from sqlalchemy import Text
 from sqlalchemy.orm import Mapped
@@ -11,11 +12,11 @@ from src.database.postgres.models.base import intpk
 
 
 class PingPrompt(ModelBase):
-    __tablename__ = 'ping_prompt'
+    __tablename__ = "ping_prompt"
+    __table_args__ = (Index("ping_order_number_index", "ping_order_number"),)
 
     prompt_id: Mapped[intpk]
     ping_order_number: Mapped[int] = mapped_column(Integer)
     system_prompt: Mapped[Optional[str]] = mapped_column(Text)
     prompt: Mapped[str] = mapped_column(Text)
     created_at: Mapped[created_at]
-

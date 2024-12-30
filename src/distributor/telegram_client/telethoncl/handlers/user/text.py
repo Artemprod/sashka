@@ -1,4 +1,3 @@
-
 from environs import Env
 from loguru import logger
 from pydantic import ValidationError
@@ -14,7 +13,7 @@ from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.services.publisher.publisher import NatsPublisher
 
 env = Env()
-env.read_env('.env')
+env.read_env(".env")
 publisher = NatsPublisher()
 
 
@@ -43,8 +42,10 @@ async def handle_text_message_user_chat(event):
         return
     try:
         await publisher.publish_message_to_subject(
-            subject_message=NatsQueueMessageDTOSubject(message=outcome_message,
-                                                       subject=nats_subscriber_communicator_settings.messages.new_message))
+            subject_message=NatsQueueMessageDTOSubject(
+                message=outcome_message, subject=nats_subscriber_communicator_settings.messages.new_message
+            )
+        )
         logger.info("Сообщение успешно опубликовано в очередь!")
     except Exception as e:
         logger.error(f"Ошибка при публикации сообщения: {e}")

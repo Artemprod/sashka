@@ -19,9 +19,11 @@ router = APIRouter(prefix="/account/client", tags=["Account"])
 
 # TODO какие данные должна содержать модель входящих данных ? нужно ли указвать api id hash и тд
 
+
 @router.post("/signup", response_model=dict, status_code=200)
-async def signup_client(service_client_dto: ServiceClientSignupDTO,
-                        publisher: NatsPublisher = Depends(get_publisher)) -> dict:
+async def signup_client(
+    service_client_dto: ServiceClientSignupDTO, publisher: NatsPublisher = Depends(get_publisher)
+) -> dict:
     """
     Запускает новый процесс исследования.
     """
@@ -41,7 +43,7 @@ async def signup_client(service_client_dto: ServiceClientSignupDTO,
 
 @router.get("/get/readyforwork", response_model=Dict[str, TelegramClientDTOResponse], status_code=200)
 async def get_ready_for_work_clients(
-        repository: RepoStorage = Depends(get_repository)
+    repository: RepoStorage = Depends(get_repository),
 ) -> Dict[str, TelegramClientDTOResponse]:
     """Выдает всех работающих клиентов"""
     try:

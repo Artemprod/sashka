@@ -2,8 +2,10 @@ from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from pathlib import Path
 import sys
+
 sys.path.append(str(Path(__file__).parent.parent))
 load_dotenv()
+
 
 class BaseConfig(BaseSettings):
     class Config:

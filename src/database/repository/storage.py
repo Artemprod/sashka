@@ -12,7 +12,6 @@ from src.database.repository.user_in_reserach import InResearchRepo
 
 
 class BaseRepoStorage:
-
     def __init__(self, database_session_manager: DatabaseSessionManager):
         self._db_manager = database_session_manager
 

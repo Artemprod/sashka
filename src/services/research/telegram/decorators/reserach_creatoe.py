@@ -11,6 +11,7 @@ def unique_users_in_research(func):
     """
     Функция-декоратор, которая удаляет пользователей, уже участвующих в исследовании.
     """
+
     @wraps(func)
     async def wrapper(self, research: ResearchDTOPost, owner: ResearchOwnerDTO):
         # Логгирование начала фильтрации
@@ -41,5 +42,3 @@ def unique_users_in_research(func):
         return await func(self, research, owner)
 
     return wrapper
-
-

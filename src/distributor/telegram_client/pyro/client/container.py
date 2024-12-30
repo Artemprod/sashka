@@ -22,16 +22,19 @@ from src.schemas.service.client import TelegramClientDTOPost
 
 class ClientsManager(InterfaceClientsContainer):
     """Class for managing clients using the Singleton pattern."""
+
     MAX_ATTEMPTS = 35
     DELAY_BETWEEN_ATTEMPTS = 2
     MAX_TIMEOUT = 120
 
-    def __init__(self, repository: RepoStorage,
-                 redis_connection_manager: Optional[RedisClient],
-                 dev_mode,
-                 settings=None,
-                 routers: List[Any] = None):
-
+    def __init__(
+        self,
+        repository: RepoStorage,
+        redis_connection_manager: Optional[RedisClient],
+        dev_mode,
+        settings=None,
+        routers: List[Any] = None,
+    ):
         self._repository = repository
         self._redis_connection_manager = redis_connection_manager
         self._routers = routers or []
@@ -67,9 +70,7 @@ class ClientsManager(InterfaceClientsContainer):
 
     @staticmethod
     def _load_settings():
-        return {
-            "shelve_file_name": "managers"
-        }
+        return {"shelve_file_name": "managers"}
 
     def add_router(self, new_router: Any):
         self._routers.append(new_router)
@@ -102,7 +103,7 @@ class ClientsManager(InterfaceClientsContainer):
             task.cancel()
 
     @staticmethod
-    async def _wait_data(task, manager: Manager) -> Optional['User']:
+    async def _wait_data(task, manager: Manager) -> Optional["User"]:
         """Wait for client data."""
 
         async def async_attempts():
@@ -130,12 +131,16 @@ class ClientsManager(InterfaceClientsContainer):
 
         raise TimeoutError("Failed to receive user data after maximum attempts")
 
-    async def _save_new_client(self, configs: ClientConfigDTO, manager: Manager, client_data: 'User') -> Optional[
-        TelegramClientDTOGet]:
+    async def _save_new_client(
+        self, configs: ClientConfigDTO, manager: Manager, client_data: "User"
+    ) -> Optional[TelegramClientDTOGet]:
         """Save a new client."""
         if manager.is_authorize_status and manager.session_string:
-            parse_mode = configs.parse_mode.value if isinstance(configs.parse_mode,
-                                                                pyrogram.enums.ParseMode) else configs.parse_mode
+            parse_mode = (
+                configs.parse_mode.value
+                if isinstance(configs.parse_mode, pyrogram.enums.ParseMode)
+                else configs.parse_mode
+            )
             client_dto = TelegramClientDTOPost(
                 telegram_client_id=client_data.id,
                 name=configs.name,
@@ -151,7 +156,7 @@ class ClientsManager(InterfaceClientsContainer):
                 password=configs.password,
                 parse_mode=parse_mode,
                 workdir=configs.workdir,
-                created_at=datetime.datetime.now()
+                created_at=datetime.datetime.now(),
             )
             try:
                 new_client = await self.repository.client_repo.save(values=client_dto.dict())
@@ -163,7 +168,8 @@ class ClientsManager(InterfaceClientsContainer):
 
     def _dev_mode_save_object_in_file(self, manager_object: Manager):
         import shelve
-        with shelve.open(self.settings.get('shelve_file_name', None)) as db:
+
+        with shelve.open(self.settings.get("shelve_file_name", None)) as db:
             try:
                 db[manager_object.app.name] = manager_object
                 logger.info("Save manager object in file DEV MODE")
@@ -184,7 +190,7 @@ class ClientsManager(InterfaceClientsContainer):
                     "is_connected": manager.app.is_connected,
                     "is_authorized": manager.is_authorize_status,
                     "session": manager.session_string,
-                    "is_banned": manager.is_banned
+                    "is_banned": manager.is_banned,
                 }
                 for name, manager in self.managers.items()
             }
@@ -228,7 +234,8 @@ class ClientsManager(InterfaceClientsContainer):
             logger.info(f"Deleted client with name {name}")
         else:
             logger.warning(f"Client with name {name} not found")
-    #TODO Тут будет ошибка с коммуникатором нужнго переделать логику загрузки коммуникатора
+
+    # TODO Тут будет ошибка с коммуникатором нужнго переделать логику загрузки коммуникатора
     async def _load_managers_from_db(self):
         """Load managers from the database."""
         logger.info("Loading managers from database...")
@@ -251,9 +258,7 @@ class ClientsManager(InterfaceClientsContainer):
     async def start_all_clients(self):
         """Start all loaded managers."""
         await self._load_managers_from_db()
-        return asyncio.gather(
-            *[manager.run() for manager in self.managers.values() if manager]
-        )
+        return asyncio.gather(*[manager.run() for manager in self.managers.values() if manager])
 
     # def gather_loops(self):
     #     return asyncio.gather(*[manager.run() for manager in self.managers.values() if manager],

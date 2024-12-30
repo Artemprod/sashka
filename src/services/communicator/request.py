@@ -27,9 +27,7 @@ class AiConnector(ABC):
     async def send_request(self, url: str, session: ClientSession, send_object):
         try:
             async with session.post(
-                    url=url,
-                    json=send_object.dict(),
-                    timeout=ai_api_endpoint_base_settings.response_timeout
+                url=url, json=send_object.dict(), timeout=ai_api_endpoint_base_settings.response_timeout
             ) as result:
                 result.raise_for_status()  # Ensure the response status is OK
                 response_data = await result.json()
@@ -48,16 +46,14 @@ class AiConnector(ABC):
 
 
 class ContextRequest(AiConnector):
-
-    async def get_response(self, context_obj: 'ContextRequestDTO') -> 'ContextResponseDTO':
+    async def get_response(self, context_obj: "ContextRequestDTO") -> "ContextResponseDTO":
         # Использование базового метода для управления сессией и обработкой исключений
         response = await self.perform_request(send_object=context_obj, url=self.url)
         return ContextResponseDTO(**response)
 
 
 class SingleRequest(AiConnector):
-
-    async def get_response(self, single_obj: 'SingleRequestDTO') -> 'SingleResponseDTO':
+    async def get_response(self, single_obj: "SingleRequestDTO") -> "SingleResponseDTO":
         # Использование базового метода для управления сессией и обработкой исключений
         response = await self.perform_request(send_object=single_obj, url=self.url)
         return SingleResponseDTO(**response)

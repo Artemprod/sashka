@@ -6,14 +6,16 @@ from src.services.research.telegram.inspector import ResearchProcess
 
 
 def initialize_research_processor() -> ResearchProcess:
-    """ Инициализирует ResearchProcess с помощью настроек из окружения """
-    repository = RepoStorage(database_session_manager=DatabaseSessionManager(
-        database_url=database_postgres_settings.async_postgres_url))
+    """Инициализирует ResearchProcess с помощью настроек из окружения"""
+    repository = RepoStorage(
+        database_session_manager=DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url)
+    )
 
     publisher = NatsPublisher()
 
-    process = ResearchProcess(repository=repository,
-                              notifier=None,
-                              publisher=publisher,
-                              )
+    process = ResearchProcess(
+        repository=repository,
+        notifier=None,
+        publisher=publisher,
+    )
     return process

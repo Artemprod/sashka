@@ -12,13 +12,14 @@ from src.distributor.telegram_client.pyro.client.roters.router import Router
 answ_router = Router(name="my_router")
 
 
-
 env = Env()
-env.read_env('.env')
+env.read_env(".env")
+
+
 @answ_router.message(filters.text)
 async def message_handler(message: Message, **kwargs):
     # Получение объекта клиента из аргументов
-    client: Client = kwargs['client']
+    client: Client = kwargs["client"]
 
     # Создаем объект заголовка сообщения
     try:
@@ -34,16 +35,12 @@ async def message_handler(message: Message, **kwargs):
         logger.error(f"Ошибка при валидации заголовков: {ve}")
         return
 
-    #TODO Вынести в паблишер
-    #TODO Настроить конфиги сабджекта
+    # TODO Вынести в паблишер
+    # TODO Настроить конфиги сабджекта
     async with NatsBroker(env("NATS_SERVER")) as broker:
-    # Открываем контекстный менеджер на брокере
+        # Открываем контекстный менеджер на брокере
         try:
-            await broker.publish(
-                message=message.text,
-                subject="message.income.new",
-                headers=outcome_message.dict()
-            )
+            await broker.publish(message=message.text, subject="message.income.new", headers=outcome_message.dict())
             logger.info("Сообщение успешно опубликовано в очередь!")
         except Exception as e:
             logger.error(f"Ошибка при публикации сообщения: {e}")

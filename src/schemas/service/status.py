@@ -22,8 +22,6 @@ class UserStatusDTOFull(UserStatusDTO):
     users: List["UserDTOFull"] = Field(default_factory=list)
 
 
-
-
 class ResearchStatusDTO(BaseModel):
     research_id: int
     status_name: str
@@ -36,13 +34,13 @@ class ResearchStatusDTO(BaseModel):
 
 class ResearchStatusDTOFull(ResearchStatusDTO):
     researches: List["ResearchDTOFull"] = Field(default_factory=list)
+
     class Config:
         from_attributes = True
-
 
 
 class ResearchStatusName(BaseModel):
     status_name: ResearchStatusEnum
+
     class Config:
         from_attributes = True
-

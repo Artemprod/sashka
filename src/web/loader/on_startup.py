@@ -12,31 +12,32 @@ from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.manager import TelegramResearchManager
 from configs.redis import redis_apscheduler_config
 
-def initialize_research_manager(repository: RepoStorage,
-                                publisher: NatsPublisher,
-                                ) -> TelegramResearchManager:
-    """ Инициализирует GPTRequestHandler с помощью настроек из окружения """
+
+def initialize_research_manager(
+    repository: RepoStorage,
+    publisher: NatsPublisher,
+) -> TelegramResearchManager:
+    """Инициализирует GPTRequestHandler с помощью настроек из окружения"""
     information_collector = TelegramUserInformationCollector(publisher=publisher)
-    telegram_researcher_manger = TelegramResearchManager(repository=repository,
-                                                         information_collector=information_collector)
+    telegram_researcher_manger = TelegramResearchManager(
+        repository=repository, information_collector=information_collector
+    )
     return telegram_researcher_manger
-
-
 
 
 def initialize_apscheduler() -> AsyncIOScheduler:
     """Инициализирует планировщик для планирования задач."""
 
     jobstores = {
-        'default': RedisJobStore(
+        "default": RedisJobStore(
             jobs_key=redis_apscheduler_config.jobs_key,  # Ключ для хранения заданий
             run_times_key=redis_apscheduler_config.run_times_key,  # Ключ для времени выполнения
             host=redis_apscheduler_config.host,
             port=redis_apscheduler_config.port,
-            db=redis_apscheduler_config.research_start_database
+            db=redis_apscheduler_config.research_start_database,
         )
     }
 
-    scheduler = AsyncIOScheduler(jobstores=jobstores,  timezone=pytz.utc)
+    scheduler = AsyncIOScheduler(jobstores=jobstores, timezone=pytz.utc)
     scheduler.start()
     return scheduler

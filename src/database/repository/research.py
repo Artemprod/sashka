@@ -1,6 +1,7 @@
 from aiocache import Cache
 from aiocache import cached
-from sqlalchemy import insert, and_
+from sqlalchemy import and_
+from sqlalchemy import insert
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import selectinload
@@ -27,14 +28,13 @@ class ResearchRepository(BaseRepository):
     """
 
     async def save_new_research(self, values: dict) -> ResearchDTOFull:
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 stmt = insert(Research).values(**values).returning(Research)
                 new_research = await session.execute(stmt)
                 await session.commit()
                 result = new_research.scalar_one()
                 return ResearchDTOFull.model_validate(result, from_attributes=True)
-
 
     async def get_research_by_id(self, research_id) -> ResearchDTOFull:
         """
@@ -43,37 +43,34 @@ class ResearchRepository(BaseRepository):
         :param research_id:
         :return:
         """
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
-                query = (select(Research).filter(Research.research_id == research_id))
+                query = select(Research).filter(Research.research_id == research_id)
 
                 execute = await session.execute(query)
                 research = execute.scalars().first()
                 if research:
                     return ResearchDTOFull.model_validate(research, from_attributes=True)
                 else:
-                    raise ObjectDoesNotExist(orm_object=Research.__name__,
-                                             msg=f" research with id {research_id} not found")
-
+                    raise ObjectDoesNotExist(
+                        orm_object=Research.__name__, msg=f" research with id {research_id} not found"
+                    )
 
     async def get_research_by_owner(self, owner_id) -> ResearchDTOFull:
-        """
-
-        """
-        async with (self.db_session_manager.async_session_factory() as session):
+        """ """
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
-                query = (select(Research).filter(Research.owner.has(ResearchOwner.owner_id == owner_id)))
+                query = select(Research).filter(Research.owner.has(ResearchOwner.owner_id == owner_id))
                 execute = await session.execute(query)
                 research = execute.scalars().first()
                 if research:
                     return ResearchDTOFull.model_validate(research, from_attributes=True)
                 else:
-                    raise ObjectDoesNotExist(orm_object=Research.__name__,
-                                             msg=f" research with owner id {owner_id} not found")
+                    raise ObjectDoesNotExist(
+                        orm_object=Research.__name__, msg=f" research with owner id {owner_id} not found"
+                    )
 
-    async def get_research_by_participant(
-            self, user_telegram_id: int, client_telegram_id: int
-    ) -> ResearchDTOFull:
+    async def get_research_by_participant(self, user_telegram_id: int, client_telegram_id: int) -> ResearchDTOFull:
         """
         Получает объект исследования по Telegram ID участника
         и преобразует его в DTO.
@@ -90,15 +87,10 @@ class ResearchRepository(BaseRepository):
         """
         async with self.db_session_manager.async_session_factory() as session:
             try:
-                query = (
-                    select(Research)
-                    .where(
-                        and_(
-                            Research.users.any(User.tg_user_id == user_telegram_id),
-                            Research.telegram_client.has(
-                                TelegramClient.telegram_client_id == client_telegram_id
-                            ),
-                        )
+                query = select(Research).where(
+                    and_(
+                        Research.users.any(User.tg_user_id == user_telegram_id),
+                        Research.telegram_client.has(TelegramClient.telegram_client_id == client_telegram_id),
                     )
                 )
                 result = await session.execute(query)
@@ -116,18 +108,15 @@ class ResearchRepository(BaseRepository):
                 # Опционально: можно добавить логирование или дополнительную обработку
                 raise e
 
-    async def update_research(self):
-        ...
+    async def update_research(self): ...
 
-    async def get_all_researches_with_status(self, status):
-        ...
+    async def get_all_researches_with_status(self, status): ...
 
 
 class ResearchRepositoryFullModel(BaseRepository):
     """
-        Когда мне нужны сложные джонины со всей инофрмацие я использую этот класс
-        """
-
+    Когда мне нужны сложные джонины со всей инофрмацие я использую этот класс
+    """
 
     async def get_research_by_id(self, research_id) -> ResearchDTORel:
         """
@@ -135,7 +124,7 @@ class ResearchRepositoryFullModel(BaseRepository):
 
         :return:
         """
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 query = self.main_query().filter(Research.research_id == research_id)
                 execute = await session.execute(query)
@@ -144,9 +133,9 @@ class ResearchRepositoryFullModel(BaseRepository):
                     print()
                     return ResearchDTORel.model_validate(research, from_attributes=True)
                 else:
-                    raise ObjectDoesNotExist(orm_object=Research.__name__,
-                                             msg=f" research with id: {research_id} not found")
-
+                    raise ObjectDoesNotExist(
+                        orm_object=Research.__name__, msg=f" research with id: {research_id} not found"
+                    )
 
     async def get_research_by_status(self, status_name: ResearchStatusEnum):
         """
@@ -154,7 +143,7 @@ class ResearchRepositoryFullModel(BaseRepository):
 
         :return:
         """
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 query = self.main_query().filter(Research.status.has(ResearchStatus.status_name == status_name))
 
@@ -164,8 +153,9 @@ class ResearchRepositoryFullModel(BaseRepository):
                     print()
                     return ResearchDTORel.model_validate(research, from_attributes=True)
                 else:
-                    raise ObjectDoesNotExist(orm_object=Research.__name__,
-                                             msg=f" research with status: {status_name} not found")
+                    raise ObjectDoesNotExist(
+                        orm_object=Research.__name__, msg=f" research with status: {status_name} not found"
+                    )
 
     def main_query(self):
         """
@@ -190,17 +180,16 @@ class ResearchRepositoryFullModel(BaseRepository):
         query = (
             select(Research)
             .options(joinedload(Research.owner))
-            .options(selectinload(Research.users)
-                     .options(selectinload(User.status))
-                     .options(joinedload(User.messages)
-                              .options(joinedload(UserMessage.voice_message)
-                                       .options(joinedload(VoiceMessage.storage))
-                                       )
-                              )
-                     )
-            .options(joinedload(Research.assistant)
-                     .options(joinedload(Assistant.messages))
-                     )
+            .options(
+                selectinload(Research.users)
+                .options(selectinload(User.status))
+                .options(
+                    joinedload(User.messages).options(
+                        joinedload(UserMessage.voice_message).options(joinedload(VoiceMessage.storage))
+                    )
+                )
+            )
+            .options(joinedload(Research.assistant).options(joinedload(Assistant.messages)))
             .options(joinedload(Research.status).load_only(ResearchStatus.status_name))
             .options(joinedload(Research.telegram_client))
         )
@@ -208,7 +197,6 @@ class ResearchRepositoryFullModel(BaseRepository):
 
 
 class ResearchRepo:
-
     def __init__(self, database_session_manager: DatabaseSessionManager):
         self.short = ResearchRepository(database_session_manager)
         self.full = ResearchRepositoryFullModel(database_session_manager)

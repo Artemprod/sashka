@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from pydantic import Field
 
 from configs.base import BaseConfig
+
 load_dotenv()
 sys.path.append(str(Path(__file__).parent.parent))
 

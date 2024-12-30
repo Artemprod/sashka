@@ -16,17 +16,24 @@ api_has = "fe561473a06737cb358db923e05e7868"
 @pytest.fixture
 async def init_client():
     env = Env()
-    env.read_env('.env')
+    env.read_env(".env")
     session_path = r"D:\projects\AIPO_V2\CUSTDEVER\tests\test_client\session_files\test.session"
-    app = Client(name=session_path, api_id=api_id, api_hash=api_has, test_mode=True, phone_number=test_phone,
-                 password=test_password, autorization_callback=None)
+    app = Client(
+        name=session_path,
+        api_id=api_id,
+        api_hash=api_has,
+        test_mode=True,
+        phone_number=test_phone,
+        password=test_password,
+        autorization_callback=None,
+    )
     yield app
-
 
 
 @pytest.fixture
 def get_console_communicator():
     return ConsoleCommunicator()
+
 
 @pytest.fixture
 def session_folder():
@@ -41,4 +48,3 @@ def session_folder():
     # Дополнительная очистка после тестов, если нужно
     if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
-

@@ -13,6 +13,7 @@ class SuccessResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 SuccessResponse.model_rebuild()
 
 

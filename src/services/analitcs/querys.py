@@ -1,6 +1,4 @@
-
 class SQLQueryBuilder:
-
     @staticmethod
     def users_in_done_research(research_id):
         query = """
@@ -26,7 +24,7 @@ class SQLQueryBuilder:
         return query.format(research_id=research_id)
 
     @staticmethod
-    def assistant_messages(telegram_user_id,research_id):
+    def assistant_messages(telegram_user_id, research_id):
         query = """
         SELECT 
             am.user_telegram_id,
@@ -35,10 +33,10 @@ class SQLQueryBuilder:
         FROM assistant_messages am
         WHERE user_telegram_id = {telegram_user_id} and research_id = {research_id}
         """
-        return query.format(telegram_user_id=telegram_user_id,research_id=research_id)
+        return query.format(telegram_user_id=telegram_user_id, research_id=research_id)
 
     @staticmethod
-    def user_messages(telegram_user_id,research_id):
+    def user_messages(telegram_user_id, research_id):
         query = """
         SELECT
             um.user_telegram_id,
@@ -47,7 +45,7 @@ class SQLQueryBuilder:
         FROM user_messages um
         WHERE user_telegram_id = {telegram_user_id} and research_id = {research_id}
         """
-        return query.format(telegram_user_id=telegram_user_id,research_id=research_id)
+        return query.format(telegram_user_id=telegram_user_id, research_id=research_id)
 
     @staticmethod
     def users_tg_link(user_telegram_id):
