@@ -14,7 +14,12 @@ from src.database.postgres.models.base import str_2048
 
 class TelegramClient(ModelBase):
     __tablename__ = "telegram_clients"
-    __table_args__ = (Index("idx_telegram_client_phone_number", "phone_number"),)
+    __table_args__ = (
+        Index("idx_telegram_client_phone_number", "phone_number"),
+        Index("idx_name", "name"),
+        Index("idx_session_string", "session_string"),
+        Index("idx_created_at", "created_at"),
+    )
 
     client_id: Mapped[intpk]
 
