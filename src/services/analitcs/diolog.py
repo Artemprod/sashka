@@ -99,11 +99,12 @@ class UserDialog(Dialogs):
         messages_by_date = combined_df[["text", "created_at", "is_user"]].set_index("created_at")
         dialog_df = messages_by_date.sort_index()
 
-        telegram_link = pd.DataFrame(
-            {"text": [f"{await self.user_messages.telegram_link}"], "created_at": [pd.Timestamp.min], "is_user": [None]}
-        )
-
-        final_df = pd.concat([telegram_link, dialog_df], ignore_index=True)
+        telegram_link = pd.DataFrame({
+            "text": [f"{await self.user_messages.telegram_link}"],
+            "created_at": [pd.Timestamp.min],
+            "is_user": "None"
+        }).set_index("created_at")
+        final_df = pd.concat([telegram_link, dialog_df], ignore_index=False)
         self.dialog = final_df
         return self
 
@@ -224,11 +225,14 @@ class ResearchDialogs(Dialogs):
     async def to_json(self):
         dialogs_json = {}
 
-        for user_id, dialog in self.dialogs.items():
-            # Преобразуем DataFrame в словарь
-            dialog_dict = dialog.dialog.to_dict(orient="index")
-
+        for user_id, dialog in  self.dialogs.items():
+            # Удаляем ссылку на tg если есть
+            filtered_dialog = self.dialogs[user_id].dialog[~self.dialogs[user_id].dialog["text"].str.contains(r"https://t\.me/", na=False)]
+            # Преобразуем Serias в словарь
+            dialog_dict = filtered_dialog.to_dict(orient="index")
+            print()
             # Обновляем ключи, преобразуя их из Timestamp в строку даты и времени
+
             formatted_dialog = {
                 (
                     index.to_pydatetime().strftime("%Y-%m-%d %H:%M:%S")
@@ -242,7 +246,10 @@ class ResearchDialogs(Dialogs):
 
         # Преобразуем полный словарь в JSON-строку
         result_json = json.dumps(dialogs_json, ensure_ascii=False, indent=2)
-        return result_json
+        if dialogs_json is not None and  len(dialogs_json) > 0:
+            return result_json
+        else:
+            return None
 
     def __getitem__(self, user_telegram_id):
         return self.dialogs[user_telegram_id].dialog
