@@ -20,22 +20,18 @@ from src.distributor.telegram_client.telethoncl.manager.container import Teletho
 
 router = NatsRouter()
 broker = NatsBroker()
+
+
 async def derive_data(msg: NatsMessage, context=Context()) -> Datas:
     users: list[dict] = json.loads(msg.headers.get("user"))
-    users_dto = [UserDTOBase(username=user['username'], tg_user_id=user["tg_user_id"]) for user in users]
+    users_dto = [UserDTOBase(username=user["username"], tg_user_id=user["tg_user_id"]) for user in users]
     client_dto = TelegramClientDTO.model_validate_json(msg.headers.get("tg_client"))
-    container: 'TelethonClientsContainer' = context.get("telethon_container")
-    client: 'TelegramClient' = container.get_telethon_client_by_name(name=client_dto.name)
-    return Datas(
-        users=users_dto,
-        client_name=client_dto.name,
-        client=client,
-        container=container
-    )
+    container: "TelethonClientsContainer" = context.get("telethon_container")
+    client: "TelegramClient" = container.get_telethon_client_by_name(name=client_dto.name)
+    return Datas(users=users_dto, client_name=client_dto.name, client=client, container=container)
 
 
 async def form_user_information(user: User) -> UserInfo:
-
     return UserInfo(
         tg_user_id=user.id,
         username=user.username,
@@ -54,7 +50,7 @@ async def form_user_information(user: User) -> UserInfo:
         second_name=user.last_name,
         status=str(user.status),
         phone_number=user.phone,
-        language_code=user.lang_code
+        language_code=user.lang_code,
     )
 
 
@@ -95,4 +91,3 @@ async def make_request(data: Datas):
         return user_data
     else:
         logger.warning("No users")
-

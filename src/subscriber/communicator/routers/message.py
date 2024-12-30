@@ -13,22 +13,19 @@ from src.subscriber.communicator.dependency.message import get_data_from_headers
 
 router = NatsRouter()
 
+
 # Подписчик на новую входящую тему
 @router.subscriber(subject=nats_subscriber_communicator_settings.messages.new_message)
 async def new_message_handler(
-        body: str,
-        msg: NatsMessage,
-        context=Context(),
-        income_message_data: IncomeUserMessageDTOQueue = Depends(message_former)
+    body: str,
+    msg: NatsMessage,
+    context=Context(),
+    income_message_data: IncomeUserMessageDTOQueue = Depends(message_former),
 ):
     """Обрабатывает новые входящие сообщения."""
     # Получение экземпляра TelegramCommunicator из контекста
     communicator: TelegramCommunicator = context.get("communicator")
     logger.info(f"ЭТО СФОРМИРОВАННОЕ СООБЩЕНИЕ{income_message_data}")
-        # Обработка сообщения с использованием TelegramCommunicator
-    asyncio.create_task(
-        communicator.reply_message(message_object=income_message_data)
-    )
+    # Обработка сообщения с использованием TelegramCommunicator
+    asyncio.create_task(communicator.reply_message(message_object=income_message_data))
     await asyncio.sleep(0.1)
-
-

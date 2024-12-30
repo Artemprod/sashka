@@ -20,16 +20,14 @@ from src.web.routers.reserach.telegram import router as research_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """ Контекстный менеджер для инициализации и закрытия ресурсов приложения """
-    session = DatabaseSessionManager(
-        database_url=database_postgres_settings.async_postgres_url)
+    """Контекстный менеджер для инициализации и закрытия ресурсов приложения"""
+    session = DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url)
     repository = RepoStorage(database_session_manager=session)
     publisher = NatsPublisher()
-    apscheduler= initialize_apscheduler()
+    apscheduler = initialize_apscheduler()
 
     app.state.apschedular = apscheduler
-    app.state.research_manager = initialize_research_manager(publisher=publisher,
-                                                            repository=repository)
+    app.state.research_manager = initialize_research_manager(publisher=publisher, repository=repository)
 
     app.state.analytic_collector = AnalyticCollector
     app.state.publisher = publisher
@@ -44,9 +42,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_server(lifespan_func=lifespan):
-    server = FastAPI(lifespan=lifespan_func,
-                     title="APPLICATION",
-                     )
+    server = FastAPI(
+        lifespan=lifespan_func,
+        title="APPLICATION",
+    )
     server.include_router(research_router)
     server.include_router(client_router)
     server.include_router(dialog_router)

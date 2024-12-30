@@ -5,7 +5,6 @@ from src.schemas.service.research import ResearchDTOFull
 
 class CyclePingAttemptCalculator:
     def __init__(self, research_info: ResearchDTOFull, attempt_multiplicative: int):
-
         self.start_date = self._validate_and_parse_date(research_info.start_date)
         self.end_date = self._validate_and_parse_date(research_info.end_date)
         self._attempt_multiplicative = attempt_multiplicative
@@ -17,7 +16,7 @@ class CyclePingAttemptCalculator:
             return date_input.replace(tzinfo=None)
         elif isinstance(date_input, str):
             try:
-                parsed_date = datetime.strptime(date_input, '%Y-%m-%d %H:%M:%S')
+                parsed_date = datetime.strptime(date_input, "%Y-%m-%d %H:%M:%S")
                 return parsed_date
             except ValueError as e:
                 raise ValueError(f"Invalid date format: {date_input}. Expected format: YYYY-MM-DD HH:MM:SS.") from e

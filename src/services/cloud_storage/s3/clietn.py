@@ -17,18 +17,18 @@ class S3Client:
     """
 
     def __init__(
-            self,
-            access_key: str,
-            secret_key: str,
-            endpoint_url: str,
-            bucket_name: str,
+        self,
+        access_key: str,
+        secret_key: str,
+        endpoint_url: str,
+        bucket_name: str,
     ):
         self.config = {
             "aws_access_key_id": access_key,  # access key from s3 storage [Required]
             "aws_secret_access_key": secret_key,  # secret key from s3 storage [Required]
             "endpoint_url": endpoint_url,  # endpoint for your s3 storage for selectel [https://s3.storage.selcloud.ru]
-            "region_name": 'ru-1',  # region name default [ru-1] [Optional]
-            "config": AioConfig(s3={'addressing_style': 'virtual'})  # [Optional]
+            "region_name": "ru-1",  # region name default [ru-1] [Optional]
+            "config": AioConfig(s3={"addressing_style": "virtual"}),  # [Optional]
         }
         self.bucket_name = bucket_name  # bucket name [Get from storage]
         self.session = get_session()  # current session [async contextmanager]
@@ -110,8 +110,8 @@ class S3Client:
             async with self.get_client() as client:
                 client: S3ClientType
                 response = await client.list_objects_v2(Bucket=self.bucket_name)
-                if 'Contents' in response:
-                    return [obj['Key'] for obj in response['Contents']]
+                if "Contents" in response:
+                    return [obj["Key"] for obj in response["Contents"]]
                 return []
         except ClientError as e:
             logger.info(f"Error listing objects: {e}")
@@ -142,9 +142,7 @@ class S3Client:
             async with self.get_client() as client:
                 client: S3ClientType
                 response = await client.generate_presigned_url(
-                    'get_object',
-                    Params={'Bucket': self.bucket_name, 'Key': key},
-                    ExpiresIn=ExpiresIn
+                    "get_object", Params={"Bucket": self.bucket_name, "Key": key}, ExpiresIn=ExpiresIn
                 )
                 return response
         except Exception as err:
@@ -163,4 +161,3 @@ class S3Client:
                 return response
         except Exception as err:
             print(err)
-

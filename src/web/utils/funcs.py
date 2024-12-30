@@ -20,14 +20,15 @@ async def produce_analytic_data(analytic_instance) -> Union[AnalyticDataBufferDT
         logger.error(f"Failed to retrieve research data: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get research data: {str(e)}") from e
 
+
 @async_wrap
-def count_users_in_research(users_dto:[List[UserDTO]],research:ResearchDTOPost)->UserInfo:
+def count_users_in_research(users_dto: [List[UserDTO]], research: ResearchDTOPost) -> UserInfo:
     """
     Функция которая принимает имена пользователей котрые были лобвленеыф в иследование
     и именга пользователоей по которым была собрана ифнформация то есть те у которых есть имя
     и возвращет статситику того сколько пользователей бюыли добалены и скольок осталовьс не добавленых
     """
-    #Реши при помощи множества
+    # Реши при помощи множества
     # A = set()
     # B = set()
     # C = A/B - есть А без B
@@ -40,9 +41,9 @@ def count_users_in_research(users_dto:[List[UserDTO]],research:ResearchDTOPost)-
         correct_names=NameInfo(
             names=added_users,
             total=Counter(added_users).total(),
-    ),
-         wrong_names=NameInfo(
+        ),
+        wrong_names=NameInfo(
             names=wrong_names,
             total=Counter(wrong_names).total(),
-             )
+        ),
     )

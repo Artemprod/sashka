@@ -4,9 +4,8 @@ from pydantic import BaseModel
 
 
 class ResearchOwnerDTO(BaseModel):
-
     name: str
-    service_owner_id: int # Id в телеграме или другом мервисе
+    service_owner_id: int  # Id в телеграме или другом мервисе
     second_name: Optional[str] = None
     phone_number: Optional[str] = None
     tg_link: Optional[str] = None

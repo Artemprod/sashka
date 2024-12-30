@@ -25,6 +25,7 @@ async def get_db_session(request: Request) -> DatabaseSessionManager:
     """Извлекает менеджер сессии базы данных из состояния приложения."""
     return request.app.state.db_session
 
+
 async def get_s3_report_storage() -> S3Client:
     """Извлекает s3 клиента для сохранения отчетов."""
     s3_client = S3Client(
@@ -35,6 +36,7 @@ async def get_s3_report_storage() -> S3Client:
     )
     return s3_client
 
+
 async def get_repository(request: Request) -> RepoStorage:
     """Извлекает репозиторий из состояния приложения."""
     return request.app.state.repository
@@ -43,7 +45,6 @@ async def get_repository(request: Request) -> RepoStorage:
 # async def get_analytic_instruments(request: Request) -> AnalyticCollector:
 #     """Извлекает CSV аналитический класс из состояния приложения."""
 #     return request.app.state.analytic_collector.instrument
-
 
 
 async def get_apscheduler(request: Request) -> BackgroundScheduler:

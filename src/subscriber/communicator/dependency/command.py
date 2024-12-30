@@ -17,13 +17,15 @@ def form_user_info(users: str) -> List[UserDTOBase]:
     except Exception as e:
         raise e
     else:
-        users_dto = [UserDTOBase(name=user["username"], tg_user_id=user["tg_user_id"])
-                     for user in deserialization_users]
+        users_dto = [
+            UserDTOBase(name=user["username"], tg_user_id=user["tg_user_id"]) for user in deserialization_users
+        ]
         return users_dto
 
 
-async def get_command_start_dialog_data_from_headers(body: str, msg: NatsMessage,
-                                                     context=Context()) -> CommandStartDiologDTO:
+async def get_command_start_dialog_data_from_headers(
+    body: str, msg: NatsMessage, context=Context()
+) -> CommandStartDiologDTO:
     # Проверка наличия заголовков
     headers = msg.headers
     print("________________HEADERS", headers)
@@ -34,7 +36,7 @@ async def get_command_start_dialog_data_from_headers(body: str, msg: NatsMessage
     # Извлечение и преобразование значений из заголовков
     try:
         users = headers.get("users", 0)
-        print("_______________USERS",users)
+        print("_______________USERS", users)
         research_id = int(headers.get("research_id", -1))
         # Проверка критических значений
         if users == 0:
@@ -45,20 +47,15 @@ async def get_command_start_dialog_data_from_headers(body: str, msg: NatsMessage
             logger.error("Missing client research id in headers.")
             raise ValueError("Missing client research id in headers.")
 
-
-
     except Exception as e:
         print(e)
 
     else:
         users_dto: List[UserDTOBase] = form_user_info(users)
-        return CommandStartDiologDTO(
-            research_id=research_id,
-            users=users_dto
-        )
+        return CommandStartDiologDTO(research_id=research_id, users=users_dto)
 
 
-async def get_command_ping_user(body:str, msg: NatsMessage) -> CommandPingUserDTO:
+async def get_command_ping_user(body: str, msg: NatsMessage) -> CommandPingUserDTO:
     # Проверка наличия заголовков
 
     decode_message = json.loads(msg.body.decode("utf-8"))
@@ -69,7 +66,7 @@ async def get_command_ping_user(body:str, msg: NatsMessage) -> CommandPingUserDT
 
     # Извлечение и преобразование значений из заголовков
     try:
-        user:dict = decode_message.get("user", 0)
+        user: dict = decode_message.get("user", 0)
         research_id = int(decode_message.get("research_id", -1))
         message_number = int(decode_message.get("message_number", -1))
 

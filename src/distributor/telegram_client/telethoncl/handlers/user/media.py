@@ -1,4 +1,3 @@
-
 from environs import Env
 from loguru import logger
 from telethon import events
@@ -13,7 +12,7 @@ from src.distributor.telegram_client.telethoncl.filters.model import SourceType
 from src.services.publisher.publisher import NatsPublisher
 
 env = Env()
-env.read_env('.env')
+env.read_env(".env")
 publisher = NatsPublisher()
 
 
@@ -25,8 +24,6 @@ async def handle_voice_message_user_chat(event):
 @events.register(events.NewMessage(incoming=True, func=AudioFilter(source_type=SourceType.USER)))
 async def handle_audio_message_user_chat(event):
     logger.info("Audio message received USER CHAT.")
-
-
 
 
 @events.register(events.NewMessage(incoming=True, func=VideoFilter(source_type=SourceType.USER)))

@@ -11,8 +11,8 @@ router = APIRouter(prefix="/configuration", tags=["Configuration"])
 
 @router.put("")
 async def create_or_update_configuration(
-        configuration: ConfigurationCreateSchema,
-        repository: RepoStorage = Depends(get_repository),
+    configuration: ConfigurationCreateSchema,
+    repository: RepoStorage = Depends(get_repository),
 ) -> ConfigurationSchema:
     """
     Этот эндпоинт принимает данные конфигурации и либо создает новую запись в базе данных,
@@ -27,9 +27,7 @@ async def create_or_update_configuration(
 
 
 @router.get("")
-async def get_configuration(
-        repository: RepoStorage = Depends(get_repository)
-) -> ConfigurationSchema:
+async def get_configuration(repository: RepoStorage = Depends(get_repository)) -> ConfigurationSchema:
     """
     Этот эндпоинт возвращает единственную запись конфигурации из базы данных.
     Если конфигурация не найдена, будет выброшено исключение.

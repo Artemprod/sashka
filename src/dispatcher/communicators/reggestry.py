@@ -1,5 +1,3 @@
-
-
 # TODO Сделать проперти с выдачей информации по назначению каждого коммуникатора
 class CommunicatorRegistryBase(type):
     REGISTRY = {}
@@ -7,17 +5,14 @@ class CommunicatorRegistryBase(type):
     def __new__(cls, name, bases, attrs):
         new_cls = super(CommunicatorRegistryBase, cls).__new__(cls, name, bases, attrs)
         # Если это не базовый класс, сохраняем фабрику для создания экземпляров
-        if not attrs.get('is_base_class', False):
-            registry_key = attrs.get('registry_key', name.lower())
+        if not attrs.get("is_base_class", False):
+            registry_key = attrs.get("registry_key", name.lower())
             cls.REGISTRY[registry_key] = new_cls
         return new_cls
 
     @classmethod
     def get_registry(cls):
         return dict(cls.REGISTRY)
-
-
-
 
 
 # TODO Описать функционал каждого коммуниктора доки для доавения в реестр

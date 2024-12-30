@@ -26,7 +26,8 @@ async def create_telethon_client(message, context=Context()):
     # todo сделать присвоение атрибутов к комуникатору
     # todo сделать передовать распокованый словарь в метод чтобы сджелать более адаптивным
     communicator = CommunicatorDispatcher(service_name=service_type).get_communicator(
-        user_id=service_dto.service_data.user_id)
+        user_id=service_dto.service_data.user_id
+    )
     task = asyncio.create_task(container.create_and_start_client(client_configs=client_dto, communicator=communicator))
     try:
         await task
