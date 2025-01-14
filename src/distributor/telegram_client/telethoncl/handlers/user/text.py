@@ -1,50 +1,21 @@
+from typing import Optional
 
-from environs import Env
 from loguru import logger
-from pydantic import ValidationError
-from telethon import TelegramClient
 from telethon import events
-from telethon.tl.types import User
 
 from configs.nats_queues import nats_subscriber_communicator_settings
 from src.distributor.telegram_client.telethoncl.filters.media import TextFilter
 from src.distributor.telegram_client.telethoncl.filters.model import SourceType
-from src.distributor.telegram_client.telethoncl.models.messages import OutcomeMessageDTOQueue
-from src.schemas.service.queue import NatsQueueMessageDTOSubject
-from src.services.publisher.publisher import NatsPublisher
-
-env = Env()
-env.read_env('.env')
-publisher = NatsPublisher()
+from src.distributor.telegram_client.telethoncl.handlers.base_handler import base_message_handler
 
 
-@events.register(events.NewMessage(incoming=True, func=TextFilter(source_type=SourceType.USER)))
-async def handle_text_message_user_chat(event):
+@events.register(
+    events.NewMessage(
+        incoming=True,
+        func=TextFilter(source_type=SourceType.USER)
+    )
+)
+@base_message_handler(nats_subscriber_communicator_settings.messages.new_text_message)
+async def handle_text_message_user_chat(event) -> Optional[str]:
     logger.info("New message from USER CHAT")
-    client: TelegramClient = event.client
-    client_info = await client.get_me()
-    # Создаем объект заголовка сообщения
-    sender: User = await event.client.get_entity(await event.get_input_sender())
-
-    try:
-        outcome_message = OutcomeMessageDTOQueue(
-            message=str(event.message.message),
-            from_user=str(event.sender_id),
-            first_name=str(sender.first_name) if sender.first_name else "Unknown",
-            username=sender.username,
-            chat=str(event.chat_id),
-            media="None",
-            voice="None",
-            client_telegram_id=str(client_info.id),
-        ).json_string()
-
-    except ValidationError as ve:
-        logger.error(f"Ошибка при валидации заголовков: {ve}")
-        return
-    try:
-        await publisher.publish_message_to_subject(
-            subject_message=NatsQueueMessageDTOSubject(message=outcome_message,
-                                                       subject=nats_subscriber_communicator_settings.messages.new_message))
-        logger.info("Сообщение успешно опубликовано в очередь!")
-    except Exception as e:
-        logger.error(f"Ошибка при публикации сообщения: {e}")
+    return

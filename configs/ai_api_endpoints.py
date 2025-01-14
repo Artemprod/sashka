@@ -36,6 +36,7 @@ class OpenAiApiConfigs(AIAPIBaseConfig):
     endpoint_prefix: str = Field("openai/request/", validation_alias='OPEN_AI_API_PREFIX')
     single_response: str = Field("single", validation_alias='SINGLE_REQUEST_ENDPOINT')
     context_response: str = Field("context", validation_alias='CONTEXT_REQUEST_ENDPOINT')
+    transcribe_response: str = Field("transcribe", validation_alias='TRANSCRIBE_REQUEST_ENDPOINT')
 
     @property
     def single_response_url(self):
@@ -48,6 +49,12 @@ class OpenAiApiConfigs(AIAPIBaseConfig):
         if not self.https:
             return f"{self.http_base_url}{self.endpoint_prefix}{self.context_response}"
         return f"{self.https_base_url}{self.endpoint_prefix}{self.context_response}"
+
+    @property
+    def transcribe_response_url(self):
+        if not self.https:
+            return f"{self.http_base_url}{self.transcribe_response}"
+        return f"{self.https_base_url}{self.transcribe_response}"
 
 
 ai_api_endpoint_base_settings = AIAPIBaseConfig()

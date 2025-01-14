@@ -19,10 +19,11 @@ from src.services.communicator.messager import MessageFirstSend, ScheduledFirstM
 from src.services.communicator.messager import PingMessage
 from src.services.communicator.messager import ResearchMessageAnswer
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
-from src.services.communicator.request import ContextRequest
+from src.services.communicator.request import ContextRequest, TranscribeRequest
 from src.services.communicator.request import SingleRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
+from src.services.research.telegram.inspector import StopWordChecker
 
 
 class TelegramCommunicator:
@@ -34,6 +35,7 @@ class TelegramCommunicator:
                  publisher: "NatsPublisher",
                  single_request: "SingleRequest",
                  context_request: "ContextRequest",
+                 transcribe_request: "TranscribeRequest",
                  prompt_generator: "ExtendedPingPromptGenerator",
                  stop_word_checker: "StopWordChecker",
                  destination_configs: Optional[Dict] = None,
@@ -58,7 +60,7 @@ class TelegramCommunicator:
             context_request=context_request,
             stop_word_checker=stop_word_checker
         )
-
+        self.transcribe_request = transcribe_request
         self.ping_message = PingMessage(
             publisher=publisher,
             repository=repository,

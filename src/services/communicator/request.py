@@ -8,8 +8,10 @@ from loguru import logger
 from configs.ai_api_endpoints import ai_api_endpoint_base_settings
 from src.schemas.communicator.request import ContextRequestDTO
 from src.schemas.communicator.request import SingleRequestDTO
+from src.schemas.communicator.request import TranscribeRequestDTO
 from src.schemas.communicator.response import ContextResponseDTO
 from src.schemas.communicator.response import SingleResponseDTO
+from src.schemas.communicator.response import TranscribeResponseDTO
 
 
 class AiConnector(ABC):
@@ -61,3 +63,16 @@ class SingleRequest(AiConnector):
         # Использование базового метода для управления сессией и обработкой исключений
         response = await self.perform_request(send_object=single_obj, url=self.url)
         return SingleResponseDTO(**response)
+
+
+class TranscribeRequest(AiConnector):
+
+    async def get_response(
+            self,
+            datas: 'TranscribeRequestDTO'
+    ) -> TranscribeResponseDTO:
+        response = await self.perform_request(
+            send_object=datas,
+            url=self.url
+        )
+        return TranscribeResponseDTO(**response)

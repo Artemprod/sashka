@@ -4,7 +4,7 @@ from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
 from src.services.communicator.communicator import TelegramCommunicator
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
-from src.services.communicator.request import ContextRequest
+from src.services.communicator.request import ContextRequest, TranscribeRequest
 from src.services.communicator.request import SingleRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
@@ -20,6 +20,7 @@ def initialize_communicator() -> TelegramCommunicator:
     info_collector = TelegramUserInformationCollector(publisher=publisher)
     single_request = SingleRequest(url=open_ai_api_endpoint_settings.single_response_url)
     context_request = ContextRequest(url=open_ai_api_endpoint_settings.context_response_url)
+    transcribe_request = TranscribeRequest(url=open_ai_api_endpoint_settings.transcribe_response_url)
     prompt_generator = ExtendedPingPromptGenerator(repository=repository)
     stop_word_checker = StopWordChecker(repo=repository)
     communicator = TelegramCommunicator(repository=repository,
@@ -28,6 +29,7 @@ def initialize_communicator() -> TelegramCommunicator:
                                         prompt_generator=prompt_generator,
                                         single_request=single_request,
                                         context_request=context_request,
+                                        transcribe_request=transcribe_request,
                                         stop_word_checker=stop_word_checker
                                         )
     return communicator

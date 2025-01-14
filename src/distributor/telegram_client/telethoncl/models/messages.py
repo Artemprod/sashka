@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -13,6 +14,7 @@ class OutcomeMessageDTOQueue(BaseModel):
     media: str
     voice: str
     client_telegram_id: str
+    s3_object_key: Optional[str]= None
 
     def json_string(self) -> str:
         # Получаем данные в виде словаря

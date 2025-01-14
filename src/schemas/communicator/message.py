@@ -1,3 +1,4 @@
+from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import field_validator
@@ -13,6 +14,7 @@ class IncomeUserMessageDTOQueue(BaseModel):
     media: bool
     voice: bool
     client_telegram_id: int
+    s3_object_key: Optional[str] = None
 
     # Валидатор для поля media
     @field_validator('media', mode='before')

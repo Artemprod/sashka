@@ -42,7 +42,14 @@ class NATSCommunicatorSubscriber(BaseConfig):
         ping_user: str = Field("command.user.ping", validation_alias='COMMUNICATOR_QUEUE_COMMANDS_PING_USER')
 
     class MessageQueues(BaseConfig):
-        new_message: str = Field("message.income.new", validation_alias='COMMUNICATOR_QUEUE_MESAGES_NEW_INCOME_MESSAGE')
+        new_text_message: str = Field(
+            "message.text.income.new",
+            validation_alias='COMMUNICATOR_QUEUE_MESAGES_NEW_INCOME_TEXT_MESSAGE'
+        )
+        new_voice_message: str = Field(
+            "message.audio.income.new",
+            validation_alias='COMMUNICATOR_QUEUE_MESAGES_NEW_INCOME_AUDIO_MESSAGE'
+        )
 
     commands: CommandsQueues = Field(default_factory=CommandsQueues)
     messages: MessageQueues = Field(default_factory=MessageQueues)
