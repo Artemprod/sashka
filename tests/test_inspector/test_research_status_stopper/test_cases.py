@@ -11,9 +11,10 @@ from src.database.postgres import ResearchStatusEnum
 @dataclass
 class TestDataCases:
     _id: str
-    research_id:int
-    status:list
+    research_id: int
+    status: list
     expectation: Union[Exception, Any]
+
 
 # Тестирую процесс перехода между статусами
 # ожидание - прогресс - готово
@@ -23,14 +24,22 @@ class TestDataCases:
 stop_when_done = TestDataCases(
     _id="stop when done",
     research_id=123,
-    status=[ResearchStatusEnum.WAIT.value,ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.DONE.value,],
+    status=[
+        ResearchStatusEnum.WAIT.value,
+        ResearchStatusEnum.IN_PROGRESS.value,
+        ResearchStatusEnum.DONE.value,
+    ],
     expectation=does_not_raise(),
 )
 
 stop_when_aborted = TestDataCases(
     _id="stop when aborted",
     research_id=123,
-    status=[ResearchStatusEnum.WAIT.value, ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.ABORTED.value,],
+    status=[
+        ResearchStatusEnum.WAIT.value,
+        ResearchStatusEnum.IN_PROGRESS.value,
+        ResearchStatusEnum.ABORTED.value,
+    ],
     expectation=does_not_raise(),
 )
 
@@ -38,9 +47,13 @@ stop_when_aborted = TestDataCases(
 stop_when_pause = TestDataCases(
     _id="stop when pause",
     research_id=123,
-    status=[ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.WAIT.value,ResearchStatusEnum.PAUSE.value,],
+    status=[
+        ResearchStatusEnum.IN_PROGRESS.value,
+        ResearchStatusEnum.WAIT.value,
+        ResearchStatusEnum.PAUSE.value,
+    ],
     expectation=does_not_raise(),
 )
 
 
-STOP_TEST_CASES = [stop_when_done,stop_when_aborted,stop_when_pause]
+STOP_TEST_CASES = [stop_when_done, stop_when_aborted, stop_when_pause]

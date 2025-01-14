@@ -2,9 +2,7 @@ from datetime import datetime
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
-from asyncpg.pgproto.pgproto import timedelta
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
@@ -28,16 +26,16 @@ router = APIRouter(prefix="/research/telegram", tags=["Research"])
 
 # TODO входящий контракт должен сожержать в себе все данные овнер ресерч какой клиент ( бота которого выбрали )
 
+
 @router.post("/start", response_model=dict, status_code=200)
 async def start_research(
-        research: ResearchDTOPost,
-        owner: ResearchOwnerDTO,
-        manager: TelegramResearchManager = Depends(get_research_manager),
-        publisher: NatsPublisher = Depends(get_publisher),
-        apscheduler: AsyncIOScheduler = Depends(get_apscheduler)
+    research: ResearchDTOPost,
+    owner: ResearchOwnerDTO,
+    manager: TelegramResearchManager = Depends(get_research_manager),
+    publisher: NatsPublisher = Depends(get_publisher),
+    apscheduler: AsyncIOScheduler = Depends(get_apscheduler),
 ) -> dict:
     """Запускает новый процесс исследования."""
-
 
     try:
         validated_research = await validate_data(research)
@@ -45,25 +43,25 @@ async def start_research(
         created_research: ResearchDTORel = await manager.create_research(research=validated_research, owner=owner)
         # Создание и публикация сообщения о начале исследования
         subject_message = NatsQueueMessageDTOSubject(
-            message='',
+            message="",
             subject=nats_subscriber_researcher_settings.researches.start_telegram_research,
-            headers={"research_id": str(created_research.research_id)}
+            headers={"research_id": str(created_research.research_id)},
         )
 
-        #FIXME Тут скорее вынести в сервис начала иследования разделение ответсвенности представление не должно знать бизнес логику
+        # FIXME Тут скорее вынести в сервис начала иследования разделение ответсвенности представление не должно знать бизнес логику
         # Запланировать публикацию сообщения через 5 минут после начала исследования
         apscheduler.add_job(
             publisher.publish_message_to_subject,
             args=[subject_message],
-            trigger=DateTrigger(run_date=created_research.start_date, timezone=pytz.utc)
+            trigger=DateTrigger(run_date=created_research.start_date, timezone=pytz.utc),
         )
-        user_info:UserInfo = await count_users_in_research(users_dto=created_research.users,research=research)
+        user_info: UserInfo = await count_users_in_research(users_dto=created_research.users, research=research)
 
-        #TODO переписать в модель DTO
+        # TODO переписать в модель DTO
         return {
             "message": f"Research '{created_research.name}' has been planed to start at {created_research.start_date}",
             "research_id": created_research.research_id,
-            "users_info":user_info.model_dump()
+            "users_info": user_info.model_dump(),
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -72,7 +70,7 @@ async def start_research(
         raise HTTPException(status_code=500, detail=f"Failed to start research: {str(e)}") from e
 
 
-#Для отмены запланированой задачи
+# Для отмены запланированой задачи
 # @app.route("/")
 # async def add_task():
 #     """Добавляем задачу в планировщик"""

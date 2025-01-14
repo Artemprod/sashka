@@ -6,6 +6,7 @@ from nats.js.api import StreamConfig
 from nats.js.errors import NotFoundError
 from loguru import logger
 
+
 class NatsChecker:
     def __init__(self, nats_url, nats_streams: list):
         self.nats_streams = nats_streams
@@ -13,15 +14,17 @@ class NatsChecker:
 
     async def check(self):
         nc = NATS()
-        await nc.connect(self.nats_url,connect_timeout=100)
+        await nc.connect(self.nats_url, connect_timeout=100)
 
         for stream in self.nats_streams:
-            await self.create_or_update_stream(nc,
-                                               stream_name=stream.stream,
-                                               subjects=[stream.subject],
-                                               retention_policy=stream.retention_policy,
-                                               storage_type=stream.storage_type,
-                                               allow_direct=stream.allow_direct)
+            await self.create_or_update_stream(
+                nc,
+                stream_name=stream.stream,
+                subjects=[stream.subject],
+                retention_policy=stream.retention_policy,
+                storage_type=stream.storage_type,
+                allow_direct=stream.allow_direct,
+            )
 
     async def create_or_update_stream(self, nc, stream_name, subjects, retention_policy, storage_type, allow_direct):
         js = nc.jetstream()
@@ -39,7 +42,7 @@ class NatsChecker:
                     subjects=updated_subjects,
                     retention=retention_policy,
                     storage=storage_type,
-                    allow_direct=allow_direct
+                    allow_direct=allow_direct,
                 )
 
                 await js.update_stream(name=stream_name, config=stream_config)
@@ -55,7 +58,7 @@ class NatsChecker:
                 subjects=subjects,
                 retention=retention_policy,
                 storage=storage_type,
-                allow_direct=allow_direct
+                allow_direct=allow_direct,
             )
             await js.add_stream(config=stream_config)
             logger.info(f"Stream '{stream_name}' created successfully with subjects: {subjects}")

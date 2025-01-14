@@ -22,4 +22,3 @@ class DatabaseSessionManager:
 
         # Создание фабрики для асинхронных сессий
         self.async_session_factory = async_sessionmaker(bind=self.engine, expire_on_commit=False, class_=AsyncSession)
-

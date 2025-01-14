@@ -12,9 +12,10 @@ from src.services.research.telegram.inspector import StopWordChecker
 
 
 def initialize_communicator() -> TelegramCommunicator:
-    """ Инициализирует GPTRequestHandler с помощью настроек из окружения """
-    repository = RepoStorage(database_session_manager=DatabaseSessionManager(
-        database_url=database_postgres_settings.async_postgres_url))
+    """Инициализирует GPTRequestHandler с помощью настроек из окружения"""
+    repository = RepoStorage(
+        database_session_manager=DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url)
+    )
 
     publisher = NatsPublisher()
     info_collector = TelegramUserInformationCollector(publisher=publisher)
@@ -23,13 +24,14 @@ def initialize_communicator() -> TelegramCommunicator:
     transcribe_request = TranscribeRequest(url=open_ai_api_endpoint_settings.transcribe_response_url)
     prompt_generator = ExtendedPingPromptGenerator(repository=repository)
     stop_word_checker = StopWordChecker(repo=repository)
-    communicator = TelegramCommunicator(repository=repository,
-                                        info_collector=info_collector,
-                                        publisher=publisher,
-                                        prompt_generator=prompt_generator,
-                                        single_request=single_request,
-                                        context_request=context_request,
-                                        transcribe_request=transcribe_request,
-                                        stop_word_checker=stop_word_checker
-                                        )
+    communicator = TelegramCommunicator(
+        repository=repository,
+        info_collector=info_collector,
+        publisher=publisher,
+        prompt_generator=prompt_generator,
+        single_request=single_request,
+        context_request=context_request,
+        transcribe_request=transcribe_request,
+        stop_word_checker=stop_word_checker
+    )
     return communicator

@@ -18,28 +18,24 @@ class ResearchOwnerRepository(BaseRepository):
     Когда мне нужны просты CRUD операции я использую этот класс
     """
 
-    async def add_owner(self, values: dict)->ResearchOwnerFullDTO:
-        async with (self.db_session_manager.async_session_factory() as session):
+    async def add_owner(self, values: dict) -> ResearchOwnerFullDTO:
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 stmt = insert(ResearchOwner).values(**values).returning(ResearchOwner)
                 new_user = await session.execute(stmt)
                 await session.commit()
                 return ResearchOwnerFullDTO.model_validate(new_user.scalar_one(), from_attributes=True)
 
-
-    async def get_owner_by_owner_id(self, owner_id)->ResearchOwnerFullDTO:
-        async with (self.db_session_manager.async_session_factory() as session):
+    async def get_owner_by_owner_id(self, owner_id) -> ResearchOwnerFullDTO:
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
-                execution = await session.execute(
-                    select(ResearchOwner).filter(ResearchOwner.owner_id == owner_id)
-                )
+                execution = await session.execute(select(ResearchOwner).filter(ResearchOwner.owner_id == owner_id))
                 user = execution.scalars().first()
                 # DONE  Конгвертация в DTO
                 return ResearchOwnerFullDTO.model_validate(user, from_attributes=True)
 
-
     async def get_owner_by_service_id(self, service_id) -> ResearchOwnerFullDTO | None:
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 execution = await session.execute(
                     select(ResearchOwner).filter(ResearchOwner.service_owner_id == service_id)
@@ -48,7 +44,6 @@ class ResearchOwnerRepository(BaseRepository):
                 if not user:
                     return None
                 return ResearchOwnerFullDTO.model_validate(user, from_attributes=True)
-
 
     async def delete_owner_by_owner_id(self, owner_id):
         async with self.db_session_manager.async_session_factory() as session:
@@ -61,15 +56,15 @@ class ResearchOwnerRepository(BaseRepository):
 
 class ResearchOwnerRepositoryFullModel(BaseRepository):
     """
-        Когда мне нужны сложные джонины со всей инофрмацие я использую этот класс
-        """
+    Когда мне нужны сложные джонины со всей инофрмацие я использую этот класс
+    """
 
-    async def get_owner_by_id(self, owner_id)->ResearchOwnerRelDTO:
+    async def get_owner_by_id(self, owner_id) -> ResearchOwnerRelDTO:
         """
         Достает иследование по его id со всеми вложенными в него данными
         :return:
         """
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 query = self.main_query().filter(ResearchOwner.owner_id == owner_id)
                 execute = await session.execute(query)
@@ -104,19 +99,19 @@ class ResearchOwnerRepositoryFullModel(BaseRepository):
         query = (
             select(ResearchOwner)
             .options(joinedload(ResearchOwner.service))
-            .options(joinedload(ResearchOwner.researches)
-                     .options(joinedload(Research.assistant))
-                     .options(joinedload(Research.status))
-                     .options(joinedload(Research.telegram_client))
-                     .options(joinedload(Research.users))
-                     )
+            .options(
+                joinedload(ResearchOwner.researches)
+                .options(joinedload(Research.assistant))
+                .options(joinedload(Research.status))
+                .options(joinedload(Research.telegram_client))
+                .options(joinedload(Research.users))
+            )
         )
 
         return query
 
 
 class OwnerRepo:
-
     def __init__(self, database_session_manager: DatabaseSessionManager):
         self.short = ResearchOwnerRepository(database_session_manager)
         self.full = ResearchOwnerRepositoryFullModel(database_session_manager)

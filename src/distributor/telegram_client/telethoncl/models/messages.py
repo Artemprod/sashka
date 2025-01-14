@@ -5,10 +5,9 @@ from pydantic import BaseModel
 
 
 class OutcomeMessageDTOQueue(BaseModel):
-
     message: str
     from_user: str
-    first_name:str
+    first_name: str
     username: str
     chat: str
     media: str

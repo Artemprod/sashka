@@ -22,16 +22,17 @@ from src.distributor.telegram_client.pyro.exceptions.connection import NoClientE
 
 # TODO ЕСЛИ сделаю асинхронный доступ до методов чтобы иметь возмодность поличть домсутп кним не збыть убрать если что
 
+
 # TODO Передовать дополнительные прараметры котрые будут доступны при передаче сообщения для инъекции
 class Manager:
     auth_attempts = 4
 
-    def __init__(self,
-                 communicator,
-                 client: Client = None,
-                 dev_mode: bool = False,
-                 ):
-
+    def __init__(
+        self,
+        communicator,
+        client: Client = None,
+        dev_mode: bool = False,
+    ):
         self.app: Client = client
         self._communicator = communicator
         self.session_string = None
@@ -39,7 +40,8 @@ class Manager:
         self.is_banned = False
         self.dev_mode = dev_mode
         logger.warning("CLIENT MANAGER DEV MODE IS ON") if self.dev_mode else logger.warning(
-            "CLIENT MANAGER PRODUCTION MODE")
+            "CLIENT MANAGER PRODUCTION MODE"
+        )
 
     @property
     def communicator(self) -> BaseCommunicator:
@@ -96,7 +98,6 @@ class Manager:
             send_code_attempt = 0
 
             while send_code_attempt < Manager.auth_attempts:
-
                 send_code = await self.app.send_code(self.app.phone_number)
 
                 code_enter_attempts = 0
@@ -104,7 +105,6 @@ class Manager:
                 logger.debug(f"SENT CODE DATA_________________ {send_code}")
 
                 while code_enter_attempts < Manager.auth_attempts:
-
                     if not self.dev_mode:
                         code = await self._communicator.get_code()
                         logger.debug(f"PROD MOD CODE____________{code}")
@@ -114,9 +114,11 @@ class Manager:
                         logger.debug(f"DEV MOD CODE____________{code}")
 
                     try:
-                        await self.app.sign_in(phone_number=self.app.phone_number,
-                                               phone_code_hash=send_code.phone_code_hash,
-                                               phone_code=code)
+                        await self.app.sign_in(
+                            phone_number=self.app.phone_number,
+                            phone_code_hash=send_code.phone_code_hash,
+                            phone_code=code,
+                        )
                         print("Successfully signed in!")
                         return
 
@@ -131,10 +133,9 @@ class Manager:
                         break
 
                     except errors.SessionPasswordNeeded:
-                        print('The cloud password is needed.')
+                        print("The cloud password is needed.")
                         await self.app.check_password(self.app.password)
                         return
-
 
                     except errors.FloodWait as e:
                         print(f"Too many attempts. Please wait {e} seconds.")
@@ -147,8 +148,8 @@ class Manager:
             raise MaxAttemptsExceededError("Exceeded the maximum number of attempts.")
 
         except errors.PasswordHashInvalid:
-            print('The cloud password is wrong.')
-            await self._communicator.send_error(message='The cloud password is wrong.')
+            print("The cloud password is wrong.")
+            await self._communicator.send_error(message="The cloud password is wrong.")
             raise
 
         except MaxAttemptsExceededError:
@@ -161,7 +162,6 @@ class Manager:
             await self._communicator.send_error(message="Api id invalid.")
             raise
 
-
         except errors.PhoneNumberInvalid:
             print("The phone number you entered is invalid.")
             await self._communicator.send_error(message="The phone number you entered is invalid.")
@@ -172,7 +172,6 @@ class Manager:
             raise ClientAuthorizationConnectionError(message=e) from e
 
     async def initialize(self):
-
         if not self.app.is_connected:
             raise ConnectionError("Can't initialize a disconnected client")
         if self.app.is_initialized:
@@ -182,7 +181,6 @@ class Manager:
         self.app.is_initialized = True
 
     async def run(self):
-
         try:
             await self.init_client()
             if not await self.is_authorize():
@@ -223,5 +221,3 @@ class Manager:
         except Exception as e:
             print(f"Unexpected error: {e}")
             raise AutorizationFaildError(message=e)
-
-

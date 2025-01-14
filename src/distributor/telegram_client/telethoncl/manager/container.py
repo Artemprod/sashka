@@ -16,10 +16,7 @@ from src.distributor.telegram_client.telethoncl.manager.manager import TelethonM
 
 
 class TelethonClientsContainer(InterfaceClientsContainer):
-    def __init__(self,
-                 repository,
-                 handlers: List = None):
-
+    def __init__(self, repository, handlers: List = None):
         self.repository = repository
         self.handlers = handlers or []
         self.dev_mode = telethon_container_settings.def_mode
@@ -54,7 +51,7 @@ class TelethonClientsContainer(InterfaceClientsContainer):
     async def create_and_start_client(self, client_configs: ClientConfigDTO, communicator=ConsoleCommunicator()):
         try:
             client_name = await self.create_client(client_configs, communicator)
-            logger.info('Mangager creaste client')
+            logger.info("Mangager creaste client")
             await self.start_client(name=client_name)
 
         except Exception as e:
@@ -129,5 +126,3 @@ class TelethonClientsContainer(InterfaceClientsContainer):
             logger.error(f"Error in starting all clients: {str(e)}")
         except CancelledError:
             logger.info("Client start operation cancelled.")
-
-

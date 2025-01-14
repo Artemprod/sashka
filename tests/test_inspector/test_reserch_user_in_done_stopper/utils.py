@@ -1,7 +1,6 @@
-
-def user_status_generator(users:int):
-    while users >=0:
+def user_status_generator(users: int):
+    while users >= 0:
         print("users=", users)
         print()
         yield users
-        users -=1
+        users -= 1

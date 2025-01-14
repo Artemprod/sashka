@@ -9,9 +9,7 @@ from pydantic import Field
 # Общая конфигурация для сериализации datetime объектов
 class ConfigBase:
     from_attributes = True
-    json_encoders = {
-        datetime: lambda dt: dt.strftime("%Y-%m-%d %H:%M:%S") if dt else None
-    }
+    json_encoders = {datetime: lambda dt: dt.strftime("%Y-%m-%d %H:%M:%S") if dt else None}
 
 
 # Базовый класс DTO
@@ -26,7 +24,7 @@ class UserDTOBase(BaseModel):
 # Класс, представляющий очередь пользователей
 class UserDTOQueue(BaseModel):
     tg_user_id: int
-    username:str
+    username: str
     is_contact: bool
     is_mutual_contact: bool
     is_deleted: bool
@@ -51,7 +49,6 @@ class UserDTOQueue(BaseModel):
 
 # Расширенный класс DTO с дополнительными полями
 class UserDTO(UserDTOBase):
-
     name: Optional[str] = None
     second_name: Optional[str] = None
     phone_number: Optional[str] = None
@@ -76,9 +73,11 @@ class UserDTOFull(UserDTO):
     class Config(ConfigBase):
         pass
 
+
 class UserDTQueue(BaseModel):
     name: str
     tg_user_id: str
+
 
 # DTO с отношениями между объектами
 class UserDTORel(UserDTOFull):

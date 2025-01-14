@@ -36,7 +36,7 @@ class Datas(BaseModel):
     user: UserDTOBase
     client_name: str
     client: Union[Client, TelegramClient]
-    container: Union[ClientsManager,TelethonClientsContainer]
+    container: Union[ClientsManager, TelethonClientsContainer]
     current_time: datetime
     send_time: datetime
 
@@ -44,13 +44,14 @@ class Datas(BaseModel):
         from_attributes = True
         arbitrary_types_allowed = True
 
-class MessageToSendData(BaseModel):
 
-    message:str
+class MessageToSendData(BaseModel):
+    message: str
     user: UserDTOBase
 
     class Config:
         from_attributes = True
         arbitrary_types_allowed = True
+
 
 Datas.model_rebuild()

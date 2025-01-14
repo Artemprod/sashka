@@ -21,16 +21,22 @@ from src.services.analitcs.models.analitic import AnalyticFileDTO
 
 
 class Analytic(ABC):
-    def __init__(self,
-                 research_id: int,
-                 session_manager,
-                 metric_calculator):
+    def __init__(
+        self,
+        research_id: int,
+        session_manager,
+        metric_calculator,
+        research_status: str = "done",
+    ):
         self.research_id = research_id
         self._session_manager = session_manager
         self.metric_calculator: MetricCalculator = metric_calculator(
-            research_id=research_id, session_manager=session_manager
+            research_status=research_status,
+            research_id=research_id,
+            session_manager=session_manager,
         )
         self._dialogs: Optional[ResearchDialogs] = None
+        self.research_status: str = research_status
 
     @property
     async def dialogs(self) -> ResearchDialogs:
@@ -43,8 +49,9 @@ class Analytic(ABC):
         """Загрузка диалогов для исследования."""
         try:
             dialogs_object = ResearchDialogs(
+                research_status=self.research_status,
                 research_id=self.research_id,
-                session_manager=self._session_manager
+                session_manager=self._session_manager,
             )
             self._dialogs = await dialogs_object.get_dialogs()
         except Exception as e:
@@ -87,24 +94,31 @@ class Analytic(ABC):
             raise ValueError(f"Unknown format of objects in dialogs: {[type(dialog) for dialog in dialogs]}")
 
 
-
 class AnalyticCSV(Analytic):
-    type = 'csv'
+    type = "csv"
     """Возвращает серию файлов: отдельные файлы для диалогов, отдельный файл для аналитики в формате csv."""
 
     async def provide_data(self, folder_path: str = None) -> Union[AnalyticDataBufferDTO, AnalyticFileDTO]:
         """Возвращает список csv по диалогам и аналитик."""
         dialogs_objects = await self.dialogs
-        return await self._process_dialogs(dialogs_objects.dialogs, folder_path, CsvExporter, 'csv')
-
+        return await self._process_dialogs(dialogs_objects.dialogs, folder_path, CsvExporter, "csv")
 
 
 class AnalyticExcel(Analytic):
-    type = 'excel'
+    type = "excel"
     """Возвращает серию файлов: отдельные файлы для диалогов, отдельный файл для аналитики в формате excel."""
 
     async def provide_data(self, folder_path: str = None) -> Union[AnalyticDataBufferDTO, AnalyticFileDTO]:
         """Возвращает список excel по диалогам и аналитик."""
-        dialogs_objects = await self.dialogs
-        return await self._process_dialogs(dialogs_objects.dialogs, folder_path, ExcelExporter, 'excel')
+        dialogs_objects: ResearchDialogs = await self.dialogs
+        return await self._process_dialogs(dialogs_objects.dialogs, folder_path, ExcelExporter, "excel")
 
+
+class AnalyticJsonDialogs(Analytic):
+    type = "json"
+
+    async def provide_data(self, folder_path: str = None):
+        """Возвращает список диалогов по иследованию."""
+        dialogs_objects: ResearchDialogs = await self.dialogs
+        result = await dialogs_objects.to_json()
+        return result

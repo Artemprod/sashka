@@ -17,7 +17,7 @@ def create_outcome_message(event, sender, client_info) -> str:
         chat=chat,
         media=media,
         voice=voice,
-        client_telegram_id=client_telegram_id
+        client_telegram_id=client_telegram_id,
     ).json_string()
 
     return outcome_message

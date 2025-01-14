@@ -16,7 +16,7 @@ def load_repo(mocker):
 
 @pytest.fixture(scope="function", autouse=True)
 def load_stop_word_checker(load_repo):
-    return  StopWordChecker(repo=load_repo)
+    return StopWordChecker(repo=load_repo)
 
 
 @pytest.mark.asyncio(scope="function", autouse=True)

@@ -1,5 +1,5 @@
-
 from sqlalchemy import BigInteger
+from sqlalchemy import Index
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
@@ -14,6 +14,12 @@ from src.database.postgres.models.base import str_2048
 
 class TelegramClient(ModelBase):
     __tablename__ = "telegram_clients"
+    __table_args__ = (
+        Index("idx_telegram_client_phone_number", "phone_number"),
+        Index("idx_name", "name"),
+        Index("idx_session_string", "session_string"),
+        Index("idx_created_at", "created_at"),
+    )
 
     client_id: Mapped[intpk]
 
@@ -29,22 +35,15 @@ class TelegramClient(ModelBase):
     session_string: Mapped[str_2048] = mapped_column(nullable=True)  # увеличено до 2048
     phone_number: Mapped[str] = mapped_column(nullable=True)
     password: Mapped[str_1024] = mapped_column(nullable=True)
-    parse_mode: Mapped[str] = mapped_column(nullable=True, default='HTML')
+    parse_mode: Mapped[str] = mapped_column(nullable=True, default="HTML")
     workdir: Mapped[str_1024] = mapped_column(nullable=True)  # увеличено до 1024
     created_at: Mapped[created_at]
 
-    messages:Mapped[list["AssistantMessage"]] = relationship(
-        back_populates="telegram_client")
+    messages: Mapped[list["AssistantMessage"]] = relationship(back_populates="telegram_client")
 
-    researches:Mapped[list["Research"]] = relationship(
-        back_populates="telegram_client"
-    )
+    researches: Mapped[list["Research"]] = relationship(back_populates="telegram_client")
 
-    user_messages:Mapped[list["UserMessage"]] = relationship(
-        back_populates="telegram_client")
-
-
-
+    user_messages: Mapped[list["UserMessage"]] = relationship(back_populates="telegram_client")
 
     def __repr__(self):
         return f"<Client {self.name}>"
