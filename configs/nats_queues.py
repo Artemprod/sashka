@@ -19,7 +19,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 class NATSConfigs(BaseConfig):
     class RPCConfigs(BaseConfig):
         max_retries: int = Field(10, validation_alias="NATS_RPC_MAX_RETRIES")
-        timeout: float = Field(10.0, validation_alias="NATS_RPC_TIMEOUT")
+        timeout: float = Field(100.0, validation_alias="NATS_RPC_TIMEOUT")
 
         @field_validator("timeout", mode="before")
         def split_str(cls, field_data):
