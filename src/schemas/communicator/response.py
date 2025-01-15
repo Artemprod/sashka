@@ -12,3 +12,7 @@ class SingleResponseDTO(BaseModel):
 class ContextResponseDTO(BaseModel):
     context: List[Dict]
     response: str
+
+
+class TranscribeResponseDTO(BaseModel):
+    text: str

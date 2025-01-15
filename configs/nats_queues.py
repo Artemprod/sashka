@@ -19,7 +19,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 class NATSConfigs(BaseConfig):
     class RPCConfigs(BaseConfig):
         max_retries: int = Field(10, validation_alias="NATS_RPC_MAX_RETRIES")
-        timeout: float = Field(10.0, validation_alias="NATS_RPC_TIMEOUT")
+        timeout: float = Field(100.0, validation_alias="NATS_RPC_TIMEOUT")
 
         @field_validator("timeout", mode="before")
         def split_str(cls, field_data):
@@ -42,7 +42,14 @@ class NATSCommunicatorSubscriber(BaseConfig):
         ping_user: str = Field("command.user.ping", validation_alias="COMMUNICATOR_QUEUE_COMMANDS_PING_USER")
 
     class MessageQueues(BaseConfig):
-        new_message: str = Field("message.income.new", validation_alias="COMMUNICATOR_QUEUE_MESAGES_NEW_INCOME_MESSAGE")
+        new_text_message: str = Field(
+            "message.text.income.new",
+            validation_alias="COMMUNICATOR_QUEUE_MESAGES_NEW_INCOME_TEXT_MESSAGE"
+        )
+        new_voice_message: str = Field(
+            "message.audio.income.new",
+            validation_alias="COMMUNICATOR_QUEUE_MESAGES_NEW_INCOME_AUDIO_MESSAGE"
+        )
 
     commands: CommandsQueues = Field(default_factory=CommandsQueues)
     messages: MessageQueues = Field(default_factory=MessageQueues)

@@ -19,25 +19,27 @@ from src.services.communicator.messager import MessageFirstSend, ScheduledFirstM
 from src.services.communicator.messager import PingMessage
 from src.services.communicator.messager import ResearchMessageAnswer
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
-from src.services.communicator.request import ContextRequest
+from src.services.communicator.request import ContextRequest, TranscribeRequest
 from src.services.communicator.request import SingleRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
+from src.services.research.telegram.inspector import StopWordChecker
 
 
 class TelegramCommunicator:
     """Класс для управления общением с ИИ через Telegram."""
 
     def __init__(
-        self,
-        repository: "RepoStorage",
-        info_collector: "TelegramUserInformationCollector",
-        publisher: "NatsPublisher",
-        single_request: "SingleRequest",
-        context_request: "ContextRequest",
-        prompt_generator: "ExtendedPingPromptGenerator",
-        stop_word_checker: "StopWordChecker",
-        destination_configs: Optional[Dict] = None,
+            self,
+            repository: "RepoStorage",
+            info_collector: "TelegramUserInformationCollector",
+            publisher: "NatsPublisher",
+            single_request: "SingleRequest",
+            context_request: "ContextRequest",
+            transcribe_request: "TranscribeRequest",
+            prompt_generator: "ExtendedPingPromptGenerator",
+            stop_word_checker: "StopWordChecker",
+            destination_configs: Optional[Dict] = None,
     ):
         self._repository = repository
         self._info_collector = info_collector
@@ -46,7 +48,10 @@ class TelegramCommunicator:
         # Инициализация компонентов для обработки сообщений
 
         self._first_message_distributes = ScheduledFirstMessage(
-            publisher=publisher, repository=repository, single_request=single_request, prompt_generator=prompt_generator
+            publisher=publisher,
+            repository=repository,
+            single_request=single_request,
+            prompt_generator=prompt_generator
         )
         self._message_research_answer = ResearchMessageAnswer(
             publisher=publisher,
@@ -55,7 +60,7 @@ class TelegramCommunicator:
             context_request=context_request,
             stop_word_checker=stop_word_checker,
         )
-
+        self.transcribe_request = transcribe_request
         self.ping_message = PingMessage(
             publisher=publisher,
             repository=repository,

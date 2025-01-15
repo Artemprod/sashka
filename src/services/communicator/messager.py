@@ -239,11 +239,16 @@ class MessageFirstSend(BaseMessageHandler):
         if not client:
             raise ValueError("No client available for the given research ID")
 
-        tasks = [
-            self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
-            async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date)
-        ]
-        await asyncio.gather(*tasks)
+        # стоит это переписать. Можно часть запросов из бд перенаправить в редис, а остальные данные
+        # вытягивать одним запросом
+        async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
+            await self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
+
+        # tasks = [
+        #     self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
+        #     async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date)
+        # ]
+        # await asyncio.gather(*tasks)
 
     async def _get_client(self, research_id: int) -> "TelegramClientDTOGet":
         client = await self.get_client_name(research_id)
