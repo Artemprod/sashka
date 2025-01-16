@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -38,10 +38,13 @@ async def start_research(
     """Запускает новый процесс исследования."""
 
     try:
+        logger.info(f"Starting research with research data: {research}")
         validated_research = await validate_data(research)
         # Создание нового исследования
         created_research: ResearchDTORel = await manager.create_research(research=validated_research, owner=owner)
         # Создание и публикация сообщения о начале исследования
+
+        logger.info(f"Created research: {created_research}")
         subject_message = NatsQueueMessageDTOSubject(
             message="",
             subject=nats_subscriber_researcher_settings.researches.start_telegram_research,
@@ -50,6 +53,22 @@ async def start_research(
 
         # FIXME Тут скорее вынести в сервис начала иследования разделение ответсвенности представление не должно знать бизнес логику
         # Запланировать публикацию сообщения через 5 минут после начала исследования
+        logger.info(f"Publishing message to subject: {subject_message}")
+        logger.info(f"Start date: {created_research.start_date}."
+                    f"Now date: {datetime.now(tz=pytz.utc)}")
+
+        research_start_date = created_research.start_date
+        if created_research.start_date.tzinfo is None:
+            research_start_date = pytz.utc.localize(created_research.start_date)
+
+        current_time = datetime.now(pytz.utc)
+
+        if research_start_date < current_time:
+            # Устанавливаем start_date на текущее время плюс 5 минут
+            created_research.start_date = (current_time + timedelta(minutes=5)).replace(tzinfo=None)
+            logger.info(f"Updated start date: {created_research.start_date}")
+            await manager.update_research(research=created_research)
+
         apscheduler.add_job(
             publisher.publish_message_to_subject,
             args=[subject_message],
@@ -57,6 +76,7 @@ async def start_research(
         )
         user_info: UserInfo = await count_users_in_research(users_dto=created_research.users, research=research)
 
+        logger.info(f"Users info: {user_info}")
         # TODO переписать в модель DTO
         return {
             "message": f"Research '{created_research.name}' has been planed to start at {created_research.start_date}",
@@ -65,6 +85,7 @@ async def start_research(
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
     except Exception as e:
         logger.error(f"Failed to start research: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to start research: {str(e)}") from e

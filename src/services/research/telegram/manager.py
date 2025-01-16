@@ -64,6 +64,9 @@ class TelegramResearchManager(BaseResearchManager):
             logger.error(f"Error during research creation: {e} \n {e.args}")
             raise
 
+    async def update_research(self, research: ResearchDTOFull):
+        await self._database_repository.research_repo.short.update_research(research)
+
     async def get_research_info(self, research: ResearchDTOPost):
         full_info = await self._database_repository.research_repo.full.get_research_by_id(
             research_id=research.research_id
