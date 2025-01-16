@@ -1,6 +1,10 @@
+from datetime import datetime
+
+import pytz
 from aiocache import Cache
 from aiocache import cached
-from sqlalchemy import and_
+from loguru import logger
+from sqlalchemy import and_, update
 from sqlalchemy import insert
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -108,7 +112,40 @@ class ResearchRepository(BaseRepository):
                 # Опционально: можно добавить логирование или дополнительную обработку
                 raise e
 
-    async def update_research(self): ...
+    async def update_research(self, research: ResearchDTOFull):
+        async with self.db_session_manager.async_session_factory() as session:
+            logger.info(f"Updating research: {research}")
+            async with session.begin():  # использовать транзакцию
+                updated_at = datetime.now(pytz.utc).replace(tzinfo=None)
+
+                values = {
+                    "research_uuid": research.research_uuid,
+                    "name": research.name,
+                    "title": research.title,
+                    "theme": research.theme,
+                    "start_date": research.start_date,
+                    "end_date": research.end_date,
+                    "updated_at": updated_at,
+                    "descriptions": research.descriptions,
+                    "additional_information": research.additional_information,
+                    "assistant_id": research.assistant_id,
+                    "owner_id": research.owner_id,
+                    "telegram_client_id": research.telegram_client_id,
+                }
+                stmt = (
+                    update(Research)
+                    .where(Research.research_id == research.research_id)
+                    .values(**values)
+                    .returning(Research)
+                )
+
+                updated_research = await session.execute(stmt)
+
+                result = updated_research.fetchall()  # Fetch all results
+                logger.info(f'Result {result}')
+                if not result:
+                    raise ValueError(f"Research with id {research.research_id} not found.")
+
 
     async def get_all_researches_with_status(self, status): ...
 
