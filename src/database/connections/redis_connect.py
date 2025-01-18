@@ -50,7 +50,7 @@ class RedisClient:
     #         return clients[client_name]
 
 
-class RedisCash(RedisClient):
+class RedisCache(RedisClient):
     REDIS_URL = f'redis://{"localhost"}:{6379}/{2}'
 
     async def get_research_data(self, research):

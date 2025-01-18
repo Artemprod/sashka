@@ -24,6 +24,7 @@ from src.database.postgres.models.user import User
 from src.database.repository.base import BaseRepository
 from src.schemas.service.research import ResearchDTOFull
 from src.schemas.service.research import ResearchDTORel
+from src.services.cache.service import redis_cache_decorator
 
 
 class ResearchRepository(BaseRepository):
@@ -40,6 +41,9 @@ class ResearchRepository(BaseRepository):
                 result = new_research.scalar_one()
                 return ResearchDTOFull.model_validate(result, from_attributes=True)
 
+    @redis_cache_decorator(
+        key="research:short:research_id:{research_id}",
+    )
     async def get_research_by_id(self, research_id) -> ResearchDTOFull:
         """
         Достает иследование по его id со всеми вложенными в него данными
@@ -60,6 +64,9 @@ class ResearchRepository(BaseRepository):
                         orm_object=Research.__name__, msg=f" research with id {research_id} not found"
                     )
 
+    @redis_cache_decorator(
+        key="research:short:owner_id:{owner_id}",
+    )
     async def get_research_by_owner(self, owner_id) -> ResearchDTOFull:
         """ """
         async with self.db_session_manager.async_session_factory() as session:
@@ -74,6 +81,9 @@ class ResearchRepository(BaseRepository):
                         orm_object=Research.__name__, msg=f" research with owner id {owner_id} not found"
                     )
 
+    @redis_cache_decorator(
+        key="research:short:participant:{user_telegram_id}:{client_telegram_id}",
+    )
     async def get_research_by_participant(self, user_telegram_id: int, client_telegram_id: int) -> ResearchDTOFull:
         """
         Получает объект исследования по Telegram ID участника
@@ -155,6 +165,9 @@ class ResearchRepositoryFullModel(BaseRepository):
     Когда мне нужны сложные джонины со всей инофрмацие я использую этот класс
     """
 
+    @redis_cache_decorator(
+        key="research:full:research_id:{research_id}",
+    )
     async def get_research_by_id(self, research_id) -> ResearchDTORel:
         """
         Достает иследование по его id со всеми вложенными в него данными
@@ -174,6 +187,9 @@ class ResearchRepositoryFullModel(BaseRepository):
                         orm_object=Research.__name__, msg=f" research with id: {research_id} not found"
                     )
 
+    @redis_cache_decorator(
+        key="research:full:status_name:{status_name}",
+    )
     async def get_research_by_status(self, status_name: ResearchStatusEnum):
         """
         Достает иследование по его id со всеми вложенными в него данными
