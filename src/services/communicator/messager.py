@@ -479,7 +479,7 @@ class ResearchMessageAnswer(MessageAnswer):
         await self._save_user_message(message_object, research_id, client, assistant)
 
         # Запуск таймера на ожидание новых сообщений перед отправкой
-        if not await self._wait_for_new_messages(client_telegram_id=message_object.client_telegram_id):
+        if not await self._wait_for_new_messages(client_telegram_id=message_object.from_user):
             logger.info(f"This is not first message: {message_object.from_user}")
             return
 
