@@ -1,12 +1,9 @@
 import asyncio
 import json
-from datetime import timedelta, datetime
-
+from datetime import datetime
 import pytest
-from pyrogram.filters import service
 from sqlalchemy import insert, text
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.util import await_only
+
 
 from configs.database import database_postgres_settings
 from src.database.postgres import (
