@@ -1,0 +1,285 @@
+[
+    {
+        "message_id": 1,
+        "user_telegram_id": 1,
+        "assistant_id": 1,
+        "chat_id": 123456789,
+        "telegram_client_id": 1,
+        "research_id": 1,
+        "text": "Welcome to the research portal! Let me know how I can assist you.",
+        "created_at": "2023-09-01T09:05:00"
+    },
+    {
+        "message_id": 2,
+        "user_telegram_id": 2,
+        "assistant_id": 2,
+        "chat_id": 234567891,
+        "telegram_client_id": 2,
+        "research_id": 1,
+        "text": "Sure, here's the schedule for the upcoming research activities.",
+        "created_at": "2023-09-02T11:35:00"
+    },
+    {
+        "message_id": 3,
+        "user_telegram_id": 2,
+        "assistant_id": 1,
+        "chat_id": 234567891,
+        "telegram_client_id": 2,
+        "research_id": 1,
+        "text": "Feel free to ask any further questions about the data submission process.",
+        "created_at": "2023-09-02T12:10:00"
+    },
+    {
+        "message_id": 4,
+        "user_telegram_id": 3,
+        "assistant_id": 3,
+        "chat_id": 345678912,
+        "telegram_client_id": 3,
+        "research_id": 2,
+        "text": "You can view previous session recordings in the archive section.",
+        "created_at": "2023-09-03T15:25:00"
+    },
+    {
+        "message_id": 5,
+        "user_telegram_id": 1,
+        "assistant_id": 1,
+        "chat_id": 123456789,
+        "telegram_client_id": 1,
+        "research_id": 2,
+        "text": "Always happy to help! Let me know if there’s anything else you need.",
+        "created_at": "2023-09-01T09:35:00"
+    },
+    {
+        "message_id": 6,
+        "user_telegram_id": 1,
+        "assistant_id": 2,
+        "chat_id": 123456789,
+        "telegram_client_id": 1,
+        "research_id": 2,
+        "text": "Our FAQ section is continually updated. Check it out for common questions.",
+        "created_at": "2023-09-04T08:50:00"
+    },
+    {
+        "message_id": 7,
+        "user_telegram_id": 2,
+        "assistant_id": 3,
+        "chat_id": 234567891,
+        "telegram_client_id": 2,
+        "research_id": 3,
+        "text": "The current research submission deadline is next Friday.",
+        "created_at": "2023-09-04T08:55:00"
+    },
+    {
+        "message_id": 8,
+        "user_telegram_id": 3,
+        "assistant_id": 1,
+        "chat_id": 345678912,
+        "telegram_client_id": 3,
+        "research_id": 3,
+        "text": "Great job on the survey! The next step is the detailed data entry.",
+        "created_at": "2023-09-04T09:20:00"
+    },
+    {
+        "message_id": 9,
+        "user_telegram_id": 2,
+        "assistant_id": 2,
+        "chat_id": 234567891,
+        "telegram_client_id": 1,
+        "research_id": 3,
+        "text": "Yes, you can resubmit. Please ensure all fields are completed.",
+        "created_at": "2023-09-04T09:40:00"
+    },
+    {
+        "message_id": 10,
+        "user_telegram_id": 1,
+        "assistant_id": 3,
+        "chat_id": 123456789,
+        "telegram_client_id": 2,
+        "research_id": 4,
+        "text": "You can update your profile in the settings section of your dashboard.",
+        "created_at": "2023-09-04T09:55:00"
+    },
+    {
+        "message_id": 11,
+        "user_telegram_id": 3,
+        "assistant_id": 2,
+        "chat_id": 345678912,
+        "telegram_client_id": 3,
+        "research_id": 4,
+        "text": "I will send the webinar recording link to your email shortly.",
+        "created_at": "2023-09-04T10:15:00"
+    },
+    {
+        "message_id": 12,
+        "user_telegram_id": 3,
+        "assistant_id": 1,
+        "chat_id": 345678912,
+        "telegram_client_id": 2,
+        "research_id": 4,
+        "text": "Our technical support team can be reached via the support section.",
+        "created_at": "2023-09-04T10:40:00"
+    },
+    {
+        "message_id": 13,
+        "user_telegram_id": 1,
+        "assistant_id": 2,
+        "chat_id": 123456789,
+        "telegram_client_id": 1,
+        "research_id": 4,
+        "text": "Yes, a preview is available before the final submission.",
+        "created_at": "2023-09-04T11:05:00"
+    },
+    {
+        "message_id": 14,
+        "user_telegram_id": 2,
+        "assistant_id": 1,
+        "chat_id": 234567891,
+        "telegram_client_id": 3,
+        "research_id": 5,
+        "text": "You're welcome! Stay updated for any new changes.",
+        "created_at": "2023-09-04T11:25:00"
+    },
+    {
+        "message_id": 15,
+        "user_telegram_id": 2,
+        "assistant_id": 3,
+        "chat_id": 234567891,
+        "telegram_client_id": 2,
+        "research_id": 5,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:50:00"
+    },
+        {
+        "message_id": 100,
+        "user_telegram_id": 100,
+        "assistant_id": 100,
+        "chat_id": 100,
+        "telegram_client_id": 100,
+        "research_id": 100,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:50:00"
+    },
+           {
+        "message_id": 101,
+        "user_telegram_id": 100,
+        "assistant_id": 101,
+        "chat_id": 100,
+        "telegram_client_id": 101,
+        "research_id": 101,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:50:00"
+    },
+               {
+        "message_id": 102,
+        "user_telegram_id": 100,
+        "assistant_id": 101,
+        "chat_id": 100,
+        "telegram_client_id": 101,
+        "research_id": 101,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:51:00"
+    },
+                   {
+        "message_id": 103,
+        "user_telegram_id": 100,
+        "assistant_id": 102,
+        "chat_id": 100,
+        "telegram_client_id": 102,
+        "research_id": 102,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:52:00"
+    },
+                       {
+        "message_id": 104,
+        "user_telegram_id": 100,
+        "assistant_id": 102,
+        "chat_id": 100,
+        "telegram_client_id": 102,
+        "research_id": 102,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:53:00"
+    },
+                       {
+        "message_id": 105,
+        "user_telegram_id": 100,
+        "assistant_id": 102,
+        "chat_id": 100,
+        "telegram_client_id": 102,
+        "research_id": 102,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:54:00"
+    },
+                           {
+        "message_id": 106,
+        "user_telegram_id": 101,
+        "assistant_id": 100,
+        "chat_id": 101,
+        "telegram_client_id": 100,
+        "research_id": 100,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:54:00"
+    },
+         {
+        "message_id": 107,
+        "user_telegram_id": 101,
+        "assistant_id": 101,
+        "chat_id": 101,
+        "telegram_client_id": 101,
+        "research_id": 101,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:54:00"
+    },
+         {
+        "message_id": 108,
+        "user_telegram_id": 101,
+        "assistant_id": 101,
+        "chat_id": 101,
+        "telegram_client_id": 101,
+        "research_id": 101,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:54:00"
+    },
+             {
+        "message_id": 109,
+        "user_telegram_id": 101,
+        "assistant_id": 102,
+        "chat_id": 101,
+        "telegram_client_id": 102,
+        "research_id": 102,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:54:00"
+    },
+                 {
+        "message_id": 110,
+        "user_telegram_id": 101,
+        "assistant_id": 102,
+        "chat_id": 101,
+        "telegram_client_id": 102,
+        "research_id": 102,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:54:00"
+    },
+                 {
+        "message_id": 111,
+        "user_telegram_id": 101,
+        "assistant_id": 102,
+        "chat_id": 101,
+        "telegram_client_id": 102,
+        "research_id": 102,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:54:00"
+    },
+     {
+        "message_id": 112,
+        "user_telegram_id": 102,
+        "assistant_id": 100,
+        "chat_id": 100,
+        "telegram_client_id": 100,
+        "research_id": 100,
+        "text": "We have some exciting workshops planned. I'll send the details soon.",
+        "created_at": "2023-09-04T11:54:00"
+    }
+
+
+
+]

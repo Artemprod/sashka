@@ -1,6 +1,6 @@
-from datetime import datetime
-from typing import Optional, Union
-from pydantic import BaseModel, Field, validator, field_validator
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 # Base headers class

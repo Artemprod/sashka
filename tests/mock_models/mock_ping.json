@@ -1,0 +1,38 @@
+[
+    {
+        "prompt_id": 1,
+        "ping_order_number": 1,
+        "system_prompt": "Initiating system check.",
+        "prompt": "Please verify all systems are operational.",
+        "created_at": "2023-09-01T08:00:00"
+    },
+    {
+        "prompt_id": 2,
+        "ping_order_number": 2,
+        "system_prompt": null,
+        "prompt": "Conduct a thorough analysis of network traffic.",
+        "created_at": "2023-09-01T09:15:00"
+    },
+    {
+        "prompt_id": 3,
+        "ping_order_number": 3,
+        "system_prompt": "Attention required.",
+        "prompt": "Review the error logs and troubleshoot any issues.",
+        "created_at": "2023-09-01T10:30:00"
+    },
+    {
+        "prompt_id": 4,
+        "ping_order_number": 4,
+        "system_prompt": null,
+        "prompt": "Ensure all backup systems are engaged and records are up-to-date.",
+        "created_at": "2023-09-01T11:45:00"
+    },
+    {
+        "prompt_id": 5,
+        "ping_order_number": 5,
+        "system_prompt": "Final check.",
+        "prompt": "Confirm all security protocols are enforced.",
+        "created_at": "2023-09-01T13:00:00"
+    }
+]
+

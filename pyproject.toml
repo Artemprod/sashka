@@ -17,7 +17,6 @@ pytest-asyncio = "^0.23.8"
 loguru = "^0.7.2"
 fastapi-websocket-rpc = "^0.1.25"
 faststream = {extras = ["nats"], version = "^0.5.18"}
-aioredis = "^2.0.1"
 setuptools = "^73.0.1"
 wheel = "^0.44.0"
 redis = "^5.0.8"
@@ -36,9 +35,72 @@ xlsxwriter = "^3.2.0"
 openpyxl = "^3.1.5"
 pydantic-settings = "^2.6.1"
 pydantic-settings-yaml = "^0.2.0"
+ruff = "^0.7.3"
+aiocache = "^0.12.3"
+apscheduler = "^3.10.4"
+pytest-mock = "^3.14.0"
+aiofiles = "^24.1.0"
+aiobotocore = "^2.16.1"
+botocore = "^1.35.88"
+types-aiobotocore-s3 = "^2.16.1"
+boto3 = "^1.35.88"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+
+[tool.ruff]
+# Основные проверки, которые помогут поддерживать стандартный стиль PEP 8 и качество кода.
+select = [
+    "E",  # Ошибки PEP 8
+    "F",  # PyFlakes
+    "W",  # Предупреждения PEP 8
+    "C",  # Сложность кода
+    "N",  # Наименования
+    "S",  # Безопасность
+    "B",  # Bugbear
+    "T",  # Типизация
+    "I",  # isort
+]
+
+# Игнорируем некоторые строгие правила, которые могут не подойти всем проектам
+ignore = [
+    "E501",  # Длина строки
+]
+
+# Основные настройки
+line-length = 120
+target-version = "py39"
+fix = true
+unfixable = ["F401"]  # Неисправляемые автоматически импорты
+
+# Исключаем системные директории и кэши
+exclude = [
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".git",
+    "__pycache__",
+    ".mypy_cache",
+]
+
+# Настройки сортировки импортов
+[tool.ruff.isort]
+combine-as-imports = true
+force-single-line = true
+relative-imports-order = "closest-to-furthest"
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
+
+# Игнорирование некоторых проверок в специальных файлах
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]  # Разрешаем неиспользуемые импорты в __init__.py

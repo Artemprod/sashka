@@ -1,13 +1,17 @@
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
-from aiocache import cached, Cache
-from sqlalchemy import insert, select, update
+from aiocache import Cache
+from aiocache import cached
+from sqlalchemy import insert
+from sqlalchemy import select
+from sqlalchemy import update
 
-from src.schemas.service.assistant import AssistantDTOGet
 from src.database.postgres.models.assistants import Assistant
 from src.database.postgres.models.research import Research
 from src.database.postgres.models.user import User
 from src.database.repository.base import BaseRepository
+from src.schemas.service.assistant import AssistantDTOGet
 
 
 class AssistantRepository(BaseRepository):
@@ -20,7 +24,6 @@ class AssistantRepository(BaseRepository):
                 result = new_assistant.scalar_one()
                 return AssistantDTOGet.model_validate(result, from_attributes=True)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_assistant(self, assistant_id: int) -> Optional[AssistantDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(Assistant).filter(Assistant.assistant_id == assistant_id)
@@ -28,7 +31,6 @@ class AssistantRepository(BaseRepository):
             assistant = execution.scalar_one()
             return AssistantDTOGet.model_validate(assistant, from_attributes=True)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_assistant_by_research(self, research_id: int) -> Optional[AssistantDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(Assistant).filter(Assistant.research.has(Research.research_id == research_id))
@@ -39,8 +41,11 @@ class AssistantRepository(BaseRepository):
     @cached(ttl=300, cache=Cache.MEMORY)
     async def get_assistant_by_user_tgelegram_id(self, telegram_id: int) -> Optional[AssistantDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
-            research_subquery = select(Research.assistant_id).where(
-                Research.users.any(User.tg_user_id == telegram_id)).scalar_subquery()
+            research_subquery = (
+                select(Research.assistant_id)
+                .where(Research.users.any(User.tg_user_id == telegram_id))
+                .scalar_subquery()
+            )
             query = select(Assistant).filter(Assistant.research.has(Research.research_id == research_subquery))
             execution = await session.execute(query)
             assistant = execution.scalar_one_or_none()

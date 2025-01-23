@@ -1,37 +1,42 @@
-import logging
-import os
-
 from environs import Env
-from faststream.nats import NatsBroker
 from loguru import logger
-from numpy.compat import unicode
-from pydantic import ValidationError
-from telethon import events, TelegramClient
-from telethon.tl.types import User
+from telethon import events
 
-from src.distributor.telegram_client.telethoncl.filters.media import TextFilter, VoiceFilter, AudioFilter, \
-     VideoFilter, PhotoFilter, StickerFilter, GifFilter
+from configs.nats_queues import nats_subscriber_communicator_settings
+from src.distributor.services.s3_manager import s3_manager
+from src.distributor.telegram_client.telethoncl.filters.media import AudioFilter
+from src.distributor.telegram_client.telethoncl.filters.media import GifFilter
+from src.distributor.telegram_client.telethoncl.filters.media import PhotoFilter
+from src.distributor.telegram_client.telethoncl.filters.media import StickerFilter
+from src.distributor.telegram_client.telethoncl.filters.media import VideoFilter
+from src.distributor.telegram_client.telethoncl.filters.media import VoiceFilter
 from src.distributor.telegram_client.telethoncl.filters.model import SourceType
-from src.distributor.telegram_client.telethoncl.models.messages import OutcomeMessageDTOQueue
-from src.schemas.service.queue import NatsQueueMessageDTOSubject
+from src.distributor.telegram_client.telethoncl.handlers.base_handler import base_message_handler
 from src.services.publisher.publisher import NatsPublisher
 
 env = Env()
-env.read_env('.env')
+env.read_env(".env")
 publisher = NatsPublisher()
 
 
-@events.register(events.NewMessage(incoming=True, func=VoiceFilter(source_type=SourceType.PRIVATE_CHAT)))
-async def handle_voice_message(event):
-    logger.info(f"Voice received from PRIVATE CHAT ")
+@events.register(
+    events.NewMessage(
+        incoming=True,
+        func=VoiceFilter(source_type=SourceType.PRIVATE_CHAT)
+    )
+)
+@base_message_handler(nats_subscriber_communicator_settings.messages.new_voice_message)
+async def handle_voice_message(event) -> str:
+    logger.info("Voice received from PRIVATE CHAT ")
+    file_path = await event.message.download_media()
+    return await s3_manager.upload_file(
+        file_path=file_path
+    )
 
 
 @events.register(events.NewMessage(incoming=True, func=AudioFilter(source_type=SourceType.PRIVATE_CHAT)))
 async def handle_audio_message_private_chat(event):
     logger.info("Audio message received from PRIVATE CHAT.")
-
-
-
 
 
 @events.register(events.NewMessage(incoming=True, func=VideoFilter(source_type=SourceType.PRIVATE_CHAT)))

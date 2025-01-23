@@ -1,29 +1,33 @@
 import datetime
-from typing import Optional, List
+from typing import List
+from typing import Optional
 
-from aiocache import cached, Cache
-from sqlalchemy import select, update, insert, values
+from sqlalchemy import insert
+from sqlalchemy import select
+from sqlalchemy import update
 
-from src.schemas.service.status import UserStatusDTO, ResearchStatusDTO
 from src.database.postgres.engine.session import DatabaseSessionManager
-from src.database.postgres.models.enum_types import UserStatusEnum, ResearchStatusEnum
-from src.database.postgres.models.status import UserStatus, ResearchStatus
+from src.database.postgres.models.enum_types import ResearchStatusEnum
+from src.database.postgres.models.enum_types import UserStatusEnum
+from src.database.postgres.models.status import ResearchStatus
+from src.database.postgres.models.status import UserStatus
 from src.database.postgres.models.user import User
 from src.database.repository.base import BaseRepository
+from src.schemas.service.status import ResearchStatusDTO
+from src.schemas.service.status import UserStatusDTO
 
 
 class UserStatusRepository(BaseRepository):
     async def add_user_status(self, values: dict) -> UserStatusDTO:
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 stmt = insert(UserStatus).values(**values).returning(UserStatus)
                 new_user = await session.execute(stmt)
                 await session.commit()
                 return UserStatusDTO.model_validate(new_user.scalar(), from_attributes=True)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_status(self, status_name: UserStatusEnum) -> Optional[UserStatusDTO]:
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 user_status_exec = await session.execute(
                     select(UserStatus).filter(UserStatus.status_name == status_name)
@@ -31,8 +35,9 @@ class UserStatusRepository(BaseRepository):
                 user_status = user_status_exec.scalar()
                 return UserStatusDTO.model_validate(user_status, from_attributes=True)
 
-    async def update_status_group_of_user(self, user_group: list[int], status: UserStatusEnum) -> Optional[
-        List[UserStatusDTO]]:
+    async def update_status_group_of_user(
+        self, user_group: list[int], status: UserStatusEnum
+    ) -> Optional[List[UserStatusDTO]]:
         """
         Обновляет статусы у всех пользователей
         1. найти id статуса в базе
@@ -90,18 +95,16 @@ class UserStatusRepository(BaseRepository):
 
 
 class ResearchStatusRepository(BaseRepository):
-
     async def add_research_status(self, values: dict) -> ResearchStatusDTO:
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 stmt = insert(ResearchStatus).values(**values).returning(ResearchStatus)
                 new_user = await session.execute(stmt)
                 await session.commit()
                 return ResearchStatusDTO.model_validate(new_user.scalar_one(), from_attributes=True)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_status(self, status_name: ResearchStatusEnum) -> ResearchStatusDTO:
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 research_status_exec = await session.execute(
                     select(ResearchStatus).filter(ResearchStatus.status_name == status_name)
@@ -109,9 +112,8 @@ class ResearchStatusRepository(BaseRepository):
                 research_status = research_status_exec.scalars().first()
                 return ResearchStatusDTO.model_validate(research_status, from_attributes=True)
 
-    @cached(ttl=300, cache=Cache.MEMORY)
     async def get_research_status(self, research_id) -> ResearchStatusDTO:
-        async with (self.db_session_manager.async_session_factory() as session):
+        async with self.db_session_manager.async_session_factory() as session:
             research_status_exec = await session.execute(
                 select(ResearchStatus).filter(ResearchStatus.research_id == research_id)
             )
@@ -147,7 +149,6 @@ class ResearchStatusRepository(BaseRepository):
 
 
 class StatusRepo:
-
     def __init__(self, database_session_manager: DatabaseSessionManager):
         self.user_status = UserStatusRepository(database_session_manager)
         self.research_status = ResearchStatusRepository(database_session_manager)

@@ -1,25 +1,30 @@
-from enum import Enum
-from typing import Optional, List, Union, Tuple
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 from environs import Env
 from loguru import logger
 from telethon import events
-from telethon.tl.types import PeerUser, PeerChat, PeerChannel, User, Chat, Channel, DocumentAttributeAudio
+from telethon.tl.types import Channel
+from telethon.tl.types import Chat
+from telethon.tl.types import DocumentAttributeAnimated
+from telethon.tl.types import DocumentAttributeAudio
+from telethon.tl.types import DocumentAttributeSticker
+from telethon.tl.types import DocumentAttributeVideo
+from telethon.tl.types import MessageMediaContact
+from telethon.tl.types import MessageMediaDocument
+from telethon.tl.types import MessageMediaGeo
+from telethon.tl.types import MessageMediaPhoto
+from telethon.tl.types import MessageMediaPoll
+from telethon.tl.types import MessageMediaVenue
+from telethon.tl.types import PeerChannel
+from telethon.tl.types import PeerChat
+from telethon.tl.types import PeerUser
+from telethon.tl.types import User
 
 from configs.telegram_account import telegram_account_allowance_policy
 from src.distributor.telegram_client.telethoncl.filters.model import SourceType
-from telethon.tl.types import (
-    MessageMediaDocument,
-    MessageMediaPhoto,
-    DocumentAttributeAudio,
-    DocumentAttributeVideo,
-    DocumentAttributeSticker,
-    DocumentAttributeAnimated,
-    MessageMediaContact,
-    MessageMediaGeo,
-    MessageMediaVenue,
-    MessageMediaPoll
-)
 
 
 class Filter:
@@ -28,12 +33,28 @@ class Filter:
     SourceType = SourceType
 
     TELEGRAM_SYSTEM_ACCOUNTS: List[Union[str, int]] = [
-        "@PremiumBot", "@Prremiummm_bot", "@Telegram", "@PassportBot", "@GDPRbot",
-        "@BotSupport", "@MTProxybot", "@DiscussBot", "@WebAppsBot",
-        "@DurgerKingBot", "@BotFather", "@SpamBot", "@GameBot",
-        "777000", "333000", "42777",
-        "@QuizBot", "@TranslateBot", "@StoreBot", "@LotteryBot",
-        "@GroupButler_bot", "@Stickers"
+        "@PremiumBot",
+        "@Prremiummm_bot",
+        "@Telegram",
+        "@PassportBot",
+        "@GDPRbot",
+        "@BotSupport",
+        "@MTProxybot",
+        "@DiscussBot",
+        "@WebAppsBot",
+        "@DurgerKingBot",
+        "@BotFather",
+        "@SpamBot",
+        "@GameBot",
+        "777000",
+        "333000",
+        "42777",
+        "@QuizBot",
+        "@TranslateBot",
+        "@StoreBot",
+        "@LotteryBot",
+        "@GroupButler_bot",
+        "@Stickers",
     ]
 
     RESTRICTED_USERS: Optional[List[Union[str, int]]] = []
@@ -64,10 +85,10 @@ class Filter:
             logger.debug("Loading restricted users from configs...")
             users = self.settings.not_allowed_users_id + self.settings.not_allowed_users_usernames
             return users
-        except Exception as e:
+        except Exception:
             logger.debug("Loading restricted users from .env...")
             env = Env()
-            env.read_env('.env')
+            env.read_env(".env")
             try:
                 users = list(env("NOT_ALLOWED_USERS_ID", "").split(","))
                 logger.debug(f"Loaded restricted users: {users}")
@@ -81,10 +102,10 @@ class Filter:
             logger.debug("Loading restricted services from configs...")
             new_services = self.settings.not_allowed_services
             return new_services
-        except Exception as e:
+        except Exception:
             logger.debug("Loading restricted services from .env...")
             env = Env()
-            env.read_env('.env')
+            env.read_env(".env")
             try:
                 new_services = list(env("NOT_ALLOWED_SERVICES", "").split(","))
                 logger.debug(f"Loaded restricted services: {new_services}")
@@ -135,10 +156,13 @@ class MediaFilter(Filter):
         Filter.SourceType.SUPERGROUP: PeerChannel,
         Filter.SourceType.CHANNEL: PeerChannel,
         Filter.SourceType.BOT: PeerUser,
-        Filter.SourceType.ANY: None
+        Filter.SourceType.ANY: None,
     }
 
-    def __init__(self, source_type: Union[str, Filter.SourceType] = Filter.SourceType.ANY, ):
+    def __init__(
+        self,
+        source_type: Union[str, Filter.SourceType] = Filter.SourceType.ANY,
+    ):
         logger.debug("Initializing MediaFilter...")
         super().__init__()
         if isinstance(source_type, str):
@@ -161,12 +185,8 @@ class MediaFilter(Filter):
         sender_username = sender.username
         sender_id = str(sender.id)
 
-        result = not (
-                self.is_system_account(sender_username) or
-                self.is_restricted(sender_username)
-        ) and not (
-                self.is_system_account(sender_id) or
-                self.is_restricted(sender_id)
+        result = not (self.is_system_account(sender_username) or self.is_restricted(sender_username)) and not (
+            self.is_system_account(sender_id) or self.is_restricted(sender_id)
         )
         logger.debug(f"Checked sender restrictions for {sender_id}: {result}")
         return result
@@ -190,12 +210,13 @@ class MediaFilter(Filter):
         return result
 
     @staticmethod
-    async def _get_chat_and_sender(event: events.NewMessage) -> Tuple[
-        Optional[Union[User, Chat, Channel]], Optional[User]]:
+    async def _get_chat_and_sender(
+        event: events.NewMessage,
+    ) -> Tuple[Optional[Union[User, Chat, Channel]], Optional[User]]:
         logger.debug("Fetching chat and sender information...")
         try:
-            chat = await event.get_chat() if hasattr(event, 'get_chat') else None
-            sender = await event.get_sender() if hasattr(event, 'get_sender') else None
+            chat = await event.get_chat() if hasattr(event, "get_chat") else None
+            sender = await event.get_sender() if hasattr(event, "get_sender") else None
             logger.debug(f"Fetched chat: {chat}, sender: {sender}")
         except Exception as e:
             logger.error(f"Failed to fetch chat or sender: {e}")
@@ -253,10 +274,7 @@ class VoiceFilter(MediaFilter):
 
         # Проверяем атрибуты документа на наличие голосового сообщения
         doc = event.message.media.document
-        is_voice = any(
-            isinstance(attr, DocumentAttributeAudio) and attr.voice
-            for attr in doc.attributes
-        )
+        is_voice = any(isinstance(attr, DocumentAttributeAudio) and attr.voice for attr in doc.attributes)
         logger.debug(f"Validated voice message content: {is_voice}")
         return is_voice
 
@@ -269,10 +287,7 @@ class AudioFilter(MediaFilter):
             return False
 
         doc = event.message.media.document
-        is_audio = any(
-            isinstance(attr, DocumentAttributeAudio) and not attr.voice
-            for attr in doc.attributes
-        )
+        is_audio = any(isinstance(attr, DocumentAttributeAudio) and not attr.voice for attr in doc.attributes)
         logger.debug(f"Validated audio message content: {is_audio}")
         return is_audio
 
@@ -285,14 +300,11 @@ class VideoFilter(MediaFilter):
             return False
 
         doc = event.message.media.document
-        is_gif = any(
-            isinstance(attr, DocumentAttributeAnimated)
-            for attr in doc.attributes
+        is_gif = any(isinstance(attr, DocumentAttributeAnimated) for attr in doc.attributes)
+        is_video = (
+            any(isinstance(attr, DocumentAttributeVideo) and not attr.round_message for attr in doc.attributes)
+            and not is_gif
         )
-        is_video = any(
-            isinstance(attr, DocumentAttributeVideo) and not attr.round_message
-            for attr in doc.attributes
-        ) and not is_gif
 
         logger.debug(f"Validated video message content: {is_video}")
         return is_video
@@ -315,10 +327,7 @@ class StickerFilter(MediaFilter):
             return False
 
         doc = event.message.media.document
-        is_sticker = any(
-            isinstance(attr, DocumentAttributeSticker)
-            for attr in doc.attributes
-        )
+        is_sticker = any(isinstance(attr, DocumentAttributeSticker) for attr in doc.attributes)
         logger.debug(f"Validated sticker message content: {is_sticker}")
         return is_sticker
 
@@ -332,10 +341,7 @@ class GifFilter(MediaFilter):
 
         doc = event.message.media.document
 
-        is_gif = any(
-            isinstance(attr, DocumentAttributeAnimated)
-            for attr in doc.attributes
-        )
+        is_gif = any(isinstance(attr, DocumentAttributeAnimated) for attr in doc.attributes)
 
         logger.debug(f"Validated animated gif content: {is_gif}")
         return is_gif

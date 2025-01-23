@@ -2,7 +2,6 @@ import asyncio
 
 from loguru import logger
 
-
 from src.services.research.telegram.inspector import ResearchProcess
 
 
@@ -14,6 +13,7 @@ async def run_research(processor: ResearchProcess, research_id: int):
     except Exception as e:
         logger.error(f"Failed to run research {research_id}: {e}")
         raise
+
 
 def task_completion_callback(task: asyncio.Task, research_id: int):
     """Логирует результат выполнения задачи."""

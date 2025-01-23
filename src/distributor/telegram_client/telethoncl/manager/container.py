@@ -1,27 +1,22 @@
 import asyncio
 from asyncio import CancelledError
-from typing import Dict, Optional, List
+from typing import Dict
+from typing import List
+from typing import Optional
 
-from environs import Env
 from loguru import logger
 from telethon import TelegramClient
 
 from configs.clients import telethon_container_settings
 from src.database.exceptions.read import EmptyTableError
-from src.database.postgres.engine.session import DatabaseSessionManager
-from src.database.repository.storage import RepoStorage
 from src.dispatcher.communicators.consol import ConsoleCommunicator
-
 from src.distributor.telegram_client.interface.container import InterfaceClientsContainer
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 from src.distributor.telegram_client.telethoncl.manager.manager import TelethonManager
 
 
 class TelethonClientsContainer(InterfaceClientsContainer):
-    def __init__(self,
-                 repository,
-                 handlers: List = None):
-
+    def __init__(self, repository, handlers: List = None):
         self.repository = repository
         self.handlers = handlers or []
         self.dev_mode = telethon_container_settings.def_mode
@@ -56,7 +51,7 @@ class TelethonClientsContainer(InterfaceClientsContainer):
     async def create_and_start_client(self, client_configs: ClientConfigDTO, communicator=ConsoleCommunicator()):
         try:
             client_name = await self.create_client(client_configs, communicator)
-            logger.info(f'Mangager creaste client')
+            logger.info("Mangager creaste client")
             await self.start_client(name=client_name)
 
         except Exception as e:
@@ -108,7 +103,6 @@ class TelethonClientsContainer(InterfaceClientsContainer):
         logger.info("Loading managers from database...")
         try:
             db_managers = await self.repository.client_repo.get_all()
-            print()
             for client_model in db_managers:
                 if client_model.name not in self.managers:
                     dto = ClientConfigDTO.model_validate(client_model, from_attributes=True)
@@ -125,7 +119,6 @@ class TelethonClientsContainer(InterfaceClientsContainer):
 
     async def start_all_clients(self):
         await self._load_managers_from_db()
-        print()
         tasks = [self.start_client(name) for name in self.managers]
         try:
             await asyncio.gather(*tasks)
@@ -133,5 +126,3 @@ class TelethonClientsContainer(InterfaceClientsContainer):
             logger.error(f"Error in starting all clients: {str(e)}")
         except CancelledError:
             logger.info("Client start operation cancelled.")
-
-

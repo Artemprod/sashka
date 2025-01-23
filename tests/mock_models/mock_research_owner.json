@@ -1,0 +1,50 @@
+[
+    {
+        "owner_id": 1,
+        "name": "Alice",
+        "second_name": "Johnson",
+        "phone_number": "+1234567890",
+        "service_owner_id": 1001,
+        "tg_link": "@alicejohnson",
+        "last_online_date": "2023-08-31T18:30:00",
+        "language_code": "en",
+        "created_at": "2021-03-15T09:00:00",
+        "service_id": 1
+    },
+    {
+        "owner_id": 2,
+        "name": "Bob",
+        "second_name": "Smith",
+        "phone_number": "+0987654321",
+        "service_owner_id": 1002,
+        "tg_link": "@bobsmith",
+        "last_online_date": "2023-08-29T12:00:00",
+        "language_code": "es",
+        "created_at": "2022-05-20T11:45:00",
+        "service_id": 1
+    },
+    {
+        "owner_id": 3,
+        "name": "Carol",
+        "second_name": "Davis",
+        "phone_number": null,
+        "service_owner_id": 1003,
+        "tg_link": "@caroldavis",
+        "last_online_date": null,
+        "language_code": "fr",
+        "created_at": "2023-01-10T14:30:00",
+        "service_id": 1
+    },
+        {
+        "owner_id": 100,
+        "name": "pingator",
+        "second_name": "pingator",
+        "phone_number": null,
+        "service_owner_id": 100,
+        "tg_link": "@caroldavis",
+        "last_online_date": null,
+        "language_code": "fr",
+        "created_at": "2023-01-10T14:30:00",
+        "service_id": 1
+    }
+]

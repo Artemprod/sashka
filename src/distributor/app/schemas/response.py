@@ -1,4 +1,5 @@
-from typing import List, Union
+from typing import List
+from typing import Union
 
 from pydantic import BaseModel
 
@@ -11,6 +12,7 @@ class SuccessResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 SuccessResponse.model_rebuild()
 

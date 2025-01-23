@@ -2,7 +2,7 @@ services:
 
   custdever_postgres_db:
     container_name: custdever_postgres_container
-    image: postgres
+    image: postgres:latest
     env_file:
       - .env
     environment:
@@ -16,8 +16,6 @@ services:
       - custdever_postgres_db:/var/lib/custdever_postgresql/data
     networks:
       - custdever_local_network
-
-
 
   custdever_redis:
     image: redis
@@ -36,89 +34,101 @@ services:
   custdever_nats:
     image: nats
     container_name: custdever_nats_worker
+    entrypoint: /nats-server
+    command: "-c /config/server.conf"
     env_file:
       - .env
     ports:
-      - "${NATS_PORT}:${NATS_PORT}"
+      - "4222:4222"
       - "8222:8222"
+      - "6555:6222"
     restart: always
     volumes:
       - custdever_nats:/DB/nats/data/
+      - ./config/server.conf:/config/server.conf
     networks:
       - custdever_local_network
 
 
-  custdever_api_getaway_main:
-    depends_on:
-      - custdever_postgres_db
-      - custdever_redis
-      - custdever_nats
-
-
-    image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
-    container_name: custdever_api_getaway_main_worker
-    volumes:
-      - custdever_main_api:/var/lib/custdever
-    restart: always
-    env_file:
-      - .env
-    command: ["make", "run_main_api"]
-    networks:
-       - custdever_local_network
-
-  custdever_subscriber_researcher:
-    depends_on:
-      - custdever_postgres_db
-      - custdever_redis
-      - custdever_nats
-
-
-    image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
-    container_name: custdever_subscriber_researcher_worker
-    volumes:
-      - custdever_subscriber_researcher:/var/lib/researcher
-    restart: always
-    env_file:
-      - .env
-    command: ["make", "run_researcher"]
-    networks:
-       - custdever_local_network
-
-  custdever_subscriber_communicator:
-    depends_on:
-      - custdever_postgres_db
-      - custdever_redis
-      - custdever_nats
-
-
-    image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
-    container_name: custdever_subscriber_communicator_worker
-    volumes:
-      - custdever_subscriber_communicator:/var/lib/communicator
-    restart: always
-    env_file:
-      - .env
-    command: ["make", "run_communicator"]
-    networks:
-       - custdever_local_network
-
-  custdever_distributor:
-    depends_on:
-      - custdever_postgres_db
-      - custdever_redis
-      - custdever_nats
-
-
-    image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
-    container_name: custdever_distributor
-    volumes:
-      - distributor:/var/lib/distributor
-    restart: always
-    env_file:
-      - .env
-    command: ["make", "run_distributor"]
-    networks:
-       - custdever_local_network
+#  custdever_api_getaway_main:
+#    depends_on:
+#      - custdever_postgres_db
+#      - custdever_redis
+#      - custdever_nats
+#
+#
+#    build:
+#      context: ../../.
+#      dockerfile: Dockerfile
+#    container_name: custdever_api_getaway_main_worker
+#    volumes:
+#      - custdever_main_api:/var/lib/custdever
+#    restart: always
+#    env_file:
+#      - .env
+#    command: ["make", "run_main_api"]
+#    networks:
+#       - custdever_local_network
+#
+#  custdever_subscriber_researcher:
+#    depends_on:
+#      - custdever_postgres_db
+#      - custdever_redis
+#      - custdever_nats
+#
+#
+#    build:
+#      context: ../../.
+#      dockerfile: Dockerfile
+#    container_name: custdever_subscriber_researcher_worker
+#    volumes:
+#      - custdever_subscriber_researcher:/var/lib/researcher
+#    restart: always
+#    env_file:
+#      - .env
+#    command: ["make", "run_researcher"]
+#    networks:
+#       - custdever_local_network
+#
+#  custdever_subscriber_communicator:
+#    depends_on:
+#      - custdever_postgres_db
+#      - custdever_redis
+#      - custdever_nats
+#
+#
+#    build:
+#      context: ../../.
+#      dockerfile: Dockerfile
+#    container_name: custdever_subscriber_communicator_worker
+#    volumes:
+#      - custdever_subscriber_communicator:/var/lib/communicator
+#    restart: always
+#    env_file:
+#      - .env
+#    command: ["make", "run_communicator"]
+#    networks:
+#       - custdever_local_network
+#
+#  custdever_distributor:
+#    depends_on:
+#      - custdever_postgres_db
+#      - custdever_redis
+#      - custdever_nats
+#
+#
+#    build:
+#      context: ../../.
+#      dockerfile: Dockerfile
+#    container_name: custdever_distributor
+#    volumes:
+#      - distributor:/var/lib/distributor
+#    restart: always
+#    env_file:
+#      - .env
+#    command: ["make", "run_distributor"]
+#    networks:
+#       - custdever_local_network
 
 volumes:
   distributor:
@@ -126,6 +136,8 @@ volumes:
   custdever_postgres_db:
   custdever_redis:
   custdever_nats:
+  custdever_subscriber_communicator:
+  custdever_subscriber_researcher:
 
 networks:
   custdever_local_network:

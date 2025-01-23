@@ -9,19 +9,18 @@ services:
       POSTGRES_DB: "${MAIN_POSTGRES_DATABASE}"
       POSTGRES_PASSWORD: "${MAIN_POSTGRES_PASSWORD}"
       POSTGRES_USER: "${MAIN_POSTGRES_USER}"
-      PGDATA: "/var/lib/custdever_postgres_db/data/pgdata"
+      PGDATA: "/var/lib/postgresql/data"
     ports:
       - "5000:5432"
     volumes:
-      - custdever_postgres_db:/var/lib/custdever_postgresql/data
+      - custdever_postgres_db:/var/lib/postgresql/data
     networks:
       - custdever_stage_network
 
 
-
   custdever_redis:
     image: redis
-    container_name: custdever_redis
+    container_name: custdever_redis_container
     env_file:
       - .env
     ports:
@@ -39,11 +38,28 @@ services:
     env_file:
       - .env
     ports:
-      - "${NATS_PORT}:${NATS_PORT}"
-      - "8222:8222"
+      - "4000:4222"
+      - "8001:8222"
+      - "6555:6222"
     restart: always
+    command: ["-c", "/config/server.conf"]
     volumes:
-      - custdever_nats:/DB/nats/data/
+      - custdever_nats:/data
+      - /remote/nats/config/server.conf:/config/server.conf
+    networks:
+      - custdever_stage_network
+
+
+
+  nats-nui:
+    image: ghcr.io/nats-nui/nui:latest
+    container_name: nats-nui
+    ports:
+      - "31311:31311"  # Порт для доступа к NATS NUI
+    volumes:
+      - nats_nui:/db
+    depends_on:
+      - custdever_nats
     networks:
       - custdever_stage_network
 
@@ -53,6 +69,7 @@ services:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
+      - nats-nui
 
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
@@ -60,6 +77,8 @@ services:
     volumes:
       - custdever_main_api:/var/lib/custdever
     restart: always
+    ports:
+      - "${API_MAIN_UVICORN_PORT}:${API_MAIN_UVICORN_PORT}"
     env_file:
       - .env
     command: ["make", "run_main_api"]
@@ -71,6 +90,7 @@ services:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
+      - nats-nui
 
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
@@ -89,6 +109,7 @@ services:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
+      - nats-nui
 
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
@@ -107,6 +128,7 @@ services:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
+      - nats-nui
 
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
@@ -126,6 +148,9 @@ volumes:
   custdever_postgres_db:
   custdever_redis:
   custdever_nats:
+  custdever_subscriber_researcher:
+  custdever_subscriber_communicator:
+  nats_nui:
 
 networks:
   custdever_stage_network:

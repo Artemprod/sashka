@@ -1,9 +1,12 @@
+import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
 from pydantic import Field
+
 from configs.base import BaseConfig
 
-from pathlib import Path
-import sys
-
+load_dotenv()
 sys.path.append(str(Path(__file__).parent.parent))
 
 
@@ -18,6 +21,10 @@ class PostgresDataBaseConfigs(BaseConfig):
     @property
     def async_postgres_url(self) -> str:
         return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_database}"
+
+    @property
+    def async_postgres_url_test(self) -> str:
+        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_database}_test"
 
     @property
     def sync_postgres_url(self) -> str:

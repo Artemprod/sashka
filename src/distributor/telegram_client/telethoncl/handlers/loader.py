@@ -1,6 +1,6 @@
-import os
-import inspect
 import importlib.util
+import inspect
+import os
 
 from loguru import logger
 
@@ -8,7 +8,7 @@ from loguru import logger
 def is_handler(func):
     """Проверяет, является ли функция хендлером для событий Telethon"""
     # Возможно, шел типовой атрибут
-    expected_attribute_name = '__tl.handlers'
+    expected_attribute_name = "__tl.handlers"
 
     if hasattr(func, expected_attribute_name):
         logger.info(f"Function {func.__name__} is considered a handler.")
@@ -21,10 +21,7 @@ def is_handler(func):
 def collect_handlers_from_module(module):
     """Собирает хендлеры из модуля"""
     logger.info(f"Collecting handlers from module: {module.__name__}")
-    handlers = [
-        obj for name, obj in inspect.getmembers(module)
-        if inspect.isfunction(obj) and is_handler(obj)
-    ]
+    handlers = [obj for name, obj in inspect.getmembers(module) if inspect.isfunction(obj) and is_handler(obj)]
     return handlers
 
 
