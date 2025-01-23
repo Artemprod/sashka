@@ -1,4 +1,4 @@
-name: custdever ai api production
+name: custdever production
 on:
   workflow_dispatch:
   push:
@@ -36,12 +36,10 @@ jobs:
 
 
   build:
-    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -57,7 +55,7 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            artemprod/sashka_ai_api
+            artemprod/sashka
           # generate Docker tags based on the following events/attributes
           tags: |
             type=ref,event=branch
@@ -125,7 +123,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
@@ -145,6 +142,7 @@ jobs:
 
       - name: Add SSH key to known_hosts
         run: ssh-keyscan -H "${{vars.PRODUCTION_SERVER_HOST}}" >> ~/.ssh/known_hosts
+
       - name: Create Docker Context
         run: docker context create ${{vars.PRUDUCTION_DOCKER_CONTEXT}} --docker "host=ssh://${{ vars.PRODUCTION_SERVER_SSH_ROUTE }}" || true
       - name: Deploy
