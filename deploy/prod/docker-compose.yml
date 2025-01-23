@@ -39,7 +39,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${NATS_PORT}:${NATS_PORT}"
+      - "4000:4222"
       - "8001:8222"
       - "6555:6222"
     restart: always
