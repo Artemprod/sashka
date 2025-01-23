@@ -13,7 +13,7 @@ services:
     ports:
       - "5000:5432"
     volumes:
-      - custdever_postgres_db:/var/lib/custdever_postgresql/data
+       - custdever_postgres_db:/var/lib/postgresql/data
     networks:
       - custdever_prod_network
 
@@ -40,19 +40,34 @@ services:
       - .env
     ports:
       - "${NATS_PORT}:${NATS_PORT}"
-      - "8222:8222"
+      - "8001:8222"
+      - "6555:6222"
     restart: always
+    command: ["-c", "/config/server.conf"]
     volumes:
-      - custdever_nats:/DB/nats/data/
+      - custdever_nats:/data
+      - /remote/nats/config/server.conf:/config/server.conf
     networks:
       - custdever_prod_network
 
+  nats-nui:
+    image: ghcr.io/nats-nui/nui:latest
+    container_name: nats-nui
+    ports:
+      - "31311:31311"  # Порт для доступа к NATS NUI
+    volumes:
+      - nats_nui:/db
+    depends_on:
+      - custdever_nats
+    networks:
+      - custdever_prod_network
 
   custdever_api_getaway_main:
     depends_on:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
+      - nats-nui
 
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
@@ -60,6 +75,8 @@ services:
     volumes:
       - custdever_main_api:/var/lib/custdever
     restart: always
+    ports:
+      - "${API_MAIN_UVICORN_PORT}:${API_MAIN_UVICORN_PORT}"
     env_file:
       - .env
     command: ["make", "run_main_api"]
@@ -71,7 +88,7 @@ services:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
-
+      - nats-nui
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
     container_name: custdever_subscriber_researcher_worker
@@ -89,7 +106,7 @@ services:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
-
+      - nats-nui
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
     container_name: custdever_subscriber_communicator_worker
@@ -107,7 +124,7 @@ services:
       - custdever_postgres_db
       - custdever_redis
       - custdever_nats
-
+      - nats-nui
 
     image: docker.io/artemprod/sashka:${IMAGE_TAG:-latest}
     container_name: custdever_distributor
@@ -126,6 +143,9 @@ volumes:
   custdever_postgres_db:
   custdever_redis:
   custdever_nats:
+  custdever_subscriber_researcher:
+  custdever_subscriber_communicator:
+  nats_nui:
 
 networks:
   custdever_prod_network:
