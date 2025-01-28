@@ -13,7 +13,7 @@ services:
     ports:
       - "5000:5432"
     volumes:
-       - custdever_postgres_db:/var/lib/postgresql/data
+      - custdever_postgres_db:/var/lib/postgresql/data
     networks:
       - custdever_prod_network
 
