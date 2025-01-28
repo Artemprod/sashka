@@ -36,6 +36,8 @@ services:
   custdever_nats:
     image: nats
     container_name: custdever_nats_worker
+    entrypoint: /nats-server
+    command: [ "-c", "/config/server.conf" ]
     env_file:
       - .env
     ports:
@@ -43,10 +45,11 @@ services:
       - "8001:8222"
       - "6555:6222"
     restart: always
-    command: ["-c", "/config/server.conf"]
+
     volumes:
       - custdever_nats:/data
-      - /nats/config/server.conf:/config/server.conf
+      - ./nats/config/server.conf:/config/server.conf
+
     networks:
       - custdever_prod_network
 
