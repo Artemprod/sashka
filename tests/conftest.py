@@ -45,7 +45,8 @@ async def prepare_database():
 
     def open_mock_json(model: str):
         # TODO заменить на нормальный путь
-        with open(rf"D:\PROJECTS\AIPO\CUSTDEVER\sashka\tests\mock_models\mock_{model}.json", "r") as file:
+        moc_file_path = Path(__file__).parent.joinpath(f"mock_models\mock_{model}.json")
+        with open(moc_file_path, "r") as file:
             return json.load(file)
 
     users = open_mock_json(model="user")
@@ -184,3 +185,4 @@ def event_loop(request):
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
