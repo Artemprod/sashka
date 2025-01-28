@@ -46,7 +46,7 @@ services:
     command: ["-c", "/config/server.conf"]
     volumes:
       - custdever_nats:/data
-      - /remote/nats/config/server.conf:/config/server.conf
+      - /nats/config/server.conf:/config/server.conf
     networks:
       - custdever_prod_network
 
