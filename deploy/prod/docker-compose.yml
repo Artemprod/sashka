@@ -17,6 +17,24 @@ services:
     networks:
       - custdever_prod_network
 
+  pgbouncer:
+    image: bitnami/pgbouncer:latest
+    container_name: pgbouncer_prod
+    depends_on: custdever_postgres_db
+    environment:
+      PGBOUNCER_DATABASE: "${MAIN_POSTGRES_DATABASE}"
+      POSTGRESQL_USERNAME:  "${MAIN_POSTGRES_USER}"
+      POSTGRESQL_PASSWORD:  "${MAIN_POSTGRES_PASSWORD}"
+      POSTGRESQL_DATABASE:  "${MAIN_POSTGRES_DATABASE}"
+      POSTGRESQL_PORT:  "${MAIN_POSTGRES_PORT}"
+      POSTGRESQL_HOST:  custdever_postgres_db
+      PGBOUNCER_AUTH_TYPE:  scram-sha-256
+      PGBOUNCER_POOL_MODE:  transaction
+      PGBOUNCER_MAX_CLIENT_CONN:  1000
+    ports:
+      - "5001:6432"
+    networks:
+      - custdever_prod_network
 
 
   custdever_redis:
