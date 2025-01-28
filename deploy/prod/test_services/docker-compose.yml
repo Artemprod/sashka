@@ -1,0 +1,16 @@
+services:
+
+  test_postgres_db:
+    container_name: test_postgres_container
+    image: postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: "${MAIN_POSTGRES_DATABASE}"
+      POSTGRES_PASSWORD: "${MAIN_POSTGRES_PASSWORD}"
+      POSTGRES_USER: "${MAIN_POSTGRES_USER}"
+      PGDATA: "/var/lib/postgresql/data"
+    ports:
+      - "5111:5432"
+
+
