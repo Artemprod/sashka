@@ -45,11 +45,11 @@ jobs:
           poetry run coverage run -m pytest -v -s
 
       - name: Generate Coverage Report
-        run: coverage report -m
+        run: poetry run coverage report -m
 
 
   build:
-
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
