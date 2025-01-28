@@ -36,7 +36,6 @@ services:
   custdever_nats:
     image: nats
     container_name: custdever_nats_worker
-    entrypoint: /nats-server
     command: [ "-c", "/config/server.conf" ]
     env_file:
       - .env
@@ -48,7 +47,7 @@ services:
 
     volumes:
       - custdever_nats:/data
-      - ./nats/config/server.conf:/config/server.conf
+      - /remote/nats/config/server.conf:/config/server.conf
 
     networks:
       - custdever_prod_network
