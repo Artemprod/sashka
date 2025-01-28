@@ -143,6 +143,15 @@ jobs:
 
       - name: Create Docker Context
         run: docker context create ${{vars.PRUDUCTION_DOCKER_CONTEXT}} --docker "host=ssh://${{ vars.PRODUCTION_SERVER_SSH_ROUTE }}" || true
+
+      - name: Ensure remote directory exists
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ vars.PRODUCTION_SERVER_SSH_ROUTE }} "mkdir -p /remote/nats/config/"
+
+      - name: Copy nats config to remote server
+        run: |
+          scp -o StrictHostKeyChecking=no deploy/prod/nats/config/server.conf ${{ vars.PRODUCTION_SERVER_SSH_ROUTE }}:/remote/nats/config/
+
       - name: Deploy
         run: |                      
           echo "${{ vars.PRODUCTION_ENV_FILE }}" >> ./${{vars.PRODUCTION_DEPLOY_FOLDER}}/.env
