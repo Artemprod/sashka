@@ -21,7 +21,6 @@ from src.distributor.telegram_client.telethoncl.manager.container import Teletho
 
 @asynccontextmanager
 async def lifespan(context: ContextRepo):
-    logger.info(f"database: {database_postgres_settings.async_postgres_url}")
     repository = RepoStorage(
         database_session_manager=DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url)
     )
@@ -44,8 +43,8 @@ async def lifespan(context: ContextRepo):
 def create_app():
     """Запускает faststream и создает корутину для клиента"""
     print(nast_base_settings.nats_server_url)
+    logger.info(f"database: {database_postgres_settings.async_postgres_url}")
     broker = NatsBroker(nast_base_settings.nats_server_url)
-    print()
     broker.include_router(client_router)
     broker.include_router(message_router)
     broker.include_router(parse_router)
