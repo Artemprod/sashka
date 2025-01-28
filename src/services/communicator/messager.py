@@ -280,7 +280,14 @@ class MessageFirstSend(BaseMessageHandler):
             )
 
             logger.debug(f"СООБЩЕНИЕ К ОТПРАВКЕ  {content}")
-            await self._publish_message(content, user, send_time, client, destination_configs)
+            await self._publish_message(
+                content=content,
+                user=user,
+                send_time=send_time,
+                client=client,
+                destination_configs=destination_configs,
+                research_id=research_id
+            )
             await self._update_user_status(user.tg_user_id)
 
         except Exception as e:
@@ -294,23 +301,33 @@ class MessageFirstSend(BaseMessageHandler):
         send_time: datetime,
         client: "TelegramClientDTOGet",
         destination_configs: "NatsDestinationDTO",
+        research_id: int
     ):
-        publish_message = await self._create_publish_message(content, user, send_time, client, destination_configs)
+        publish_message = await self._create_publish_message(
+            content=content,
+            user=user,
+            send_time=send_time,
+            client=client,
+            destination_configs=destination_configs,
+            research_id=research_id
+        )
         await self.publisher.publish_message_to_stream(stream_message=publish_message)
 
     async def _create_publish_message(
-        self,
-        content: "SingleResponseDTO",
-        user: UserDTOBase,
-        send_time: datetime,
-        client: "TelegramClientDTOGet",
-        destination_configs: "NatsDestinationDTO",
+            self,
+            content: "SingleResponseDTO",
+            user: UserDTOBase,
+            send_time: datetime,
+            client: "TelegramClientDTOGet",
+            destination_configs: "NatsDestinationDTO",
+            research_id: int
     ) -> "NatsQueueMessageDTOStreem":
         headers = TelegramTimeDelaHeadersDTO(
             tg_client_name=str(client.name),
             user=json.dumps(user.model_dump()),
             send_time_msg_timestamp=str(datetime.now(tz=timezone.utc).timestamp()),
             send_time_next_message_timestamp=str(send_time.timestamp()),
+            research_id=str(research_id)
         )
         return self.publisher.form_stream_message(
             message=content.response,
@@ -358,6 +375,7 @@ class ScheduledFirstMessage(MessageFirstSend):
         destination_configs: "NatsDestinationDTO",
     ):
         try:
+            send_time = self._make_send_time_delay(send_time)
             single_request_object = await self.form_single_request(
                 telegram_user_id=user.tg_user_id, research_id=research_id
             )
@@ -372,8 +390,13 @@ class ScheduledFirstMessage(MessageFirstSend):
                 assistant_id=assistant_id,
                 client_id=client.client_id,
             )
-            publish_message = await self._create_publish_message_(content, user, client, destination_configs)
-
+            publish_message = await self._create_publish_message_(
+                content=content,
+                user=user,
+                client=client,
+                destination_configs=destination_configs,
+                research_id=research_id
+            )
             # Добавляем асинхронную корутину в планировщик
             self.scheduler.add_job(
                 self.publisher.publish_message_to_stream,
@@ -382,8 +405,6 @@ class ScheduledFirstMessage(MessageFirstSend):
             )
 
             logger.debug("CООБЩЕНИЕ ЗАПЛАНИРОВАНО К ОТПРОАВКЕ ")
-            # TODO делать апдейт статуса когда ? когда отпралися  ?
-            await self._update_user_status(user.tg_user_id)
 
         except Exception as e:
             logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
@@ -395,12 +416,33 @@ class ScheduledFirstMessage(MessageFirstSend):
         user: UserDTOBase,
         client: "TelegramClientDTOGet",
         destination_configs: "NatsDestinationDTO",
+        research_id: int,
     ) -> "NatsQueueMessageDTOStreem":
-        data = {"message": content.response, "tg_client": str(client.name), "user": user.dict()}
+        data = {
+            "message": content.response,
+            "tg_client": str(client.name),
+            "user": user.dict(),
+            "research_id": research_id
+        }
         return self.publisher.form_stream_message(
             message=json.dumps(data), subject=destination_configs.subject, stream=destination_configs.stream
         )
 
+    @staticmethod
+    def _make_send_time_delay(
+            send_time: datetime
+    ) -> datetime:
+        """
+        Checks if the time of sending a message is less than the current time.
+
+        If the time of sending a message is less than the current time, then returns the current time plus 10 seconds.
+        Otherwise, returns the original send time plus 10 seconds.
+        """
+
+        current_time = datetime.now(tz=pytz.utc).replace(tzinfo=None)
+        if send_time < current_time:
+            return current_time + timedelta(seconds=10)
+        return send_time + timedelta(seconds=10)
 
 @create_publish_message
 class MessageAnswer(BaseMessageHandler):
@@ -469,7 +511,10 @@ class ResearchMessageAnswer(MessageAnswer):
         self._message_waiters: dict[int, MessageWaiter] = {}
 
     async def handle(
-        self, message_object: IncomeUserMessageDTOQueue, destination_configs: NatsDestinationDTO, research_id: int
+            self,
+            message_object: IncomeUserMessageDTOQueue,
+            destination_configs: NatsDestinationDTO,
+            research_id: int
     ):
         # Получение информации об ассистенте и клиенте
         assistant = await self.get_assistant(research_id=research_id)

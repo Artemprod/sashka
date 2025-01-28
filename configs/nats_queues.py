@@ -38,8 +38,18 @@ class NATSConfigs(BaseConfig):
 
 class NATSCommunicatorSubscriber(BaseConfig):
     class CommandsQueues(BaseConfig):
-        start_dialog: str = Field("command.dialog.start", validation_alias="COMMUNICATOR_QUEUE_COMMANDS_START_DIALOG")
-        ping_user: str = Field("command.user.ping", validation_alias="COMMUNICATOR_QUEUE_COMMANDS_PING_USER")
+        start_dialog: str = Field(
+            "command.dialog.start",
+            validation_alias="COMMUNICATOR_QUEUE_COMMANDS_START_DIALOG"
+        )
+        ping_user: str = Field(
+            "command.user.ping",
+            validation_alias="COMMUNICATOR_QUEUE_COMMANDS_PING_USER"
+        )
+        answer_to_message: str = Field(
+            "command.dialog.answer_to_message",
+            validation_alias="COMMUNICATOR_QUEUE_COMMANDS_ANSWER_TO_MESSAGE"
+        )
 
     class MessageQueues(BaseConfig):
         new_text_message: str = Field(
@@ -58,7 +68,16 @@ class NATSCommunicatorSubscriber(BaseConfig):
 class NATSResearchSubscriber(BaseConfig):
     class ResearchQueues(BaseConfig):
         start_telegram_research: str = Field(
-            "research.telegram.start", validation_alias="RESEARCH_QUEUE_RESERACH_TELEGRAM_START"
+            "research.telegram.start",
+            validation_alias="RESEARCH_QUEUE_RESERACH_TELEGRAM_START"
+        )
+        ban_telegram_research: str = Field(
+            "research.telegram.ban",
+            validation_alias="RESEARCH_QUEUE_RESERACH_TELEGRAM_BAN"
+        )
+        unban_telegram_research: str = Field(
+            "research.telegram.unban",
+            validation_alias="RESEARCH_QUEUE_RESERACH_TELEGRAM_UNBAN"
         )
 
     researches: ResearchQueues = Field(default_factory=ResearchQueues)

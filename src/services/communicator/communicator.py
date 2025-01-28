@@ -10,7 +10,7 @@ from src.database.repository.storage import RepoStorage
 from src.schemas.communicator.distanation import NatsDestinationDTO
 from src.schemas.communicator.message import IncomeUserMessageDTOQueue
 from src.schemas.service.client import TelegramClientDTOGet
-from src.schemas.service.user import UserDTO
+from src.schemas.service.user import UserDTO, UserDTORel
 from src.schemas.service.user import UserDTOBase
 from src.schemas.service.user import UserDTOFull
 from src.services.communicator.checker import Checker
@@ -87,7 +87,7 @@ class TelegramCommunicator:
         try:
             logger.debug("ВЫЗОВ ФУНКЦИИ ОТПРАВКИ ПЕРВОГО СООБЩЗЕНИЯ ")
             await self._first_message_distributes.handle(
-                users=users, destination_configs=self._destination_configs["reply"], research_id=research_id
+                users=users, destination_configs=self._destination_configs["firs_message"], research_id=research_id
             )
         except Exception as e:
             raise e

@@ -128,3 +128,36 @@ async def get_telegram_client(body: str, context: Context = Context()) -> Telegr
         raise ValueError("No Telegram client found.")
 
     return client
+
+
+async def get_telegram_client_name(body: str) -> str:
+    """Извлекает клиента."""
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to decode JSON body. {body}")
+        raise ValueError("Invalid JSON format.") from e
+
+    client_name = data.get("tg_client") or data.get("tg_client_name")
+    if not client_name:
+        logger.error("Client name not provided in the body.")
+        raise ValueError("Client name is missing in the JSON body.")
+
+    return client_name
+
+
+async def get_research_id(body: str) -> int:
+    """Извлекает id исследования."""
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to decode JSON body. {body}")
+        raise ValueError("Invalid JSON format.") from e
+
+    research_id = data.get("research_id")
+    logger.info(f"Body: {body} RESEARCH ID {research_id}")
+    if not research_id:
+        logger.error("research_id not provided in the body.")
+        raise ValueError("research_id is missing in the JSON body.")
+
+    return int(research_id)

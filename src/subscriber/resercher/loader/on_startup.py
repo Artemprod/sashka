@@ -1,4 +1,5 @@
 from configs.database import database_postgres_settings
+from configs.redis import redis_cache_config  # noqa: F401
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
 from src.services.publisher.publisher import NatsPublisher
