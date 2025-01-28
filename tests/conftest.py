@@ -172,7 +172,7 @@ async def prepare_database():
 
 @pytest.fixture(scope="session", autouse=True)
 async def load_database_session() -> DatabaseSessionManager:
-    return DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url_test)
+    return DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url)
 
 
 @pytest.fixture(scope="session", autouse=True)
