@@ -35,7 +35,7 @@ from src.database.repository.storage import RepoStorage
 
 @pytest.fixture(scope="session", autouse=True)
 async def prepare_database():
-    session = DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url_test)
+    session = DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url)
 
     async with session.engine.begin() as conn:
         await conn.run_sync(ModelBase.metadata.drop_all)
