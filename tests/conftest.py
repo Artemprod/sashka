@@ -44,8 +44,7 @@ async def prepare_database():
         await conn.commit()
 
     def open_mock_json(model: str):
-        # TODO заменить на нормальный путь
-        moc_file_path = Path(__file__).parent.joinpath(f"mock_models\mock_{model}.json")
+        moc_file_path = Path(__file__).parent.joinpath("mock_models").joinpath(f"mock_{model}.json")
         with open(moc_file_path, "r") as file:
             return json.load(file)
 
