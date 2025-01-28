@@ -1,0 +1,13 @@
+{
+  "configuration_id": 1,
+  "min_response_time": 5,
+  "max_response_time": 60,
+  "stop_word": "STOP_DIALOG",
+  "communicator_people_in_bunch": 10,
+  "communicator_delay_between_bunch_hours": 2,
+  "communicator_delay_between_message_in_bunch_minutes": 15,
+  "ping_max_messages": 100,
+  "ping_attempts_multiplier": 2,
+  "ping_interval": 0.1,
+  "created_at": "2025-01-28T13:03:33.375Z"
+}

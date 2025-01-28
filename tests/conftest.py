@@ -1,3 +1,7 @@
+from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).parent.parent))
+
 import asyncio
 import json
 from datetime import datetime
@@ -6,6 +10,7 @@ from sqlalchemy import insert, text
 
 
 from configs.database import database_postgres_settings
+
 from src.database.postgres import (
     AssistantMessage,
     UserMessage,
@@ -19,18 +24,13 @@ from src.database.postgres import (
     Services,
     UserStatus,
     ResearchStatus,
-    User,
+    User, Configuration,
 )
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
-from src.schemas.service.message import AssistantMessageDTOGet
-from src.services.publisher.publisher import NatsPublisher
-from src.services.research.telegram.inspector import (
-    ResearchOverChecker,
-    ResearchStopper,
-    ResearchStatusStopper,
-    UserPingator,
-)
+
+
+
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -60,6 +60,11 @@ async def prepare_database():
     user_research = open_mock_json(model="user_research_relation")
     user_messages = open_mock_json(model="user_messages")
     assistants_messages = open_mock_json(model="assistant_message")
+    configs = open_mock_json(model="configurations")
+
+    if configs["created_at"]:
+        configs["created_at"] = datetime.strptime(configs["created_at"], "%Y-%m-%dT%H:%M:%S.%fZ")
+
 
     for user in users:
         if user["last_online_date"]:
@@ -144,6 +149,7 @@ async def prepare_database():
         add_user_research = insert(UserResearch).values(user_research)
         add_user_messages = insert(UserMessage).values(user_messages)
         add_assistants_messages = insert(AssistantMessage).values(assistants_messages)
+        add_configs = insert(Configuration).values(configs)
 
         await session.execute(add_users)
         await session.execute(add_service)
@@ -158,6 +164,7 @@ async def prepare_database():
         await session.execute(add_user_research)
         await session.execute(add_user_messages)
         await session.execute(add_assistants_messages)
+        await session.execute(add_configs)
 
         await session.commit()
 
