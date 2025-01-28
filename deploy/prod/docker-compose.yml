@@ -20,7 +20,8 @@ services:
   pgbouncer:
     image: bitnami/pgbouncer:latest
     container_name: pgbouncer_prod
-    depends_on: custdever_postgres_db
+    depends_on:
+      - custdever_postgres_db
     environment:
       PGBOUNCER_DATABASE: "${MAIN_POSTGRES_DATABASE}"
       POSTGRESQL_USERNAME:  "${MAIN_POSTGRES_USER}"
