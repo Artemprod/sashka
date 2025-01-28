@@ -48,6 +48,7 @@ async def prepare_database():
         with open(moc_file_path, "r") as file:
             return json.load(file)
 
+
     users = open_mock_json(model="user")
     research_owners = open_mock_json(model="research_owner")
     services = open_mock_json(model="services")
