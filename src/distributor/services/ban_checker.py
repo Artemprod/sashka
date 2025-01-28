@@ -98,11 +98,7 @@ class ClientBanChecker:
         """
          Проверяет статус аккаунта в @SpamBot. Возвращает False, если аккаунт не заблокирован, иначе True.
          """
-        current_time = datetime.datetime.now().time()
-        logger.info(f"Current time: {current_time}")
-        if current_time < datetime.time(hour=12, minute=4, second=59):
-            return True
-        # return False
+
         try:
             logger.info("Checking account status via @SpamBot")
             async with client.conversation("@SpamBot") as conv:

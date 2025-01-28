@@ -17,6 +17,7 @@ from src.services.communicator.checker import Checker
 
 from src.services.communicator.messager import MessageFirstSend, ScheduledFirstMessage
 from src.services.communicator.messager import PingMessage
+from src.services.communicator.messager import PingMessage, ScheduledFirstMessage
 from src.services.communicator.messager import ResearchMessageAnswer
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
 from src.services.communicator.request import ContextRequest, TranscribeRequest

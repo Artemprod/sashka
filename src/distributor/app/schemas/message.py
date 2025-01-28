@@ -56,12 +56,20 @@ class MessageToSendData(BaseModel):
         arbitrary_types_allowed = True
 
 
-class MessageContext(BaseModel):
-    client: TelegramClient
-    publisher: NatsPublisher
-    research_id: Optional[int] = None,
-    client_name: Optional[str] = None,
-    client_ban_checker: Optional[ClientBanChecker] = None
-
-
 Datas.model_rebuild()
+
+
+class MessageContext:
+    def __init__(
+            self,
+            client: TelegramClient,
+            publisher: NatsPublisher,
+            research_id: Optional[int] = None,
+            client_name: Optional[str] = None,
+            client_ban_checker: Optional[ClientBanChecker] = None
+    ):
+        self.client = client
+        self.publisher = publisher
+        self.research_id = research_id
+        self.client_name = client_name
+        self.client_ban_checker = client_ban_checker
