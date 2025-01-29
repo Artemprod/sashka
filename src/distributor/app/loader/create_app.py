@@ -33,7 +33,10 @@ async def lifespan(context: ContextRepo):
         repository=repository, redis_connection_manager=redis_connection_manager
     )
     publisher = NatsPublisher()
-    client_ban_checker = initialize_client_ban_checker(publisher=publisher)
+    client_ban_checker = initialize_client_ban_checker(
+        publisher=publisher,
+        repository=repository
+    )
 
     context.set_global("telethon_container", telethon_container)
     context.set_global("pyrogram_container", pyrogram_container)

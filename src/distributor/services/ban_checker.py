@@ -1,10 +1,15 @@
 import asyncio
-import datetime
 
 from loguru import logger
+from pyrogram.raw.base import RpcError
 from telethon import TelegramClient
+from telethon.errors import ChatWriteForbiddenError
+from telethon.errors import FloodWaitError
+from telethon.errors import PeerFloodError
+from telethon.errors import UserDeactivatedBanError
 
 from configs.nats_queues import nats_subscriber_researcher_settings
+from src.database.repository.storage import RepoStorage
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
 from src.services.publisher.publisher import NatsPublisher
 
@@ -58,9 +63,11 @@ class ClientBanPublisher:
 class ClientBanChecker:
     def __init__(
             self,
-            publisher: NatsPublisher
+            publisher: NatsPublisher,
+            repository: RepoStorage
     ):
-        self.publisher = ClientBanPublisher(publisher=publisher)
+        self._publisher = ClientBanPublisher(publisher=publisher)
+        self._repository = repository
 
         self._tasks = {} # В дальнейшем через этот словарь можно чекать какие бан чекеры запущены
 
@@ -79,7 +86,7 @@ class ClientBanChecker:
             logger.warning(f"Ban check already running for client: {client}")
             return
 
-        await self.publisher.publish_ban_on_research(research_id=research_id)
+        await self._publisher.publish_ban_on_research(research_id=research_id)
 
         task = asyncio.create_task(
             self._periodic_check(
@@ -112,6 +119,20 @@ class ClientBanChecker:
                 else:
                     logger.error("Unknown response from @SpamBot.")
                 return True
+
+        except (UserDeactivatedBanError, ChatWriteForbiddenError, PeerFloodError) as e:
+            logger.error(f"Аккаунт полностью заблокирован! Ошибка: {e} ")
+            return True
+
+        except FloodWaitError as e:
+            logger.warning(f"Telegram временно ограничил отправку сообщений. Подождите {e.seconds} секунд.")
+            await asyncio.sleep(e.seconds)
+            return True
+
+        except RpcError as e:
+            logger.error(f"Ошибка RPC при проверке через @SpamBot: {e}")
+            return True
+
         except Exception as e:
             logger.error(f"Failed to check account status: {e}")
             return True
@@ -129,7 +150,7 @@ class ClientBanChecker:
             logger.warning(f"No ban check running for client: {client}")
             return
 
-        await self.publisher.publish_unban_research(research_id=research_id)
+        await self._publisher.publish_unban_research(research_id=research_id)
 
         task = self._tasks.pop(client)
         task.cancel()
@@ -144,7 +165,8 @@ class ClientBanChecker:
 
         while await self.check_is_account_banned(client=client):
             logger.info(f"Client {client} is banned.")
-            await asyncio.sleep(10)  # Проверка раз в час
+            config = await self._repository.configuration_repo.get()
+            await asyncio.sleep(config.ban_check_interval_in_minutes * 60)
 
         logger.info(f"Client {client} is unbanned.")
         await self.stop_check_ban(

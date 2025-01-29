@@ -25,4 +25,6 @@ class Configuration(ModelBase):
     ping_attempts_multiplier: Mapped[int]
     ping_interval: Mapped[int]
 
+    ban_check_interval_in_minutes: Mapped[int]
+
     created_at: Mapped[created_at]

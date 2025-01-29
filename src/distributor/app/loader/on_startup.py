@@ -38,7 +38,11 @@ def initialize_pyrogram_container(repository: RepoStorage, redis_connection_mana
     return container
 
 
-def initialize_client_ban_checker(publisher: NatsPublisher):
+def initialize_client_ban_checker(
+        publisher: NatsPublisher,
+        repository: RepoStorage
+):
     return ClientBanChecker(
-        publisher=publisher
+        publisher=publisher,
+        repository=repository
     )
