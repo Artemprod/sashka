@@ -24,5 +24,4 @@ class Configuration(ModelBase):
     ping_max_messages: Mapped[int]
     ping_attempts_multiplier: Mapped[int]
     ping_interval: Mapped[int]
-
     created_at: Mapped[created_at]

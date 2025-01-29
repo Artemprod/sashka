@@ -26,7 +26,9 @@ async def send_message_with_typing(
         client: TelegramClient,
         user: UserDTOBase,
         message: str,
-        typing_delay: float = 2.0
+        read_message_delay: float = 4.0,
+        typing_delay: float = 7.0
+
 ) -> Optional[types.Message]:
     """
     Отправляет сообщение в Telegram с эффектом печатания и маркировкой прочитанных сообщений.
@@ -65,6 +67,7 @@ async def send_message_with_typing(
             ))
         except Exception as e:
             logger.warning(f"Failed to mark messages as read: {e}")
+        await asyncio.sleep(read_message_delay)
 
         # Устанавливаем статус "печатает"
         try:
