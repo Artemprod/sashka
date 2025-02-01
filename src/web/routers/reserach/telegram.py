@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -9,6 +10,7 @@ from fastapi import HTTPException
 from loguru import logger
 
 from configs.nats_queues import nats_subscriber_researcher_settings
+from src.schemas.information.start_research import ResponseScheme
 from src.schemas.information.start_research import UserInfo
 from src.schemas.service.owner import ResearchOwnerDTO
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
@@ -16,7 +18,8 @@ from src.schemas.service.research import ResearchDTOPost
 from src.schemas.service.research import ResearchDTORel
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.manager import TelegramResearchManager
-from src.web.dependencies.researcher.start import get_publisher, get_apscheduler
+from src.web.dependencies.researcher.start import get_apscheduler
+from src.web.dependencies.researcher.start import get_publisher
 from src.web.dependencies.researcher.start import get_research_manager
 from src.web.dependencies.researcher.validation import validate_data
 from src.web.utils.funcs import count_users_in_research
@@ -27,14 +30,14 @@ router = APIRouter(prefix="/research/telegram", tags=["Research"])
 # TODO входящий контракт должен сожержать в себе все данные овнер ресерч какой клиент ( бота которого выбрали )
 
 
-@router.post("/start", response_model=dict, status_code=200)
+@router.post("/start", status_code=200)
 async def start_research(
     research: ResearchDTOPost,
     owner: ResearchOwnerDTO,
     manager: TelegramResearchManager = Depends(get_research_manager),
     publisher: NatsPublisher = Depends(get_publisher),
     apscheduler: AsyncIOScheduler = Depends(get_apscheduler),
-) -> dict:
+) -> ResponseScheme:
     """Запускает новый процесс исследования."""
 
     try:
@@ -78,11 +81,11 @@ async def start_research(
 
         logger.info(f"Users info: {user_info}")
         # TODO переписать в модель DTO
-        return {
-            "message": f"Research '{created_research.name}' has been planed to start at {created_research.start_date}",
-            "research_id": created_research.research_id,
-            "users_info": user_info.model_dump(),
-        }
+        return ResponseScheme(
+            start_time=created_research.start_date,
+            research_id=created_research.research_id,
+            users_info=user_info,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
