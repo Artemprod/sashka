@@ -62,8 +62,8 @@ class RedisApschedulerConfigs(RedisConfigs):
     first_message_database: int = Field(default=13, validation_alias="REDIS_APSCHEDULER_FIRST_MESSAGE")
     inspector_database: int = Field(default=14, validation_alias="REDIS_APSCHEDULER_INSPECTOR")
 
-    jobs_key: str = "apscheduler.jobs"
-    run_times_key: str = "apscheduler.run_times"
+    jobs_key: str = "scheduler.jobs"
+    run_times_key: str = "scheduler.run_times"
 
     @property
     def redis_url(self) -> str:

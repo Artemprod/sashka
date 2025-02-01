@@ -1,5 +1,6 @@
 import asyncio
 import json
+import pickle
 
 from datetime import datetime
 from datetime import timedelta
@@ -19,7 +20,6 @@ from apscheduler.triggers.date import DateTrigger
 from loguru import logger
 from pytz import utc
 
-from configs.communicator import communicator_first_message_policy
 from configs.redis import redis_apscheduler_config
 from src.database.postgres.models.enum_types import UserStatusEnum
 from src.database.repository.storage import RepoStorage
@@ -48,6 +48,7 @@ from src.services.communicator.request import SingleRequest
 from src.services.communicator.message_waiter import MessageWaiter
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.inspector import StopWordChecker
+from src.services.scheduler.manager import BaseAsyncSchedularManager, AsyncPostgresSchedularManager
 from src.web.models.configuration import ConfigurationSchema
 
 
@@ -218,17 +219,28 @@ class BaseMessageHandler:
 
 
 class MessageFirstSend(BaseMessageHandler):
-    """Отправляет первое сообщение. Для работы необходимо имя пользователя, чтобы отправить сообщение незнакомому пользователю, и его Telegram ID, чтобы сохранить сообщение в базе данных."""
+    """Отправляет первое сообщение. Для работы необходимо имя пользователя,
+     чтобы отправить сообщение незнакомому пользователю, и его Telegram ID,
+     чтобы сохранить сообщение в базе данных."""
 
     def __init__(
-        self, publisher: "NatsPublisher", repository: "RepoStorage", single_request: "SingleRequest", prompt_generator
+        self,
+            publisher: "NatsPublisher",
+            repository: "RepoStorage",
+            single_request: "SingleRequest",
+            prompt_generator,
+
     ):
         super().__init__(publisher, repository, prompt_generator)
 
         self.message_delay_generator = MessageGeneratorTimeDelay(repository=repository)
         self.single_request = single_request
 
-    async def handle(self, users: List[UserDTOBase], research_id: int, destination_configs: "NatsDestinationDTO"):
+
+    async def handle(self, users: List[UserDTOBase],
+                     research_id: int,
+                     destination_configs: "NatsDestinationDTO"):
+
         client = await self._get_client(research_id)
         assistant_id = await self.get_assistant(research_id)
         start_date = await self.get_research_start_date(research_id)
@@ -241,14 +253,19 @@ class MessageFirstSend(BaseMessageHandler):
 
         # стоит это переписать. Можно часть запросов из бд перенаправить в редис, а остальные данные
         # вытягивать одним запросом
-        async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
-            await self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
 
-        # tasks = [
-        #     self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
-        #     async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date)
-        # ]
-        # await asyncio.gather(*tasks)
+        # планирование первго сообщения можно тут
+
+        async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
+
+            self.schedular.schedular.add_job(
+                                             func=print,
+                                             args=[user, send_time, research_id, client, assistant_id, destination_configs],
+                                             trigger=DateTrigger(run_date=send_time,
+                                                                 timezone=pytz.utc),
+                id=f"first_message:research:{research_id}:user:{user}:{int(datetime.now().timestamp())}",
+                name=f"first_message_generation:{research_id}:{user}")
+
 
     async def _get_client(self, research_id: int) -> "TelegramClientDTOGet":
         client = await self.get_client_name(research_id)

@@ -9,6 +9,7 @@ from src.services.communicator.request import SingleRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.inspector import StopWordChecker
+from src.services.scheduler.manager import AsyncPostgresSchedularManager, AsyncPostgresSetting
 
 
 def initialize_communicator() -> TelegramCommunicator:
@@ -24,6 +25,15 @@ def initialize_communicator() -> TelegramCommunicator:
     transcribe_request = TranscribeRequest(url=open_ai_api_endpoint_settings.transcribe_response_url)
     prompt_generator = ExtendedPingPromptGenerator(repository=repository)
     stop_word_checker = StopWordChecker(repo=repository)
+
+    # инициализация планировщика для этого сервиса
+    schedular: AsyncPostgresSchedularManager = AsyncPostgresSchedularManager(
+        settings=AsyncPostgresSetting(
+            DATABASE_URL=database_postgres_settings.sync_postgres_url,
+            TABLE_NAME="apscheduler_communicator",
+        )
+    )
+
     communicator = TelegramCommunicator(
         repository=repository,
         info_collector=info_collector,
@@ -32,6 +42,7 @@ def initialize_communicator() -> TelegramCommunicator:
         single_request=single_request,
         context_request=context_request,
         transcribe_request=transcribe_request,
-        stop_word_checker=stop_word_checker
+        stop_word_checker=stop_word_checker,
+        schedular=schedular
     )
     return communicator
