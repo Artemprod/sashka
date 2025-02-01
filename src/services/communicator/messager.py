@@ -320,38 +320,50 @@ class MessageFirstSend(BaseMessageHandler):
         destination_configs: "NatsDestinationDTO",
         research_id: int
     ):
-        publish_message = await self._create_publish_message(
+        publish_message = await self._create_publish_message_(
             content=content,
             user=user,
-            send_time=send_time,
             client=client,
             destination_configs=destination_configs,
             research_id=research_id
         )
         await self.publisher.publish_message_to_stream(stream_message=publish_message)
 
-    async def _create_publish_message(
+
+    async def _create_publish_message_(
             self,
             content: "SingleResponseDTO",
             user: UserDTOBase,
-            send_time: datetime,
             client: "TelegramClientDTOGet",
             destination_configs: "NatsDestinationDTO",
-            research_id: int
+            research_id: int,
     ) -> "NatsQueueMessageDTOStreem":
-        headers = TelegramTimeDelaHeadersDTO(
-            tg_client_name=str(client.name),
-            user=json.dumps(user.model_dump()),
-            send_time_msg_timestamp=str(datetime.now(tz=timezone.utc).timestamp()),
-            send_time_next_message_timestamp=str(send_time.timestamp()),
-            research_id=str(research_id)
-        )
+        data = {
+            "message": content.response,
+            "tg_client": str(client.name),
+            "user": user.model_dump(),
+            "research_id": research_id
+        }
         return self.publisher.form_stream_message(
-            message=content.response,
-            subject=destination_configs.subject,
-            stream=destination_configs.stream,
-            headers=headers.model_dump(),
+            message=json.dumps(data), subject=destination_configs.subject, stream=destination_configs.stream
         )
+
+    @staticmethod
+    def _make_send_time_delay(
+            send_time: datetime
+    ) -> datetime:
+        """
+        Checks if the time of sending a message is less than the current time.
+
+        If the time of sending a message is less than the current time, then returns the current time plus 10 seconds.
+        Otherwise, returns the original send time plus 10 seconds.
+        """
+
+        current_time = datetime.now(tz=pytz.utc).replace(tzinfo=None)
+        if send_time < current_time:
+            return current_time + timedelta(seconds=10)
+        return send_time + timedelta(seconds=10)
+
 
     async def _update_user_status(self, telegram_id: int) -> bool:
         try:
@@ -438,7 +450,7 @@ class ScheduledFirstMessage(MessageFirstSend):
         data = {
             "message": content.response,
             "tg_client": str(client.name),
-            "user": user.dict(),
+            "user": user.model_dump(),
             "research_id": research_id
         }
         return self.publisher.form_stream_message(

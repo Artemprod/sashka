@@ -9,10 +9,24 @@ from src.services.communicator.request import SingleRequest
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.inspector import StopWordChecker
+from src.services.scheduler.event_handlers import handle_scheduler_event, handle_job_event, handle_missed_job
 from src.services.scheduler.manager import AsyncPostgresSchedularManager, AsyncPostgresSetting
 
+def initialize_schedular()->AsyncPostgresSchedularManager:
+    # инициализация планировщика для этого сервиса
+    schedular: AsyncPostgresSchedularManager = AsyncPostgresSchedularManager(
+        settings=AsyncPostgresSetting(
+            DATABASE_URL=database_postgres_settings.sync_postgres_url,
+            TABLE_NAME="apscheduler_communicator",
+        )
+    )
+    schedular.add_event_handler(handle_scheduler_event)
+    schedular.add_event_handler(handle_job_event)
+    schedular.add_event_handler(handle_missed_job)
+    return schedular
 
-def initialize_communicator() -> TelegramCommunicator:
+
+def initialize_communicator(scheduler:AsyncPostgresSchedularManager) -> TelegramCommunicator:
     """Инициализирует GPTRequestHandler с помощью настроек из окружения"""
     repository = RepoStorage(
         database_session_manager=DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url)
@@ -26,14 +40,6 @@ def initialize_communicator() -> TelegramCommunicator:
     prompt_generator = ExtendedPingPromptGenerator(repository=repository)
     stop_word_checker = StopWordChecker(repo=repository)
 
-    # инициализация планировщика для этого сервиса
-    schedular: AsyncPostgresSchedularManager = AsyncPostgresSchedularManager(
-        settings=AsyncPostgresSetting(
-            DATABASE_URL=database_postgres_settings.sync_postgres_url,
-            TABLE_NAME="apscheduler_communicator",
-        )
-    )
-
     communicator = TelegramCommunicator(
         repository=repository,
         info_collector=info_collector,
@@ -43,6 +49,6 @@ def initialize_communicator() -> TelegramCommunicator:
         context_request=context_request,
         transcribe_request=transcribe_request,
         stop_word_checker=stop_word_checker,
-        schedular=schedular
+        schedular=scheduler
     )
     return communicator

@@ -7,6 +7,7 @@ class UserStatusEnum(enum.Enum):
     IN_PROGRESS = "IN_PROGRESS"
     DONE = "DONE"
     NOT_ANSWERED = "NOT_ANSWERED"
+
     # WAIT_FIRST_MESSAGE: WAIT_FIRST_MESSAGE
 
 
