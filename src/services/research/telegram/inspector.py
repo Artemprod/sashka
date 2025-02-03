@@ -9,9 +9,11 @@ from typing import Dict
 from typing import List
 from typing import Optional
 import pytz
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from loguru import logger
 from mako.testing.helpers import result_lines
 
+from configs.database import database_postgres_settings
 from configs.nats_queues import nats_subscriber_communicator_settings
 from configs.research import research_pingator_settings
 from re import Pattern
@@ -35,6 +37,7 @@ from src.services.publisher.publisher import NatsPublisher
 from src.services.research.models import PingDataQueueDTO
 from src.services.research.telegram.decorators.finish_reserch import move_users_to_archive
 from src.services.research.utils import CyclePingAttemptCalculator
+from src.services.scheduler.manager import AsyncPostgresSchedularManager, AsyncPostgresSetting
 from src.web.models.configuration import ConfigurationSchema
 from src.utils.wrappers import async_wrap
 
@@ -634,13 +637,21 @@ class ResearchProcess:
 
             # Завершаем исследование
             await self.research_stopper.complete_research(research_id)
-
             logger.info(f"Все задачи исследования {research_id} завершены.")
+
+            # Отмена запланированных задач по этому исследованию
+            await self._cancel_scheduled_messages(research_id)
+            logger.info(f"Все задачи исследования {research_id} завершены.")
+
             return 1
 
         except Exception as e:
             logger.error(f"Ошибка в процессе исследования {research_id}: {str(e)}")
+            # Завершаем исследование
             self._cancel_pending_tasks(research_id)
+
+            # Отмена запланированных задач по этому иследованию
+            await self._cancel_scheduled_messages(research_id)
             raise e
 
 
@@ -673,3 +684,28 @@ class ResearchProcess:
         # Удаляем задачи из словаря
         if not tasks:
             del self._tasks[research_id]
+
+    @staticmethod
+    async def _cancel_scheduled_messages(
+            research_id: int,
+    )->None:
+        """
+        Отменяет все запланированые таски по первому сообщению
+        """
+        schedular: AsyncPostgresSchedularManager = AsyncPostgresSchedularManager(
+            settings=AsyncPostgresSetting(
+                DATABASE_URL=database_postgres_settings.sync_postgres_url,
+                TABLE_NAME="apscheduler_communicator",
+            )
+        )
+        try:
+            await schedular.delete_scheduled_task(prefix=f'first_message:research:{research_id}')
+            logger.debug(f"Задачи отменена")
+
+        except Exception as e:
+            logger.error(f"Ошибка завершения запланированных работ")
+            raise e
+
+        finally:
+            del schedular
+            logger.debug(f"Объект планировщика удален")

@@ -66,6 +66,7 @@ async def plan_first_message(
     )
 
 
+
 if __name__ == '__main__':
     async def main():
         scheduler_manager = AsyncPostgresSchedularManager(AsyncPostgresSetting(

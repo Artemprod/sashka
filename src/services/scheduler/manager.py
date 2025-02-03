@@ -18,7 +18,7 @@ from configs.redis import redis_apscheduler_config
 
 from abc import ABC, abstractmethod
 
-
+from src.utils.wrappers import async_wrap
 
 
 class SchedularSettings(BaseModel):
@@ -49,7 +49,6 @@ class BaseAsyncSchedularManager(IAsyncSchedularManager):
 
     def _init_schedular(self):
         raise NotImplemented
-
 
     @property
     def event_handlers(self):
@@ -93,6 +92,26 @@ class BaseAsyncSchedularManager(IAsyncSchedularManager):
             return
         for handler in self._event_handlers:
             self._schedular.add_listener(handler)
+
+    @async_wrap
+    def delete_scheduled_task(
+            self,
+            prefix: str
+    ) -> int:
+        """
+        Removes scheduled tasks based on the job id prefix.
+
+        :param prefix: Prefix to identify the task.
+        :return: Number of removed jobs.
+        """
+        removed_jobs_count = 0
+        for job in self._schedular.get_jobs():
+            if job.id.startswith(prefix):
+                logger.info(f"Job ID: {job.id}")
+                self._schedular.remove_job(job.id)
+                logger.info(f"Removed job: {job.id}")
+                removed_jobs_count += 1
+        return removed_jobs_count
 
 
 
@@ -187,6 +206,8 @@ class AsyncPostgresSchedularManager(BaseAsyncSchedularManager):
 
 
 
+
+
 class RedisApschedulerManager:
     def __init__(self):
         """Инициализирует планировщик для планирования задач."""
@@ -209,24 +230,7 @@ class RedisApschedulerManager:
     def get_scheduler(self) -> AsyncIOScheduler:
         return self._scheduler
 
-    def delete_scheduled_task(
-            self,
-            prefix: str
-    ) -> int:
-        """
-        Removes scheduled tasks based on the job id prefix.
 
-        :param prefix: Prefix to identify the task.
-        :return: Number of removed jobs.
-        """
-        removed_jobs_count = 0
-        for job in self._scheduler.get_jobs():
-            if job.id.startswith(prefix):
-                logger.info(f"Job ID: {job.id}")
-                self._scheduler.remove_job(job.id)
-                logger.info(f"Removed job: {job.id}")
-                removed_jobs_count += 1
-        return removed_jobs_count
 
 
 # scheduler_manager = ApschedulerManager()

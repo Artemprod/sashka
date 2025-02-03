@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -96,23 +96,29 @@ class TelegramCommunicator:
         }
 
     async def make_first_message_distribution(self, research_id: int, users: List[UserDTOBase]):
+
         try:
+            # Для рпассылки первого сообшения получаем данные
             research = await self._repository.research_repo.short.get_research_by_id(research_id=research_id)
             start_date = research.start_date
             client = await self._repository.client_repo.get_client_by_research_id(research_id)
             assistant_id = research.assistant_id
             logger.debug("ПЛАНИРОВАНИЕ ПЕРВОГО СООБЩЗЕНИЯ")
 
+            # Генерирую время отправки первого сообщения для каждого пользователя
             async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
+
+                # Для каждого пользователя создается задача
                 self.schedular.schedular.add_job(
                         func=plan_first_message,
                     args=[user, send_time, research_id, client, assistant_id, self._destination_configs["firs_message"]],
-                    trigger=DateTrigger(run_date=send_time,
+                    trigger=DateTrigger(run_date=send_time + timedelta(minutes=10),
                                         timezone=pytz.utc),
+
                     id=f"first_message:research:{research_id}:user:{user}:{int(datetime.now().timestamp())}",
                     name=f"first_message_generation:{research_id}:{user}")
 
-
+            logger.debug("ВСЕ СООБЩЕНИЯ ЗАПЛАНИРОВАНЫ")
         except Exception as e:
             raise e
 
