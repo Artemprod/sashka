@@ -3,7 +3,7 @@ from nats.aio.client import Client as NATS
 from nats.js.api import StreamConfig
 
 
-async def clear_jetstream_stream(stream_name: str, nats_url: str = "nats://194.87.79.10:4000"):
+async def clear_jetstream_stream(stream_name: str, nats_url: str = "nats://localhost:4222"):
     # Создаем подключение к NATS
     nc = NATS()
     await nc.connect(nats_url)
@@ -12,7 +12,11 @@ async def clear_jetstream_stream(stream_name: str, nats_url: str = "nats://194.8
     js = nc.jetstream()
 
     try:
+
         # Получаем информацию о стриме
+
+        streams_info = await js.streams_info()
+
         stream_info = await js.stream_info(stream_name)
         print(f"Стрим найден: {stream_name}, сообщений: {stream_info.state.messages}")
 
@@ -33,5 +37,5 @@ async def clear_jetstream_stream(stream_name: str, nats_url: str = "nats://194.8
 
 # Запуск асинхронного кода
 if __name__ == "__main__":
-    stream = "SEND_MESSAGE_STREEM"  # Название стрима, который нужно очистить
+    stream = "DELAY_MESSAGE_SEND_STREEM"  # Название стрима, который нужно очистить
     asyncio.run(clear_jetstream_stream(stream))

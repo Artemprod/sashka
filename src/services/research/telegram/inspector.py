@@ -51,7 +51,7 @@ class BaseStopper:
 
     @staticmethod
     def _load_settings() -> Dict[str, int]:
-        return {"delay_check_interval": 60}
+        return {"delay_check_interval": 2}
 
 
 class ResearchStarter:
@@ -166,8 +166,9 @@ class ResearchStopper:
 
     async def _update_user_statuses(self, user_group: List[UserDTOFull]) -> None:
         """Обновление статусов пользователей."""
+        user_ids = [user.user_id for user in user_group]
         await self.repository.status_repo.user_status.update_status_group_of_user(
-            user_group=user_group, status=UserStatusEnum.DONE
+            user_group=user_ids, status=UserStatusEnum.DONE
         )
         logger.info(f"Статусы пользователей в группе {user_group} обновлены на DONE")
 
@@ -699,6 +700,7 @@ class ResearchProcess:
             )
         )
         try:
+            schedular.start()
             await schedular.delete_scheduled_task(prefix=f'first_message:research:{research_id}')
             logger.debug(f"Задачи отменена")
 
@@ -707,5 +709,6 @@ class ResearchProcess:
             raise e
 
         finally:
+            schedular.shutdown()
             del schedular
             logger.debug(f"Объект планировщика удален")
