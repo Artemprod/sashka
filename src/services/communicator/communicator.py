@@ -112,7 +112,7 @@ class TelegramCommunicator:
                 self.schedular.schedular.add_job(
                         func=plan_first_message,
                     args=[user, send_time, research_id, client, assistant_id, self._destination_configs["firs_message"]],
-                    trigger=DateTrigger(run_date=send_time + timedelta(minutes=10),
+                    trigger=DateTrigger(run_date=send_time,
                                         timezone=pytz.utc),
 
                     id=f"first_message:research:{research_id}:user:{user}:{int(datetime.now().timestamp())}",
