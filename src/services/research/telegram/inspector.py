@@ -10,12 +10,12 @@ from typing import List
 from typing import Optional
 import pytz
 from loguru import logger
-from mako.testing.helpers import result_lines
 
 from configs.nats_queues import nats_subscriber_communicator_settings
 from configs.research import research_pingator_settings
 from re import Pattern
 
+from src.database.postgres import TelegramClient
 from src.database.postgres.models.enum_types import ResearchStatusEnum
 from src.database.postgres.models.enum_types import UserStatusEnum
 from src.database.repository.storage import RepoStorage
@@ -25,15 +25,12 @@ from src.schemas.service.user import UserDTOBase
 from src.schemas.service.user import UserDTOFull
 from src.schemas.service.user import UserDTQueue
 from src.services.exceptions.research import (
-    UntimelyCompletionError,
-    ResearchCompletionError,
     UserAndResearchInProgressError,
     UserInProgressError,
     ResearchStatusInProgressError,
 )
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.models import PingDataQueueDTO
-from src.services.research.telegram.decorators.finish_reserch import move_users_to_archive
 from src.services.research.utils import CyclePingAttemptCalculator
 from src.web.models.configuration import ConfigurationSchema
 from src.utils.wrappers import async_wrap
@@ -164,7 +161,7 @@ class ResearchStopper:
     async def _update_user_statuses(self, user_group: List[UserDTOFull]) -> None:
         """Обновление статусов пользователей."""
         await self.repository.status_repo.user_status.update_status_group_of_user(
-            user_group=user_group, status=UserStatusEnum.DONE
+            user_group=[user.tg_user_id for user in user_group], status=UserStatusEnum.DONE
         )
         logger.info(f"Статусы пользователей в группе {user_group} обновлены на DONE")
 
@@ -440,7 +437,7 @@ class UserPingator:
             unresponded_messages = await self.count_unresponded_assistant_message(
                 telegram_id=user.tg_user_id,
                 research_id=research_info.research_id,
-                telegram_client_id=research_info.telegram_client_id,
+                telegram_clients=research_info.telegram_clients,
                 assistant_id=research_info.assistant_id,
             )
 
@@ -457,7 +454,7 @@ class UserPingator:
             send_time = await self.calculate_send_time(
                 telegram_id=user.tg_user_id,
                 research_id=research_info.research_id,
-                telegram_client_id=research_info.telegram_client_id,
+                telegram_clients=research_info.telegram_clients,
                 assistant_id=research_info.assistant_id,
                 time_delay=time_delay,
             )
@@ -502,33 +499,44 @@ class UserPingator:
         raise ValueError("No status name value")
 
     async def count_unresponded_assistant_message(
-        self, telegram_id: int, research_id: int, telegram_client_id: int, assistant_id: int
+        self, telegram_id: int, research_id: int, telegram_clients: list[TelegramClient], assistant_id: int
     ) -> int:
         """Получение всех неотвеченных сообщений от ассистента."""
-        unresponded_messages = await self.repo.message_repo.assistant.fetch_context_assistant_messages_after_user(
-            telegram_id=telegram_id,
-            research_id=research_id,
-            telegram_client_id=telegram_client_id,
-            assistant_id=assistant_id,
-        )
+        unresponded_messages = []
+        for client in telegram_clients:
+            unresponded_messages.extend(
+                await self.repo.message_repo.assistant.fetch_context_assistant_messages_after_user(
+                    telegram_id=telegram_id,
+                    research_id=research_id,
+                    telegram_client_id=client.client_id,
+                    assistant_id=assistant_id,
+                )
+            )
 
         return len(unresponded_messages)
 
     async def calculate_send_time(
-        self, telegram_id: int, research_id: int, telegram_client_id: int, assistant_id: int, time_delay: int
+        self, telegram_id: int, research_id: int, telegram_clients: list[TelegramClient], assistant_id: int, time_delay: int
     ) -> Optional[datetime]:
         """Расчёт времени отправки следующего пинга."""
         try:
-            last_message = await self.repo.message_repo.user.get_last_user_message_in_context_by_user_telegram_id(
-                telegram_id, research_id, telegram_client_id, assistant_id
-            )
+            for telegram_client in telegram_clients:
+                last_message = await self.repo.message_repo.user.get_last_user_message_in_context_by_user_telegram_id(
+                    telegram_id, research_id, telegram_client.client_id, assistant_id
+                )
+                if last_message is not None:
+                    break
+
             # Конвертируем точно в UTC
             if not last_message:
-                last_message = (
-                    await self.repo.message_repo.assistant.get_last_assistant_message_in_context_by_user_telegram_id(
-                        telegram_id, research_id, telegram_client_id, assistant_id
+                for telegram_client in telegram_clients:
+                    last_message = (
+                        await self.repo.message_repo.assistant.get_last_assistant_message_in_context_by_user_telegram_id(
+                            telegram_id, research_id, telegram_client.client_id, assistant_id
+                        )
                     )
-                )
+                    if last_message is not None:
+                        break
 
             if last_message:
                 last_message_time = (

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import BigInteger
+from sqlalchemy import BigInteger, Table, Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Index
 from sqlalchemy import UniqueConstraint
@@ -15,6 +15,14 @@ from src.database.postgres.models.base import intpk
 from src.database.postgres.models.base import updated_at
 
 
+research_telegram_client = Table(
+    "research_telegram_client",
+    ModelBase.metadata,
+    Column("research_id", ForeignKey("researches.research_id"), primary_key=True),
+    Column("client_id", ForeignKey("telegram_clients.client_id"), primary_key=True),
+)
+
+
 class Research(ModelBase):
     __tablename__ = "researches"
     __table_args__ = (
@@ -24,8 +32,7 @@ class Research(ModelBase):
         Index("idx_research_end_date", "end_date"),
         Index("idx_research_created_at", "created_at"),
         Index("idx_research_updated_at", "updated_at"),
-        Index("idx_research_assistant_id", "assistant_id"),
-        Index("idx_research_telegram_client_id", "telegram_client_id"),
+        Index("idx_research_assistant_id", "assistant_id")
     )
 
     research_id: Mapped[intpk]
@@ -42,7 +49,6 @@ class Research(ModelBase):
     additional_information: Mapped[Optional[str]]
 
     assistant_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("assistants.assistant_id"))
-    telegram_client_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("telegram_clients.client_id"))
 
     owner: Mapped["ResearchOwner"] = relationship(back_populates="researches")
 
@@ -52,8 +58,11 @@ class Research(ModelBase):
 
     status: Mapped["ResearchStatus"] = relationship(back_populates="researches")
 
-    telegram_client: Mapped["TelegramClient"] = relationship(back_populates="researches")
-
     user_messages: Mapped[list["UserMessage"]] = relationship(back_populates="research")
 
     assistant_messages: Mapped[list["AssistantMessage"]] = relationship(back_populates="research")
+
+    telegram_clients: Mapped[list["TelegramClient"]] = relationship(
+        back_populates="researches",
+        secondary=research_telegram_client
+    )
