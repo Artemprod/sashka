@@ -65,7 +65,7 @@
     },
     {
         "research_id": 5,
-        "research_uuid": "uuid-mno345",
+        "research_uuid": "uuid-mno3445",
         "owner_id": 2,
         "name": "Urban Development",
         "title": "Next-Gen Cities: Growth and Sustainability",
@@ -81,7 +81,7 @@
     },
      {
         "research_id": 100,
-        "research_uuid": "uuid-mno345",
+        "research_uuid": "uuid-mno35645",
         "owner_id": 100,
         "name": "Pingator",
         "title": "Pingator",
@@ -97,7 +97,7 @@
     },
          {
         "research_id": 101,
-        "research_uuid": "uuid-mno345",
+        "research_uuid": "uuid-mno3463215",
         "owner_id": 100,
         "name": "Pingator",
         "title": "Pingator",
@@ -113,7 +113,7 @@
     },
          {
         "research_id": 102,
-        "research_uuid": "uuid-mno345",
+        "research_uuid": "uuid-mno34123as5",
         "owner_id": 100,
         "name": "Pingator",
         "title": "Pingator",

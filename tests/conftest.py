@@ -1,14 +1,16 @@
+from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).parent.parent))
+
 import asyncio
 import json
-from datetime import timedelta, datetime
-
+from datetime import datetime
 import pytest
-from pyrogram.filters import service
 from sqlalchemy import insert, text
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.util import await_only
+
 
 from configs.database import database_postgres_settings
+
 from src.database.postgres import (
     AssistantMessage,
     UserMessage,
@@ -22,23 +24,18 @@ from src.database.postgres import (
     Services,
     UserStatus,
     ResearchStatus,
-    User,
+    User, Configuration,
 )
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
-from src.schemas.service.message import AssistantMessageDTOGet
-from src.services.publisher.publisher import NatsPublisher
-from src.services.research.telegram.inspector import (
-    ResearchOverChecker,
-    ResearchStopper,
-    ResearchStatusStopper,
-    UserPingator,
-)
+
+
+
 
 
 @pytest.fixture(scope="session", autouse=True)
 async def prepare_database():
-    session = DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url_test)
+    session = DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url)
 
     async with session.engine.begin() as conn:
         await conn.run_sync(ModelBase.metadata.drop_all)
@@ -47,9 +44,10 @@ async def prepare_database():
         await conn.commit()
 
     def open_mock_json(model: str):
-        # TODO заменить на нормальный путь
-        with open(rf"D:\PROJECTS\AIPO\CUSTDEVER\sashka\tests\mock_models\mock_{model}.json", "r") as file:
+        moc_file_path = Path(__file__).parent.joinpath("mock_models").joinpath(f"mock_{model}.json")
+        with open(moc_file_path, "r") as file:
             return json.load(file)
+
 
     users = open_mock_json(model="user")
     research_owners = open_mock_json(model="research_owner")
@@ -63,6 +61,11 @@ async def prepare_database():
     user_research = open_mock_json(model="user_research_relation")
     user_messages = open_mock_json(model="user_messages")
     assistants_messages = open_mock_json(model="assistant_message")
+    configs = open_mock_json(model="configurations")
+
+    if configs["created_at"]:
+        configs["created_at"] = datetime.strptime(configs["created_at"], "%Y-%m-%dT%H:%M:%S.%fZ")
+
 
     for user in users:
         if user["last_online_date"]:
@@ -147,6 +150,7 @@ async def prepare_database():
         add_user_research = insert(UserResearch).values(user_research)
         add_user_messages = insert(UserMessage).values(user_messages)
         add_assistants_messages = insert(AssistantMessage).values(assistants_messages)
+        add_configs = insert(Configuration).values(configs)
 
         await session.execute(add_users)
         await session.execute(add_service)
@@ -161,13 +165,14 @@ async def prepare_database():
         await session.execute(add_user_research)
         await session.execute(add_user_messages)
         await session.execute(add_assistants_messages)
+        await session.execute(add_configs)
 
         await session.commit()
 
 
 @pytest.fixture(scope="session", autouse=True)
 async def load_database_session() -> DatabaseSessionManager:
-    return DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url_test)
+    return DatabaseSessionManager(database_url=database_postgres_settings.async_postgres_url)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -180,3 +185,4 @@ def event_loop(request):
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+

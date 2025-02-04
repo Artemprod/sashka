@@ -1,10 +1,10 @@
 from datetime import timedelta
 
 import pytest
-from pytest_mock import mocker
 
-from test_cases import TEST_CASES, TestDataCases
-from utils import user_status_generator
+
+from . cases import TEST_CASES, TestDataCases
+from . utils import user_status_generator
 
 
 # Создаем генератор времени, который повышает текущее время на 1 секунду при каждом вызове
