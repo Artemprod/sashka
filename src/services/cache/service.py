@@ -25,7 +25,7 @@ def redis_cache_decorator(key: str, ttl: int = 300):
 
             cached_value = await cache.get(generated_key)
             if cached_value is not None:
-                logger.info(f"Cache get: {generated_key} - {type(cached_value)} - {cached_value}")
+                # logger.info(f"Cache get: {generated_key} - {type(cached_value)} - {cached_value}")
                 return cached_value
 
             result = await func(*args, **kwargs)

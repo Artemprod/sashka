@@ -26,7 +26,7 @@ from src.schemas.service.user import UserDTOBase
 from configs.database import database_postgres_settings
 from configs.ai_api_endpoints import open_ai_api_endpoint_settings
 from src.services.scheduler.event_handlers import handle_scheduler_event, handle_job_event, handle_missed_job
-from src.services.scheduler.manager import AsyncPostgresSchedularManager, AsyncPostgresSetting
+
 
 
 class MessageService:
@@ -67,29 +67,5 @@ async def plan_first_message(
 
 
 
-if __name__ == '__main__':
-    async def main():
-        scheduler_manager = AsyncPostgresSchedularManager(AsyncPostgresSetting(
-            DATABASE_URL=database_postgres_settings.async_postgres_url,
-            TABLE_NAME="apscheduler_communicator",
-        ))
-
-        scheduler_manager.add_event_handler(handle_scheduler_event)
-        scheduler_manager.add_event_handler(handle_job_event)
-        scheduler_manager.add_event_handler(handle_missed_job)
-        scheduler_manager.start()
 
 
-        scheduler_manager.schedular.add_job(
-                        func=plan_first_message,
-                                            args=[1, 2, 3, 3, 4, 4],
-                                                 trigger=DateTrigger(run_date=datetime.now(),
-                                                                     timezone=pytz.utc),
-                    id=f"first_message:research:{0}:user:{2}:{int(datetime.now().timestamp())}",
-                    name=f"first_message_generation:{21}:{2}")
-
-        scheduler_manager.shutdown()
-
-
-
-    asyncio.run(main())

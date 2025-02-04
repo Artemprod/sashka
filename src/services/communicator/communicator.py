@@ -29,7 +29,7 @@ from src.services.communicator.tasks.message import plan_first_message
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.inspector import StopWordChecker
-from src.services.scheduler.manager import AsyncPostgresSchedularManager
+from src.services.scheduler.manager import AsyncPostgresSchedularManager, BaseAsyncSchedularManager
 
 
 class TelegramCommunicator:
@@ -45,7 +45,7 @@ class TelegramCommunicator:
             transcribe_request: "TranscribeRequest",
             prompt_generator: "ExtendedPingPromptGenerator",
             stop_word_checker: "StopWordChecker",
-            schedular: "AsyncPostgresSchedularManager",
+            schedular: "BaseAsyncSchedularManager",
             destination_configs: Optional[Dict] = None,
 
 
@@ -77,7 +77,7 @@ class TelegramCommunicator:
             prompt_generator=prompt_generator,
             context_request=context_request,
         )
-        self.schedular=schedular
+        self.schedular = schedular
         self.message_delay_generator = MessageGeneratorTimeDelay(repository=repository)
 
     # TODO Вынести конфиги и закгрузку конфигов в отдельный модуль
@@ -109,7 +109,7 @@ class TelegramCommunicator:
             async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
 
                 # Для каждого пользователя создается задача
-                self.schedular.schedular.add_job(
+               self.schedular.schedular.add_job(
                         func=plan_first_message,
                     args=[user, send_time, research_id, client, assistant_id, self._destination_configs["firs_message"]],
                     trigger=DateTrigger(run_date=send_time,
@@ -181,7 +181,7 @@ class TelegramCommunicator:
             for user in user_info:
                 user.is_info = True
                 await self._repository.user_in_research_repo.short.update_user_info(
-                    telegram_id=message_object.from_user, values=user.dict()
+                    telegram_id=message_object.from_user, values=user.model_dump()
                 )
                 logger.info(f"User {user.tg_user_id} information updated in database")
 

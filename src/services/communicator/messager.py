@@ -65,7 +65,7 @@ class MessageGeneratorTimeDelay:
 
         configuration = await self.get_configuration()
 
-        people_per_day = configuration.communicator_people_in_bunch
+        people_per_day = max(1, configuration.communicator_people_in_bunch)  # Гарантируем, что шаг в range() не будет 0
         delay_between_bunch = timedelta(hours=configuration.communicator_delay_between_bunch_hours)
         delay_between_messages = timedelta(minutes=configuration.communicator_delay_between_message_in_bunch_minutes)
 
@@ -658,7 +658,17 @@ class ResearchMessageAnswer(MessageAnswer):
     async def _get_random_timeout_before_publish(self) -> int:
         # Выбор рандомной задержки перед отправкой
         configuration: ConfigurationSchema = await self.repository.configuration_repo.get()
-        return randint(configuration.min_response_time, configuration.max_response_time)
+        min_response_time = configuration.min_response_time
+        max_response_time = configuration.max_response_time
+        # Защита от "Дурака" если максимальное время меньше поменять местами
+        if min_response_time > max_response_time:
+            min_response_time, max_response_time = max_response_time, min_response_time
+            # Если минимальное и максимальное время одинаковы, просто возвращаем его
+
+        if min_response_time == max_response_time:
+            return min_response_time
+
+        return randint(min_response_time, max_response_time)
 
     async def _publish_response(
         self,

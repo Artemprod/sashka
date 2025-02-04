@@ -37,7 +37,8 @@ from src.services.publisher.publisher import NatsPublisher
 from src.services.research.models import PingDataQueueDTO
 from src.services.research.telegram.decorators.finish_reserch import move_users_to_archive
 from src.services.research.utils import CyclePingAttemptCalculator
-from src.services.scheduler.manager import AsyncPostgresSchedularManager, AsyncPostgresSetting
+from src.services.scheduler.manager import AsyncRedisApschedulerManager
+
 from src.web.models.configuration import ConfigurationSchema
 from src.utils.wrappers import async_wrap
 
@@ -251,7 +252,6 @@ class UserDoneStopper(BaseStopper):
                 logger.info(f"Завершаю исследование {research_id}, так как закончились пользователи")
                 return 1
 
-            logger.info(f"Проверяю исследование {research_id}, пользователей в процессе: {users_in_progress}")
             await asyncio.sleep(self.settings["delay_check_interval"])
 
     async def _get_users_in_progress(self, research_id: int) -> int:
@@ -273,8 +273,6 @@ class ResearchStatusStopper(BaseStopper):
             if research_status not in [ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.WAIT.value]:
                 logger.info(f"Завершаю исследование {research_id} по смене статуса. Статус {research_status}")
                 return 1
-
-            logger.info(f"Проверяю исследование {research_id}, статус исследования: {research_status}")
             await asyncio.sleep(self.settings["delay_check_interval"])
 
     async def _get_research_current_status(self, research_id: int) -> str:
@@ -305,7 +303,6 @@ class ResearchOverChecker(BaseStopper):
                 )
                 return 1
 
-            logger.info(f"Проверяю исследование {research_id}, оставшееся время иследвония : {end_date - current_time}")
 
             await asyncio.sleep(self.settings["delay_check_interval"])
 
@@ -453,7 +450,6 @@ class UserPingator:
 
             config = await self.get_config()
             if unresponded_messages > config.ping_max_messages:
-                logger.info(f"Превышено максимальное количество пингов для пользователя {user.tg_user_id}.")
                 return
 
             time_delay = self._ping_calculator.calculate(n=unresponded_messages)
@@ -693,12 +689,8 @@ class ResearchProcess:
         """
         Отменяет все запланированые таски по первому сообщению
         """
-        schedular: AsyncPostgresSchedularManager = AsyncPostgresSchedularManager(
-            settings=AsyncPostgresSetting(
-                DATABASE_URL=database_postgres_settings.sync_postgres_url,
-                TABLE_NAME="apscheduler_communicator",
-            )
-        )
+        schedular = AsyncRedisApschedulerManager()
+        schedular.start()
         try:
             schedular.start()
             await schedular.delete_scheduled_task(prefix=f'first_message:research:{research_id}')

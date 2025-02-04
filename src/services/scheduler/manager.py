@@ -1,4 +1,6 @@
 #______ Паттерн
+import contextlib
+import inspect
 from typing import Optional, Callable, List, Union
 
 import pytz
@@ -14,35 +16,31 @@ from loguru import logger
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from pydantic import BaseModel
 
+from configs.database import database_postgres_settings
 from configs.redis import redis_apscheduler_config
 
 from abc import ABC, abstractmethod
 
+from src.services.scheduler.event_handlers import handle_scheduler_event, handle_job_event, handle_missed_job
 from src.utils.wrappers import async_wrap
 
+from src.services.scheduler import event_handlers
 
-class SchedularSettings(BaseModel):
-    ...
-
-class AsyncPostgresSetting(SchedularSettings):
-    DATABASE_URL: str
-    TABLE_NAME: str
 
 
 class IAsyncSchedularManager(ABC):pass
 
 
-class BaseAsyncSchedularManager(IAsyncSchedularManager):
+class BaseAsyncSchedularManager:
 
-    def __init__(self, settings: SchedularSettings):
+    def __init__(self):
         self._event_handlers = None
-        self._schedular: Optional[BaseScheduler] = None
-        self.settings = settings
+        self._schedular: Optional[AsyncIOScheduler] = None
         self._event_handlers:list[Callable] =[]
 
-
+    # Получает экземпляр с настройками
     @property
-    async def schedular(self):
+    def schedular(self) -> AsyncIOScheduler:
         if self._schedular is None:
             self._init_schedular()
         return self._schedular
@@ -86,6 +84,16 @@ class BaseAsyncSchedularManager(IAsyncSchedularManager):
         else:
             raise ValueError("Аргумент должен быть вызываемым объектом или списком вызываемых объектов.")
 
+    def start(self) -> None:
+        """Запуск планировщика"""
+        self._init_schedular()
+        self._schedular.start()
+        logger.debug("Schedular has been started")
+
+    def shutdown(self) -> None:
+        """Остановка планировщика"""
+        self._schedular.shutdown()
+
     def _setup_handlers(self) -> None:
         """Настройка слушателей событий"""
         if not self._event_handlers:
@@ -125,17 +133,12 @@ class AsyncPostgresSchedularManager(BaseAsyncSchedularManager):
 
     """
 
-    def __init__(self,
-                 settings:AsyncPostgresSetting):
-        super().__init__(settings)
+    def __init__(self):
+        super().__init__()
         self._schedular:Optional[AsyncIOScheduler] = None
 
-    # Получает экземпляр с настройками
-    @property
-    def schedular(self) -> AsyncIOScheduler:
-        if self._schedular is None:
-            self._init_schedular()
-        return self._schedular
+
+
 
     def replace_driver(self, link: str) -> str:
         import re
@@ -151,19 +154,60 @@ class AsyncPostgresSchedularManager(BaseAsyncSchedularManager):
 
     def _init_schedular(self):
         from sqlalchemy import create_engine
-        # Производим замену
-        url = self.replace_driver(self.settings.DATABASE_URL)
-        logger.info(f"old url {self.settings.DATABASE_URL}")
-        logger.info(f"new url {url}")
 
+        # Производим замену драфвера если требуется
+        url = self.replace_driver(database_postgres_settings.sync_postgres_url)
+        logger.info(f"postgres url {url}")
         engine = create_engine(url)
 
         jobstores = {
-            'default': SQLAlchemyJobStore(url=self.settings.DATABASE_URL,
-                                          tablename=self.settings.TABLE_NAME,
-                                          engine=engine),
+            'default': SQLAlchemyJobStore(url=url,engine=engine),
+
+        }
+        # Исполнители определяют, как именно задачи выполняются.
+        executors = {
+            'default': AsyncIOExecutor(),  # По дефолту в асинхронном контексте ( в лупе ) запускает задачи
+
+        }
+        # настройки применяются к каждой задаче, если они не были заданы вручную.
+        job_defaults = {
+            'coalesce': False,  # (True/False) – если True, то пропущенные задачи объединяются в одну,
+            # если False, выполняются все пропущенные.
+            'max_instances': 1,
+            # (int) – максимальное число одновременных запусков одной и той же задачи. Предотвращает дубли
+            'misfire_grace_time': 60 * 2,
+            # (int) – время (в секундах), в течение которого можно выполнить задачу после пропуска.
+            'replace_existing ': True,  # (True/False) – если True, то новая задача заменяет существующую с таким же ID.
+
+        }
+
+        self._schedular = AsyncIOScheduler(
+
+            jobstores=jobstores,
+            executors=executors,
+            job_defaults=job_defaults,
+            timezone=pytz.utc
+        )
+        self._setup_handlers()
+        return self._schedular
 
 
+
+class AsyncRedisApschedulerManager(BaseAsyncSchedularManager):
+    def __init__(self):
+        super().__init__()
+        self._schedular: Optional[AsyncIOScheduler] = None
+
+    def _init_schedular(self):
+
+        jobstores = {
+            "default": RedisJobStore(
+                jobs_key=redis_apscheduler_config.jobs_key,  # Ключ для хранения заданий
+                run_times_key=redis_apscheduler_config.run_times_key,  # Ключ для времени выполнения
+                host=redis_apscheduler_config.host,
+                port=redis_apscheduler_config.port,
+                db=redis_apscheduler_config.research_start_database,
+            )
         }
         # Исполнители определяют, как именно задачи выполняются.
         executors = {
@@ -194,44 +238,8 @@ class AsyncPostgresSchedularManager(BaseAsyncSchedularManager):
         return self._schedular
 
 
-    def start(self) -> None:
-        """Запуск планировщика"""
-        self._init_schedular()
-        self._schedular.start()
-
-    def shutdown(self) -> None:
-        """Остановка планировщика"""
-        self._schedular.shutdown()
-
-
-
-
-
-
-class RedisApschedulerManager:
-    def __init__(self):
-        """Инициализирует планировщик для планирования задач."""
-
-        jobstores = {
-            "default": RedisJobStore(
-                jobs_key=redis_apscheduler_config.jobs_key,  # Ключ для хранения заданий
-                run_times_key=redis_apscheduler_config.run_times_key,  # Ключ для времени выполнения
-                host=redis_apscheduler_config.host,
-                port=redis_apscheduler_config.port,
-                db=redis_apscheduler_config.research_start_database,
-            )
-        }
-
-        scheduler = AsyncIOScheduler(jobstores=jobstores, timezone=pytz.utc)
-        scheduler.start()
-
-        self._scheduler = scheduler
-
     def get_scheduler(self) -> AsyncIOScheduler:
-        return self._scheduler
+        return self._schedular
 
 
 
-
-# scheduler_manager = ApschedulerManager()
-# postgres_schedular = AsyncPostgresSchedularManager
