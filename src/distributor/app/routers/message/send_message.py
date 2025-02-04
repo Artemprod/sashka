@@ -1,3 +1,5 @@
+import asyncio
+
 from faststream import Context
 from faststream import Depends
 from faststream.nats import JStream
@@ -77,6 +79,9 @@ async def send_message_subscriber(
         client=Depends(get_telegram_client),
 ):
     """Send a conversation message."""
+    message_id = getattr(data, 'message_id', 'unknown')
+    logger.info(f"Message {message_id} acknowledged")
+
     message_context = MessageContext(
         client=client,
         publisher=context.get("publisher"),
@@ -84,9 +89,17 @@ async def send_message_subscriber(
         client_name=None
     )
 
-    await process_message(
-        data=data,
-        msg=msg,
-        context=message_context,
-        is_first_message=False
+    # Создаем задачу отправки сообщения на фоне
+    asyncio.create_task(
+        await process_message(
+            data=data,
+            msg=msg,
+            context=message_context,
+            is_first_message=False
+        ),
+        name=f"send_message_{message_id}"
     )
+
+    logger.info(f"Created send task for message {message_id}")
+
+
