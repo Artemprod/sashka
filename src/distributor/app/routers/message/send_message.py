@@ -47,6 +47,7 @@ async def send_first_message_subscriber(
     message_context = MessageContext(
         client=client,
         publisher=context.get("publisher"),
+        telethon_container=context.get("telethon_container"),
         client_ban_checker=context.get("client_ban_checker"),
         research_id=research_id,
         client_name=client_name
@@ -92,6 +93,7 @@ async def send_message_subscriber(
     message_context = MessageContext(
         client=client,
         publisher=context.get("publisher"),
+        telethon_container=context.get("telethon_container"),
         research_id=None,
         client_name=None
     )

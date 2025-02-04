@@ -11,6 +11,7 @@ from telethon.errors import UserDeactivatedBanError
 from configs.nats_queues import nats_subscriber_researcher_settings
 from src.database.repository.storage import RepoStorage
 from src.schemas.service.queue import NatsQueueMessageDTOSubject
+from src.services.exceptions.telegram_clients import AllClientsBannedError
 from src.services.publisher.publisher import NatsPublisher
 
 
@@ -66,7 +67,7 @@ class ClientBanChecker:
             publisher: NatsPublisher,
             repository: RepoStorage
     ):
-        self._publisher = ClientBanPublisher(publisher=publisher)
+        self.publisher = ClientBanPublisher(publisher=publisher)
         self._repository = repository
 
         self._tasks = {} # В дальнейшем через этот словарь можно чекать какие бан чекеры запущены
@@ -79,14 +80,19 @@ class ClientBanChecker:
         """
         Запускает задачу для проверки статуса бана аккаунта раз в час.
         """
-
-        logger.info(f"Starting ban check for client: {client} with research_id: {research_id}")
-
         if client in self._tasks:
             logger.warning(f"Ban check already running for client: {client}")
             return
 
-        await self._publisher.publish_ban_on_research(research_id=research_id)
+        logger.info(f"Starting ban check for client: {client} with research_id: {research_id}")
+
+        client_info = await client.get_me()
+        await self._repository.client_repo.update(
+            telegram_client_id=client_info.id,
+            values={
+                "is_banned": True
+            }
+        )
 
         task = asyncio.create_task(
             self._periodic_check(
@@ -145,17 +151,44 @@ class ClientBanChecker:
         """
         Останавливает задачу проверки статуса бана для указанного клиента.
         """
-        logger.info(f"Stopping ban check for client: {client}")
+        client_info = await client.get_me()
+        logger.info(f"Stopping ban check for client: {client_info.username}")
+
         if client not in self._tasks:
-            logger.warning(f"No ban check running for client: {client}")
+            logger.warning(f"No ban check running for client: {client_info.username}")
             return
 
-        await self._publisher.publish_unban_research(research_id=research_id)
+        await self._repository.client_repo.update(
+            telegram_client_id=client_info.id,
+            values={
+                "is_banned": False
+            }
+        )
+
+        try:
+            if await self._check_is_publish_unban_research(research_id=research_id):
+                await self.publisher.publish_unban_research(research_id=research_id)
+
+        except AllClientsBannedError:
+            logger.error(f"Что-то пошло не так.")
 
         task = self._tasks.pop(client)
         task.cancel()
 
         logger.info(f"Stopped ban check for client: {client}")
+
+    async def _check_is_publish_unban_research(
+            self,
+            research_id: int
+    ) -> bool:
+        """
+        Checks whether all clients associated with a given research_id are banned.
+        Returns True if all clients are banned, otherwise False.
+        """
+        clients = await self._repository.client_repo.get_clients_by_research_id(
+            research_id=research_id
+        )
+        return all(client.is_banned for client in clients)
 
     async def _periodic_check(
             self,
@@ -164,7 +197,8 @@ class ClientBanChecker:
     ):
 
         while await self.check_is_account_banned(client=client):
-            logger.info(f"Client {client} is banned.")
+            client_info = await client.get_me()
+            logger.info(f"Client {client_info.username} is banned.")
             config = await self._repository.configuration_repo.get()
             await asyncio.sleep(config.ban_check_interval_in_minutes * 60)
 

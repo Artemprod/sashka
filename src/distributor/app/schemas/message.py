@@ -64,12 +64,14 @@ class MessageContext:
             self,
             client: TelegramClient,
             publisher: NatsPublisher,
+            telethon_container: TelethonClientsContainer,
             research_id: Optional[int] = None,
             client_name: Optional[str] = None,
-            client_ban_checker: Optional[ClientBanChecker] = None
+            client_ban_checker: Optional[ClientBanChecker] = None,
     ):
         self.client = client
         self.publisher = publisher
+        self.telethon_container = telethon_container
         self.research_id = research_id
         self.client_name = client_name
         self.client_ban_checker = client_ban_checker

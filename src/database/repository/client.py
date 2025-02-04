@@ -49,20 +49,17 @@ class ClientRepository(BaseRepository):
             else:
                 raise ObjectDoesNotExist(orm_object=ClientModel.__name__, msg=f"client with id {client_id} not found")
 
-    @redis_cache_decorator(
-        key="client:research_id:{research_id}",
-    )
-    async def get_client_by_research_id(self, research_id: str) -> Optional[TelegramClientDTOGet]:
+    # no cache this
+    async def get_clients_by_research_id(self, research_id: str) -> Optional[List[TelegramClientDTOGet]]:
         async with self.db_session_manager.async_session_factory() as session:
             query = select(ClientModel).where(ClientModel.researches.any(Research.research_id == research_id))
             results = await session.execute(query)
-            result = results.scalars().first()
-            if result:
-                return TelegramClientDTOGet.model_validate(result, from_attributes=True)
-            else:
-                raise ObjectDoesNotExist(
-                    orm_object=ClientModel.__name__, msg=f"client with research_id {research_id} not found"
-                )
+            all_clients = results.scalars().all()
+            if not all_clients:
+                return None
+            return [
+                TelegramClientDTOGet.model_validate(client, from_attributes=True) for client in all_clients
+            ]
 
     @redis_cache_decorator(
         key="client:name:{name}",
