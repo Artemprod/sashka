@@ -47,12 +47,12 @@ async def process_message(
 
         if isinstance(msg_data, types.Message):
             logger.info(
-                f"Message {message_id} sent successfully to user {data.user.tg_user_id}. "
+                f"Message sent successfully to user {data.user.tg_user_id}. "
                 f"Telegram message ID: {msg_data.id}"
             )
         else:
             logger.warning(
-                f"Message {message_id} sent, but returned unexpected result type: {type(msg_data)}"
+                f"Message sent, but returned unexpected result type: {type(msg_data)}"
             )
 
         if msg_data is None:
@@ -64,10 +64,9 @@ async def process_message(
 
     except Exception as e:
         logger.error(
-            f"Failed to send message {message_id}: {str(e)}",
+            f"Failed to send message: {str(e)}",
             extra={
                 "user_id": getattr(data, 'user', {}).get('tg_user_id', 'unknown'),
-                "message_id": message_id
             }
         )
 
