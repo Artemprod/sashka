@@ -1,14 +1,15 @@
-from datetime import datetime, timezone
-from typing import Optional, List
-from pydantic import BaseModel, Field
+from datetime import datetime
+from typing import List
+from typing import Optional
+
+from pydantic import BaseModel
+from pydantic import Field
 
 
 # Общая конфигурация для сериализации datetime объектов
 class ConfigBase:
     from_attributes = True
-    json_encoders = {
-        datetime: lambda dt: dt.strftime("%Y-%m-%d %H:%M:%S") if dt else None
-    }
+    json_encoders = {datetime: lambda dt: dt.strftime("%Y-%m-%d %H:%M:%S") if dt else None}
 
 
 # Базовый класс DTO
@@ -23,7 +24,7 @@ class UserDTOBase(BaseModel):
 # Класс, представляющий очередь пользователей
 class UserDTOQueue(BaseModel):
     tg_user_id: int
-    username:str
+    username: str
     is_contact: bool
     is_mutual_contact: bool
     is_deleted: bool
@@ -40,6 +41,7 @@ class UserDTOQueue(BaseModel):
     status: str
     last_online_date: Optional[datetime] = None  # Можно оставить как datetime
     phone_number: Optional[str] = None
+    language_code: Optional[str] = None
 
     class Config(ConfigBase):
         pass
@@ -47,8 +49,7 @@ class UserDTOQueue(BaseModel):
 
 # Расширенный класс DTO с дополнительными полями
 class UserDTO(UserDTOBase):
-
-
+    name: Optional[str] = None
     second_name: Optional[str] = None
     phone_number: Optional[str] = None
     tg_link: Optional[str] = None
@@ -72,9 +73,11 @@ class UserDTOFull(UserDTO):
     class Config(ConfigBase):
         pass
 
+
 class UserDTQueue(BaseModel):
     name: str
     tg_user_id: str
+
 
 # DTO с отношениями между объектами
 class UserDTORel(UserDTOFull):

@@ -1,11 +1,16 @@
 from datetime import datetime
 from typing import Optional
+
 from pydantic import BaseModel
 
 
 class UserMessageDTOPost(BaseModel):
-    from_user: int
-    chat: int
+    user_telegram_id: int
+    chat_id: int
+    research_id: int
+    telegram_client_id: int
+    assistant_id: int
+
     forwarded_from: Optional[str] = None
     reply_to_message_id: Optional[int] = None
     media: bool
@@ -14,13 +19,18 @@ class UserMessageDTOPost(BaseModel):
     text: str
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class UserMessageDTOGet(BaseModel):
-    user_message_id: int
-    from_user: int
-    chat: int
+    message_id: int
+
+    user_telegram_id: int
+    chat_id: int
+    research_id: int
+    telegram_client_id: int
+    assistant_id: int
+
     forwarded_from: Optional[str] = None
     reply_to_message_id: Optional[int] = None
     media: bool
@@ -30,34 +40,36 @@ class UserMessageDTOGet(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class AssistantMessageDTOPost(BaseModel):
-
     text: str
-    chat_id: int
-    to_user_id: int
-    assistant_id: int
-    telegram_client_id: int
 
+    user_telegram_id: int
+    assistant_id: int
+    chat_id: int
+    telegram_client_id: int
+    research_id: int
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class AssistantMessageDTOGet(BaseModel):
-
-    assistant_message_id: int
+    message_id: int
     text: str
-    chat_id: int
-    created_at: datetime
-    to_user_id: int
+
+    user_telegram_id: int
     assistant_id: int
+    chat_id: int
     telegram_client_id: int
+    research_id: int
+
+    created_at: datetime
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class VoiceMessageDTOPost(BaseModel):
@@ -68,7 +80,7 @@ class VoiceMessageDTOPost(BaseModel):
     file_size: Optional[float] = None
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 class VoiceMessageDTOGet(BaseModel):
@@ -81,4 +93,4 @@ class VoiceMessageDTOGet(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True 
+        from_attributes = True

@@ -1,14 +1,23 @@
-from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean, ForeignKey
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy import Boolean
+from sqlalchemy import Index
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
-from src.database.postgres.models.base import ModelBase, intpk, str_1024, created_at
+from src.database.postgres.models.base import ModelBase
+from src.database.postgres.models.base import created_at
+from src.database.postgres.models.base import intpk
 
 
 class Assistant(ModelBase):
-    __tablename__ = 'assistants'
+    __tablename__ = "assistants"
+    __table_args__ = (
+        Index("idx_assistant_name", "name"),
+        Index("idx_assistant_for_conversation", "for_conversation"),
+    )
 
     assistant_id: Mapped[intpk]
     name: Mapped[str] = mapped_column(String)
@@ -24,9 +33,8 @@ class Assistant(ModelBase):
 
     created_at: Mapped[created_at]
 
-    research: Mapped["Research"] = relationship(
-        back_populates="assistant"
-    )
+    research: Mapped["Research"] = relationship(back_populates="assistant")
 
-    messages: Mapped[list["AssistantMessage"]] = relationship(
-        back_populates="assistant")
+    messages: Mapped[list["AssistantMessage"]] = relationship(back_populates="assistant")
+
+    user_messages: Mapped[list["UserMessage"]] = relationship(back_populates="assistant")

@@ -1,12 +1,13 @@
 import asyncio
-from abc import abstractmethod, ABC
+from abc import ABC
+from abc import abstractmethod
 from typing import Optional
 
-import pandas
 from loguru import logger
 
 from src.database.postgres.engine.session import DatabaseSessionManager
-from src.services.analitcs.diolog import ResearchDialogs, UserDialog
+from src.services.analitcs.diolog import ResearchDialogs
+from src.services.analitcs.diolog import UserDialog
 from src.services.analitcs.models.metrics import DialogMetrics
 
 
@@ -19,13 +20,12 @@ class MetricCalculator(ABC):
 
 
 class BasicMetricCalculator(MetricCalculator):
-    def __init__(self,
-                 research_id: int,
-                 session_manager,
-                 dialogs: Optional[ResearchDialogs] = None):
-
+    def __init__(
+        self, research_status: str, research_id: int, session_manager, dialogs: Optional[ResearchDialogs] = None
+    ):
         self.research_id = research_id
         self._session_manager = session_manager
+        self._research_status: str = research_status
         self._dialogs: Optional[ResearchDialogs] = dialogs
 
     @property
@@ -39,8 +39,9 @@ class BasicMetricCalculator(MetricCalculator):
         """Загрузка диалогов для исследования."""
         try:
             dialogs_object = ResearchDialogs(
+                research_status=self._research_status,
                 research_id=self.research_id,
-                session_manager=self._session_manager
+                session_manager=self._session_manager,
             )
             self._dialogs = await dialogs_object.get_dialogs()
         except Exception as e:
@@ -78,11 +79,7 @@ class BasicMetricCalculator(MetricCalculator):
         answered = await self._count_first_message_responses()
         conversion = round((answered / total) * 100, 2)
 
-        return DialogMetrics(
-            total_dialogs=total,
-            answered_first=answered,
-            conversion_rate=conversion
-        )
+        return DialogMetrics(total_dialogs=total, answered_first=answered, conversion_rate=conversion)
 
     # Методы для обратной совместимости
     async def total_interviewed(self) -> int:
@@ -100,17 +97,4 @@ class BasicMetricCalculator(MetricCalculator):
         metrics = await self.analyze()
         return metrics.conversion_rate
 
-    async def completed_dialog_conversion(self):
-        ...
-
-
-if __name__ == "__main__":
-    async def main():
-        session = DatabaseSessionManager(
-            database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
-        m = BasicMetricCalculator(research_id=80, session_manager=session)
-        r = await m.analyze()
-        print(r)
-
-
-    asyncio.run(main())
+    async def completed_dialog_conversion(self): ...

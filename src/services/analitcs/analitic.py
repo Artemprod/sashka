@@ -1,28 +1,42 @@
 import asyncio
 import uuid
-from abc import abstractmethod, ABC
+from abc import ABC
+from abc import abstractmethod
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
+from typing import Union
 
 from loguru import logger
 
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.services.analitcs.decorator.collector import AnalyticCollector
 from src.services.analitcs.diolog import ResearchDialogs
-from src.services.analitcs.exporters import CsvExporter, ExcelExporter
-from src.services.analitcs.metrics import MetricCalculator, BasicMetricCalculator
-from src.services.analitcs.models.analitic import AnalyticDataBufferDTO, AnalyticFileDTO
+from src.services.analitcs.exporters import CsvExporter
+from src.services.analitcs.exporters import ExcelExporter
+from src.services.analitcs.metrics import BasicMetricCalculator
+from src.services.analitcs.metrics import MetricCalculator
+from src.services.analitcs.models.analitic import AnalyticDataBufferDTO
+from src.services.analitcs.models.analitic import AnalyticFileDTO
 
 
 class Analytic(ABC):
-    def __init__(self, research_id: int, session_manager, metric_calculator):
+    def __init__(
+        self,
+        research_id: int,
+        session_manager,
+        metric_calculator,
+        research_status: str = "done",
+    ):
         self.research_id = research_id
         self._session_manager = session_manager
         self.metric_calculator: MetricCalculator = metric_calculator(
-            research_id=research_id, session_manager=session_manager
+            research_status=research_status,
+            research_id=research_id,
+            session_manager=session_manager,
         )
         self._dialogs: Optional[ResearchDialogs] = None
+        self.research_status: str = research_status
 
     @property
     async def dialogs(self) -> ResearchDialogs:
@@ -35,8 +49,9 @@ class Analytic(ABC):
         """Загрузка диалогов для исследования."""
         try:
             dialogs_object = ResearchDialogs(
+                research_status=self.research_status,
                 research_id=self.research_id,
-                session_manager=self._session_manager
+                session_manager=self._session_manager,
             )
             self._dialogs = await dialogs_object.get_dialogs()
         except Exception as e:
@@ -79,42 +94,31 @@ class Analytic(ABC):
             raise ValueError(f"Unknown format of objects in dialogs: {[type(dialog) for dialog in dialogs]}")
 
 
-@AnalyticCollector
 class AnalyticCSV(Analytic):
-    type = 'csv'
+    type = "csv"
     """Возвращает серию файлов: отдельные файлы для диалогов, отдельный файл для аналитики в формате csv."""
 
     async def provide_data(self, folder_path: str = None) -> Union[AnalyticDataBufferDTO, AnalyticFileDTO]:
         """Возвращает список csv по диалогам и аналитик."""
         dialogs_objects = await self.dialogs
-        return await self._process_dialogs(dialogs_objects.dialogs, folder_path, CsvExporter, 'csv')
+        return await self._process_dialogs(dialogs_objects.dialogs, folder_path, CsvExporter, "csv")
 
 
-@AnalyticCollector
 class AnalyticExcel(Analytic):
-    type = 'excel'
+    type = "excel"
     """Возвращает серию файлов: отдельные файлы для диалогов, отдельный файл для аналитики в формате excel."""
 
     async def provide_data(self, folder_path: str = None) -> Union[AnalyticDataBufferDTO, AnalyticFileDTO]:
         """Возвращает список excel по диалогам и аналитик."""
-        dialogs_objects = await self.dialogs
-        return await self._process_dialogs(dialogs_objects.dialogs, folder_path, ExcelExporter, 'excel')
+        dialogs_objects: ResearchDialogs = await self.dialogs
+        return await self._process_dialogs(dialogs_objects.dialogs, folder_path, ExcelExporter, "excel")
 
 
-if __name__ == "__main__":
-    async def main():
-        session = DatabaseSessionManager(
-            database_url='postgresql+asyncpg://postgres:1234@localhost:5432/cusdever_client')
-        csv_class: AnalyticCSV = AnalyticCollector.instruments['csv'](research_id=80,
-                                                                      session_manager=session,
-                                                                      metric_calculator=BasicMetricCalculator)
-        excel_class = AnalyticCollector.instruments['excel'](research_id=80,
-                                                             session_manager=session,
-                                                             metric_calculator=BasicMetricCalculator)
-        print(csv_class)  # Должно напечатать класс AnalyticCSV
-        print(excel_class)  # Должно напечатать класс AnalyticExcel
-        r = await excel_class.provide_data(path=r'D:\projects\AIPO_V2\CUSTDEVER\src\services\analitcs\test.xlsx')
-        print(r)
+class AnalyticJsonDialogs(Analytic):
+    type = "json"
 
-
-    asyncio.run(main())
+    async def provide_data(self, folder_path: str = None):
+        """Возвращает список диалогов по иследованию."""
+        dialogs_objects: ResearchDialogs = await self.dialogs
+        result = await dialogs_objects.to_json()
+        return result

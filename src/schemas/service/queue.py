@@ -1,6 +1,6 @@
-from datetime import datetime
-from typing import Optional, Union
-from pydantic import BaseModel, Field, validator, field_validator
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 # Base headers class
@@ -15,6 +15,7 @@ class TelegramTimeDelaHeadersDTO(NatsHeaders):
     user: str
     send_time_msg_timestamp: str
     send_time_next_message_timestamp: str
+    research_id: str
 
 
 class TelegramSimpleHeadersDTO(NatsHeaders):

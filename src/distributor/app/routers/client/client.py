@@ -7,10 +7,7 @@ from faststream.nats import NatsRouter
 from configs.nats_queues import nats_distributor_settings
 from src.dispatcher.dispatcher import CommunicatorDispatcher
 from src.distributor.app.schemas.singup import TelegramServiceClientSignupDTO
-from src.distributor.telegram_client.pyro.client.container import ClientsManager
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
-
-from src.distributor.telegram_client.pyro.client.roters.message.router import answ_router
 from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
 
 router = NatsRouter()
@@ -29,7 +26,8 @@ async def create_telethon_client(message, context=Context()):
     # todo сделать присвоение атрибутов к комуникатору
     # todo сделать передовать распокованый словарь в метод чтобы сджелать более адаптивным
     communicator = CommunicatorDispatcher(service_name=service_type).get_communicator(
-        user_id=service_dto.service_data.user_id)
+        user_id=service_dto.service_data.user_id
+    )
     task = asyncio.create_task(container.create_and_start_client(client_configs=client_dto, communicator=communicator))
     try:
         await task

@@ -1,40 +1,58 @@
-
 class SQLQueryBuilder:
-
     @staticmethod
-    def users_in_research(research_id):
+    def users_in_done_research(research_id):
         query = """
         SELECT tg_user_id	
         FROM public.users
         WHERE user_id in (SELECT user_id 
-                            FROM public.user_research 
+                            FROM public.archived_user_research 
                             WHERE research_id = {research_id})
         """
 
         return query.format(research_id=research_id)
 
     @staticmethod
-    def assistant_messages(telegram_user_id):
+    def users_in_progress_research(research_id):
+        query = """
+          SELECT tg_user_id	
+          FROM public.users
+          WHERE user_id in (SELECT user_id 
+                              FROM public.user_research 
+                              WHERE research_id = {research_id})
+          """
+
+        return query.format(research_id=research_id)
+
+    @staticmethod
+    def assistant_messages(telegram_user_id, research_id):
         query = """
         SELECT 
-            am.to_user_id,
+            am.user_telegram_id,
             am.text,
             am.created_at
         FROM assistant_messages am
-        WHERE to_user_id = {telegram_user_id}
+        WHERE user_telegram_id = {telegram_user_id} and research_id = {research_id}
         """
-        return query.format(telegram_user_id=telegram_user_id)
+        return query.format(telegram_user_id=telegram_user_id, research_id=research_id)
 
     @staticmethod
-    def user_messages(telegram_user_id):
+    def user_messages(telegram_user_id, research_id):
         query = """
-        SELECT 
-            um.from_user,
+        SELECT
+            um.user_telegram_id,
             um.text,
             um.created_at
         FROM user_messages um
-        WHERE from_user = {telegram_user_id}
+        WHERE user_telegram_id = {telegram_user_id} and research_id = {research_id}
         """
-        return query.format(telegram_user_id=telegram_user_id)
+        return query.format(telegram_user_id=telegram_user_id, research_id=research_id)
 
+    @staticmethod
+    def users_tg_link(user_telegram_id):
+        query = """
+            SELECT tg_link	
+            FROM public.users
+            WHERE tg_user_id = {user_telegram_id}
+            """
 
+        return query.format(user_telegram_id=user_telegram_id)

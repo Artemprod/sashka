@@ -6,4 +6,3 @@ class MessageError(Exception):
 class FirstSendMessageError(MessageError):
     def __repr__(self):
         return f"Cant send first message   {self.msg}"
-

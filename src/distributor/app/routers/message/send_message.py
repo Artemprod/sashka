@@ -1,52 +1,92 @@
+from faststream import Context
+from faststream import Depends
+from faststream.nats import JStream
+from faststream.nats import NatsMessage
+from faststream.nats import NatsRouter
 from loguru import logger
-from faststream import Context, Depends
-from faststream.nats import NatsRouter, NatsMessage, JStream
+from nats.js.api import DeliverPolicy
+from nats.js.api import RetentionPolicy
 
 from configs.nats_queues import nats_distributor_settings
-from src.distributor.app.dependency.message import _get_data_from_headers
-from src.distributor.app.schemas.message import Datas
-from src.distributor.app.utils.message import send_message
-from nats.js.api import DeliverPolicy, RetentionPolicy
+from src.database.postgres import UserStatusEnum
+from src.database.repository.storage import RepoStorage
+from src.distributor.app.dependency.message import get_data_from_body, get_research_id, get_telegram_client_name
+from src.distributor.app.dependency.message import get_telegram_client
+from src.distributor.app.utils.message import process_message
+from src.distributor.app.schemas.message import MessageContext
 
 # Создаем маршрутизатор NATS и две очереди JStream
 router = NatsRouter()
 
 
-@router.subscriber(stream=JStream(name=nats_distributor_settings.message.first_message_message.stream,
-                                  retention=RetentionPolicy.WORK_QUEUE),
-                   subject=nats_distributor_settings.message.first_message_message.subject,
-                   deliver_policy=DeliverPolicy.ALL, no_ack=True)
-async def send_first_message_subscriber(body: str, msg: NatsMessage, context=Context(),
-                                        data: Datas = Depends(_get_data_from_headers)):
-    """Send the first message with delay"""
+@router.subscriber(
+    stream=JStream(
+        name=nats_distributor_settings.message.first_message_message.stream,
+        retention=RetentionPolicy.WORK_QUEUE
+    ),
+    subject=nats_distributor_settings.message.first_message_message.subject,
+    deliver_policy=DeliverPolicy.ALL,
+    no_ack=True,
+)
+async def send_first_message_subscriber(
+    body: str,
+    msg: NatsMessage,
+    context=Context(),
+    data=Depends(get_data_from_body),
+    client=Depends(get_telegram_client),
+    client_name=Depends(get_telegram_client_name),
+    research_id=Depends(get_research_id),
+):
+    print()
+    message_context = MessageContext(
+        client=client,
+        publisher=context.get("publisher"),
+        client_ban_checker=context.get("client_ban_checker"),
+        research_id=research_id,
+        client_name=client_name
+    )
 
-    if data.current_time < data.send_time:
-        delay = (data.send_time - data.current_time).total_seconds()
-        await msg.nack(delay=delay)
-        logger.info(f"Message {data.user, body}  delayed for {delay} ")
-    else:
-        try:
-            msg_data = await send_message(data.client, data.user, body)
-            logger.info(f"Message sent at {data.current_time}: {msg_data}")
-            await msg.ack()
-        except Exception as e:
-            logger.error(f"Error while sending message: {e}")
-            raise e
+    if not await process_message(
+        data=data,
+        msg=msg,
+        context=message_context,
+        is_first_message=True
+    ):
+        return
 
+    repository: RepoStorage = context.get("repository")
+    await repository.user_in_research_repo.short.update_user_status(
+        telegram_id=data.user.tg_user_id,
+        status=UserStatusEnum.IN_PROGRESS
+    )
 
-@router.subscriber(stream=JStream(name=nats_distributor_settings.message.send_message.stream,
-                                  retention=RetentionPolicy.WORK_QUEUE),
-                   subject=nats_distributor_settings.message.send_message.subject,
-                   deliver_policy=DeliverPolicy.ALL,
-                   no_ack=True)
-async def send_message_subscriber(body: str, msg: NatsMessage, context=Context(), data=Depends(_get_data_from_headers)):
+@router.subscriber(
+    stream=JStream(
+        name=nats_distributor_settings.message.send_message.stream,
+        retention=RetentionPolicy.WORK_QUEUE
+    ),
+    subject=nats_distributor_settings.message.send_message.subject,
+    deliver_policy=DeliverPolicy.ALL,
+    no_ack=True,
+)
+async def send_message_subscriber(
+        body: str,
+        msg: NatsMessage,
+        context=Context(),
+        data=Depends(get_data_from_body),
+        client=Depends(get_telegram_client),
+):
     """Send a conversation message."""
-    logger.info("Sending message...")
+    message_context = MessageContext(
+        client=client,
+        publisher=context.get("publisher"),
+        research_id=None,
+        client_name=None
+    )
 
-    try:
-        msg_data = await send_message(data.client, data.user, body)
-        logger.info(f"Message sent: {msg_data}")
-        await msg.ack()
-    except Exception as e:
-        logger.error(f"Failed to send message: {e}")
-        raise e
+    await process_message(
+        data=data,
+        msg=msg,
+        context=message_context,
+        is_first_message=False
+    )

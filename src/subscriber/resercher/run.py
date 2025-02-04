@@ -1,4 +1,3 @@
-
 import asyncio
 
 from src.subscriber.resercher.loader.create_app import create_app

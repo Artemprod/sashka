@@ -2,8 +2,6 @@ from faststream import Context
 from faststream.nats import NatsMessage
 from loguru import logger
 
-from src.schemas.communicator.message import IncomeUserMessageDTOQueue
-
 
 async def get_data_from_headers(body: str, msg: NatsMessage, context=Context()) -> int:
     # Проверка наличия заголовков

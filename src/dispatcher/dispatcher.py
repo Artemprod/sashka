@@ -1,9 +1,8 @@
 from src.dispatcher.communicators.consol import ConsoleCommunicator
-
-from src.dispatcher.communicators.reggestry import CommunicatorRegistryBase
 from src.dispatcher.communicators.telegram import TelegramCommunicator
 
-#TODO передаелать этот контенер под диспетчера
+# TODO передаелать этот контенер под диспетчера
+
 
 # class CommunicatorDispatcher:
 #     instruments = {}
@@ -26,7 +25,6 @@ class CommunicatorDispatcher:
     COMMUNICATORS = {
         "telegram": TelegramCommunicator,
         "console": ConsoleCommunicator,
-
     }
 
     def __init__(self, service_name):
@@ -37,4 +35,3 @@ class CommunicatorDispatcher:
         if communicator is None:
             raise ValueError(f"No service {self.service_name}")
         return communicator(*args, **kwargs)
-

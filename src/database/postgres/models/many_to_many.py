@@ -1,27 +1,44 @@
-from datetime import datetime
+from sqlalchemy import BigInteger
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
 
-from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Boolean, ForeignKey, DateTime, BigInteger
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from src.database.postgres.models.base import ModelBase, intpk, str_1024, created_at, str_2048, str_10
+from src.database.postgres.models.base import ModelBase
+from src.database.postgres.models.base import created_at
 
 
 class UserResearch(ModelBase):
-    __tablename__ = 'user_research'
+    __tablename__ = "user_research"
 
     user_id: Mapped[int] = mapped_column(
         BigInteger,
-        ForeignKey('users.user_id',
-                   ondelete="CASCADE"),
-        primary_key=True
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        primary_key=True,
+        unique=True,
     )
 
     research_id: Mapped[int] = mapped_column(
         BigInteger,
-        ForeignKey('researches.research_id',
-                   ondelete="CASCADE"),
+        ForeignKey("researches.research_id", ondelete="CASCADE"),
         primary_key=True,
+    )
+    created_at: Mapped[created_at]
 
+
+class ArchivedUserResearch(ModelBase):
+    __tablename__ = "archived_user_research"
+
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        primary_key=True,
+        unique=False,
+    )
+
+    research_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("researches.research_id", ondelete="CASCADE"),
+        primary_key=True,
     )
 
     created_at: Mapped[created_at]

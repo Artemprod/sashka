@@ -1,18 +1,10 @@
-import sys
-from enum import Enum
-from pathlib import Path
-
-from pydantic import BaseModel, Field, __version__
-from typing import Union, Optional, Dict
-
-from pyrogram.enums import ParseMode
+from pydantic import BaseModel
 
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 
 
 class ServiceData(BaseModel):
     user_id: int
-
 
 
 class TelegramServiceClientSignupDTO(BaseModel):

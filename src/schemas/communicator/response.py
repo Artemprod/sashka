@@ -1,5 +1,5 @@
-
-from typing import List, Dict
+from typing import Dict
+from typing import List
 
 from pydantic import BaseModel
 
@@ -12,3 +12,7 @@ class SingleResponseDTO(BaseModel):
 class ContextResponseDTO(BaseModel):
     context: List[Dict]
     response: str
+
+
+class TranscribeResponseDTO(BaseModel):
+    text: str

@@ -1,14 +1,15 @@
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
-from loguru import logger
-from environs import Env
-from faststream import FastStream, ContextRepo
+
+from faststream import ContextRepo
+from faststream import FastStream
 from faststream.nats import NatsBroker
+from loguru import logger
 
 from configs.nats_queues import nast_base_settings
-from src.subscriber.resercher.routers.process import router as process_router
 from src.subscriber.resercher.loader.on_startup import initialize_research_processor
+from src.subscriber.resercher.routers.process import router as process_router
 
 sys.path.append(str(Path(__file__).parent.parent))
 

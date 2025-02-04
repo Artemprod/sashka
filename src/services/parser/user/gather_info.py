@@ -1,25 +1,26 @@
-import asyncio
 import json
-from abc import ABC, abstractmethod
-from typing import List, Optional, AsyncGenerator
-
-from faststream.nats import NatsBroker
+from abc import ABC
+from abc import abstractmethod
+from typing import AsyncGenerator
+from typing import List
+from typing import Optional
 
 from loguru import logger
 
 from configs.nats_queues import nats_distributor_settings
-from src.distributor.app.schemas.response import ErrorResponse
 from src.schemas.service.client import TelegramClientDTOGet
-from src.schemas.service.queue import NatsReplyRequestQueueMessageDTOStreem, TelegramObjectHeadersDTO
-from src.schemas.service.response import ResponseModel
-from src.schemas.service.user import UserDTOQueue, UserDTO, UserDTOBase
+from src.schemas.service.queue import NatsReplyRequestQueueMessageDTOStreem
+from src.schemas.service.queue import TelegramObjectHeadersDTO
+from src.schemas.service.response import ResponseModel, ErrorResponse
+from src.schemas.service.user import UserDTO
+from src.schemas.service.user import UserDTOBase
+from src.schemas.service.user import UserDTOQueue
 from src.services.publisher.publisher import NatsPublisher
 
 
 class UserInformationCollector(ABC):
-
     @abstractmethod
-    async def collect_users_information(self, *args, **kwargs) -> List['UserDTO']:
+    async def collect_users_information(self, *args, **kwargs) -> List["UserDTO"]:
         pass
 
 
@@ -29,38 +30,43 @@ class TelegramUserInformationCollector(UserInformationCollector):
     def __init__(self, publisher: NatsPublisher):
         self.publisher = publisher
 
-    async def collect_users_information(self, users: List[UserDTOBase], client: TelegramClientDTOGet) -> Optional[
-        List[UserDTO]]:
+    async def collect_users_information(
+        self, users: List[UserDTOBase], client: TelegramClientDTOGet
+    ) -> Optional[List[UserDTO]]:
+        """
+        Собирает данные о пользоватле
+        """
         message = self._create_nats_message(users, client)
-        print("NATS MESSAGE", message)
         try:
             response = await self.publisher.request_reply(nats_message=message)
-            print()
+
             if response:
-                logger.info(f"Ответ от сервера получен")
+                logger.info("Ответ от сервера получен")
                 response_model = ResponseModel.model_validate_json(response)
-                if not isinstance(response_model, ErrorResponse):
-                    return await self._parse_users_info(response_model)
-                else:
-                    logger.warning(f"Error in response {response_model.error_message}")
+
+                if not isinstance(response_model.response, ErrorResponse):
+                    parsed_users = await self._parse_users_info(response_model)
+                    return parsed_users
+
+                elif isinstance(response_model.response, ErrorResponse):
+                    logger.warning(f"Error in response {response_model.response.error_message}")
+
         except Exception as e:
             logger.error(f"Ошибка при сборе информации о пользователях: {e}")
             raise
 
         return None
 
-    def _create_nats_message(self, users: List[UserDTOBase],
-                             client: TelegramClientDTOGet) -> NatsReplyRequestQueueMessageDTOStreem:
-        user_dicts = [user.dict() for user in users]
+    def _create_nats_message(
+        self, users: List[UserDTOBase], client: TelegramClientDTOGet
+    ) -> NatsReplyRequestQueueMessageDTOStreem:
+        user_dicts = [user.model_dump() for user in users]
 
-        headers = TelegramObjectHeadersDTO(
-            tg_client=client.json(),
-            user=json.dumps(user_dicts)
-        )
+        headers = TelegramObjectHeadersDTO(tg_client=client.model_dump_json(), user=json.dumps(user_dicts))
 
         return NatsReplyRequestQueueMessageDTOStreem(
             subject=self.PARSE_SUBJECT,
-            headers=headers.dict(),
+            headers=headers.model_dump(),
         )
 
     async def _parse_users_info(self, response: ResponseModel) -> Optional[List[UserDTO]]:
@@ -72,10 +78,23 @@ class TelegramUserInformationCollector(UserInformationCollector):
 
     @staticmethod
     async def _user_generator(response: ResponseModel) -> AsyncGenerator[UserDTOQueue, None]:
-
-        for user_data in response.response.data:
-            yield user_data
+        if not isinstance(response.response, ErrorResponse):
+            for user_data in response.response.data:
+                yield user_data
 
     @staticmethod
     async def convert_to_user_dto(user_data: UserDTOQueue) -> UserDTO:
-        return UserDTO(**user_data.dict())
+        return UserDTO(
+            name=user_data.name,
+            username=user_data.username,
+            tg_user_id=user_data.tg_user_id,
+            second_name=user_data.second_name,
+            phone_number=user_data.phone_number,
+            tg_link=f"https://t.me/{user_data.username}" if user_data.username else None,
+            is_verified=user_data.is_verified,
+            is_scam=user_data.is_scam,
+            is_fake=user_data.is_fake,
+            is_premium=user_data.is_premium,
+            last_online_date=user_data.last_online_date,
+            language_code=user_data.language_code,
+        )
