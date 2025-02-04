@@ -20,7 +20,6 @@ from src.distributor.app.schemas.message import MessageContext
 # Создаем маршрутизатор NATS и две очереди JStream
 router = NatsRouter()
 
-
 @router.subscriber(
     stream=JStream(
         name=nats_distributor_settings.message.first_message_message.stream,
