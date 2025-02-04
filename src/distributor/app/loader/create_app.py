@@ -11,12 +11,14 @@ from configs.nats_queues import nast_base_settings
 from src.database.connections.redis_connect import RedisClient
 from src.database.postgres.engine.session import DatabaseSessionManager
 from src.database.repository.storage import RepoStorage
+from src.distributor.app.loader.on_startup import initialize_client_ban_checker
 from src.distributor.app.loader.on_startup import initialize_pyrogram_container
 from src.distributor.app.loader.on_startup import initialize_telethon_container
 from src.distributor.app.routers.client.client import router as client_router
 from src.distributor.app.routers.message.send_message import router as message_router
 from src.distributor.app.routers.parse.gather_info import router as parse_router
 from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
+from src.services.publisher.publisher import NatsPublisher
 
 
 @asynccontextmanager
@@ -30,9 +32,18 @@ async def lifespan(context: ContextRepo):
     pyrogram_container = initialize_pyrogram_container(
         repository=repository, redis_connection_manager=redis_connection_manager
     )
+    publisher = NatsPublisher()
+    client_ban_checker = initialize_client_ban_checker(
+        publisher=publisher,
+        repository=repository
+    )
 
     context.set_global("telethon_container", telethon_container)
     context.set_global("pyrogram_container", pyrogram_container)
+    context.set_global("repository", repository)
+    context.set_global("publisher", publisher)
+    context.set_global("client_ban_checker", client_ban_checker)
+
     logger.info("app has been startup")
     client_task = asyncio.create_task(telethon_container.start_all_clients())
     logger.info(f"clients started {client_task}")

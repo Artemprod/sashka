@@ -16,6 +16,7 @@ from src.web.routers.account.client import router as client_router
 from src.web.routers.analitics.dialog import router as dialog_router
 from src.web.routers.configuration.configuration import router as configuration_router
 from src.web.routers.reserach.telegram import router as research_router
+from src.web.utils.middlewares import add_process_time_header
 
 
 @asynccontextmanager
@@ -60,4 +61,7 @@ def create_server(lifespan_func=lifespan):
 
     # Подключение директории статических файлов
     server.mount("/static", StaticFiles(directory=static_directory_path), name="static")
+
+    server.middleware("http")(add_process_time_header)
+
     return server

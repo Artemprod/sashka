@@ -2,16 +2,18 @@ import asyncio
 import json
 import math
 import re
+from asyncio import Task
 from datetime import datetime
 from datetime import timedelta
-from datetime import timezone
 from typing import Dict
 from typing import List
 from typing import Optional
 import pytz
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from loguru import logger
 from mako.testing.helpers import result_lines
 
+from configs.database import database_postgres_settings
 from configs.nats_queues import nats_subscriber_communicator_settings
 from configs.research import research_pingator_settings
 from re import Pattern
@@ -35,6 +37,8 @@ from src.services.publisher.publisher import NatsPublisher
 from src.services.research.models import PingDataQueueDTO
 from src.services.research.telegram.decorators.finish_reserch import move_users_to_archive
 from src.services.research.utils import CyclePingAttemptCalculator
+from src.services.scheduler.manager import AsyncRedisApschedulerManager
+
 from src.web.models.configuration import ConfigurationSchema
 from src.utils.wrappers import async_wrap
 
@@ -48,7 +52,7 @@ class BaseStopper:
 
     @staticmethod
     def _load_settings() -> Dict[str, int]:
-        return {"delay_check_interval": 60}
+        return {"delay_check_interval": 2}
 
 
 class ResearchStarter:
@@ -58,7 +62,10 @@ class ResearchStarter:
         self.settings = self._load_seatings()
 
     def _load_seatings(self):
-        return {"command_subject": nats_subscriber_communicator_settings.commands.start_dialog}
+        return {
+            "command_subject": nats_subscriber_communicator_settings.commands.start_dialog,
+            "answer_to_message": nats_subscriber_communicator_settings.commands.answer_to_message
+        }
 
     async def start_up_research(self, research_id: int) -> None:
         """Начинает исследование, разослав сообщения пользователям."""
@@ -68,17 +75,12 @@ class ResearchStarter:
         )
         user_group: List[UserDTOFull] = await self._get_users_in_research(research_id)
 
-        await self.repository.status_repo.user_status.update_status_group_of_user(
-            user_group=[user.tg_user_id for user in user_group], status=UserStatusEnum.IN_PROGRESS
-        )
-        users_dto = [
-            UserDTOBase(username=user.username, tg_user_id=user.tg_user_id).model_dump() for user in user_group
-        ]
-        await self._publish_star_dialog_command(users=users_dto, research_id=research_id)
+        users_dto = self._convert_users_to_dto(user_group)
+        await self._publish_start_dialog_command(users=users_dto, research_id=research_id)
 
-        logger.info("Команда отправлена ")
+        logger.info("Команда на запуск исследования отправлена ")
 
-    async def _publish_star_dialog_command(self, users: List[dict], research_id: int):
+    async def _publish_start_dialog_command(self, users: List[dict], research_id: int):
         subject_message: NatsQueueMessageDTOSubject = NatsQueueMessageDTOSubject(
             message="",
             subject=self.settings["command_subject"],
@@ -95,6 +97,18 @@ class ResearchStarter:
             UserDTOFull
         ] = await self.repository.user_in_research_repo.short.get_users_by_research_id(research_id=research_id)
         return users_in_research
+
+    @staticmethod
+    def _convert_users_to_dto(users: List[UserDTOFull]) -> List[dict]:
+        """
+        Преобразует список объектов UserDTOFull в формат DTO.
+        """
+        return [
+            UserDTOBase(
+                username=user.username,
+                tg_user_id=user.tg_user_id
+            ).model_dump() for user in users
+        ]
 
 
 class ResearchStopper:
@@ -153,16 +167,16 @@ class ResearchStopper:
 
     async def _update_user_statuses(self, user_group: List[UserDTOFull]) -> None:
         """Обновление статусов пользователей."""
+        user_ids = [user.user_id for user in user_group]
         await self.repository.status_repo.user_status.update_status_group_of_user(
-            user_group=user_group, status=UserStatusEnum.DONE
+            user_group=user_ids, status=UserStatusEnum.DONE
         )
         logger.info(f"Статусы пользователей в группе {user_group} обновлены на DONE")
 
     async def _get_users_in_research(self, research_id) -> List[UserDTOFull]:
-        users_in_research = await self.repository.user_in_research_repo.short.get_users_by_research_id(
+        return await self.repository.user_in_research_repo.short.get_users_by_research_id(
             research_id=research_id
         )
-        return [user.tg_user_id for user in users_in_research]
 
     async def _get_users_in_progress(self, research_id) -> int:
         users_in_progress = await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
@@ -176,6 +190,59 @@ class ResearchStopper:
         return research_status.status_name
 
 
+class ResearchBanner(ResearchStarter):
+
+    async def ban_research(self, research_id: int):
+        await self.repository.status_repo.research_status.change_research_status(
+            research_id=research_id,
+            status=ResearchStatusEnum.BANNED
+        )
+        logger.info(f"Статус исследования {research_id} обновлён на BANNED")
+
+    async def unban_research(self, research_id: int):
+        await self.repository.status_repo.research_status.change_research_status(
+            research_id=research_id,
+            status=ResearchStatusEnum.IN_PROGRESS
+        )
+
+        users_without_first_message: List[UserDTOFull] = \
+            await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
+                research_id=research_id,
+                status=UserStatusEnum.WAIT
+            )
+
+        users_without_answered_message: List[UserDTOFull] = \
+            await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
+                research_id=research_id,
+                status=UserStatusEnum.NOT_ANSWERED
+            )
+
+        await self._publish_start_dialog_command(
+            users=self._convert_users_to_dto(users_without_first_message),
+            research_id=research_id
+        )
+
+        await self._publish_answer_to_message(
+            users=self._convert_users_to_dto(users_without_answered_message),
+            research_id=research_id
+        )
+
+    async def _publish_answer_to_message(
+            self,
+            users: List[dict],
+            research_id: int
+    ):
+        subject_message: NatsQueueMessageDTOSubject = NatsQueueMessageDTOSubject(
+            message="",
+            subject=self.settings["answer_to_message"],
+            headers={
+                "users": json.dumps(users),
+                "research_id": str(research_id)
+            },
+        )
+        await self.publisher.publish_message_to_subject(subject_message=subject_message)
+
+
 class UserDoneStopper(BaseStopper):
     async def monitor_user_status(self, research_id: int) -> int:
         while True:
@@ -185,7 +252,6 @@ class UserDoneStopper(BaseStopper):
                 logger.info(f"Завершаю исследование {research_id}, так как закончились пользователи")
                 return 1
 
-            logger.info(f"Проверяю исследование {research_id}, пользователей в процессе: {users_in_progress}")
             await asyncio.sleep(self.settings["delay_check_interval"])
 
     async def _get_users_in_progress(self, research_id: int) -> int:
@@ -193,7 +259,10 @@ class UserDoneStopper(BaseStopper):
         users_in_progress = await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
             research_id=research_id, status=UserStatusEnum.IN_PROGRESS
         )
-        return len(users_in_progress)
+        users_in_wait = await self.repository.user_in_research_repo.short.get_users_by_research_with_status(
+            research_id=research_id, status=UserStatusEnum.WAIT
+        )
+        return len(users_in_progress) + len(users_in_wait)
 
 
 class ResearchStatusStopper(BaseStopper):
@@ -204,8 +273,6 @@ class ResearchStatusStopper(BaseStopper):
             if research_status not in [ResearchStatusEnum.IN_PROGRESS.value, ResearchStatusEnum.WAIT.value]:
                 logger.info(f"Завершаю исследование {research_id} по смене статуса. Статус {research_status}")
                 return 1
-
-            logger.info(f"Проверяю исследование {research_id}, статус исследования: {research_status}")
             await asyncio.sleep(self.settings["delay_check_interval"])
 
     async def _get_research_current_status(self, research_id: int) -> str:
@@ -236,7 +303,6 @@ class ResearchOverChecker(BaseStopper):
                 )
                 return 1
 
-            logger.info(f"Проверяю исследование {research_id}, оставшееся время иследвония : {end_date - current_time}")
 
             await asyncio.sleep(self.settings["delay_check_interval"])
 
@@ -384,7 +450,6 @@ class UserPingator:
 
             config = await self.get_config()
             if unresponded_messages > config.ping_max_messages:
-                logger.info(f"Превышено максимальное количество пингов для пользователя {user.tg_user_id}.")
                 return
 
             time_delay = self._ping_calculator.calculate(n=unresponded_messages)
@@ -496,44 +561,146 @@ class ResearchProcess:
     ):
         self.research_starter = ResearchStarter(repository=repository, publisher=publisher)
         self.research_stopper = ResearchStopper(repository, notifier)
+        self.research_banner = ResearchBanner(repository=repository, publisher=publisher)
         self.user_status_stopper = UserDoneStopper(repository=repository, stopper=self.research_stopper)
         self.research_status_stopper = ResearchStatusStopper(repository=repository, stopper=self.research_stopper)
         self.research_over_checker = ResearchOverChecker(repository, self.research_stopper)
         self.research_user_pingator = UserPingator(repo=repository, publisher=publisher)
 
+        # Словарь для хранения задач
+        self._tasks: Dict[int, List[Task]] = {}
+
     async def run(self, research_id: int) -> int:
-        """Основной цикл проведения исследования."""
+        """
+        Запуск основного цикла проведения исследования.
+        """
         await self.research_starter.start_up_research(research_id)
+        return await self._start_tasks(research_id)
 
-        # Запуск асинхронных задач для проверки завершения исследования
+    async def ban(
+            self,
+            research_id: int,
+    ) -> None:
+        """
+        Приостановить исследование, остановив все связанные задачи.
+        """
+        logger.info(f"Приостанавливаю исследование {research_id}.")
+        self._cancel_pending_tasks(research_id)
+        await self.research_banner.ban_research(research_id=research_id)
 
-        tasks_over_checker = asyncio.create_task(self.research_over_checker.monitor_time_completion(research_id))
-        task_user_done_status = asyncio.create_task(self.user_status_stopper.monitor_user_status(research_id))
-        task_research_done_status = asyncio.create_task(
-            self.research_status_stopper.monitor_research_status(research_id)
-        )
-        tasks_user_ping = asyncio.create_task(self.research_user_pingator.ping_users(research_id))
+    async def unban(
+            self,
+            research_id: int,
+    ) -> int:
+        """
+        Возобновление выполнения исследования.
+        """
+        logger.info(f"Возобновляю выполнение исследования {research_id}.")
+        await self.research_banner.unban_research(research_id)
+        return await self._start_tasks(research_id)
+
+    async def _start_tasks(self, research_id: int) -> int:
+        """
+        Общий метод для запуска задач исследования.
+        """
+        # Проверяем, если задачи уже запущены
+        if research_id in self._tasks:
+            logger.warning(f"Исследование {research_id} уже запущено.")
+            return 0
+
+        # Создаём и сохраняем задачи
+        self._tasks[research_id] = self._create_tasks(research_id)
+        logger.info(f"Задачи исследования {research_id} запущены.")
 
         try:
-            # Ждём, когда одна из задач завершится, остальные будут отменены
+            # Ожидание завершения одной из задач
             done, pending = await asyncio.wait(
-                [tasks_over_checker, task_user_done_status, task_research_done_status, tasks_user_ping],
+                self._tasks[research_id],
                 return_when=asyncio.FIRST_COMPLETED,
             )
 
-            logger.info(f"pending tasks {len(pending)}")
-            # Отмена всех оставшихся задач (например, пингатор может продолжать дольше нужного)
-            for task in pending:
-                task.cancel()
-            logger.info(f"All tasks stoped")
+            logger.info(f"Завершены задачи: {len(done)}. Отменяю оставшиеся задачи.")
+            logger.info(f"Done tasks: {done}")
+            self._cancel_pending_tasks(research_id, pending)
 
-            # Проверяем и заврешаем иследование
+            # Если задачи отменены или выбросили ошибку, то исследование не завершено
+            for task in done:
+                if task.cancelled():
+                    logger.info(f"Задача {task} была отменена.")
+                    return 0
+                elif task.exception():
+                    logger.error(f"Ошибка в задаче {task}: {task.exception()}")
+                    return 0  #
+
+            # Завершаем исследование
             await self.research_stopper.complete_research(research_id)
-
             logger.info(f"Все задачи исследования {research_id} завершены.")
+
+            # Отмена запланированных задач по этому исследованию
+            await self._cancel_scheduled_messages(research_id)
+            logger.info(f"Все задачи исследования {research_id} завершены.")
+
             return 1
 
         except Exception as e:
-            # Обработка ошибок на глобальном уровне
             logger.error(f"Ошибка в процессе исследования {research_id}: {str(e)}")
+            # Завершаем исследование
+            self._cancel_pending_tasks(research_id)
+
+            # Отмена запланированных задач по этому иследованию
+            await self._cancel_scheduled_messages(research_id)
             raise e
+
+
+    def _create_tasks(self, research_id: int) -> list[Task]:
+        """Создаёт список задач для исследования."""
+        return [
+            asyncio.create_task(self.research_over_checker.monitor_time_completion(research_id)),
+            asyncio.create_task(self.user_status_stopper.monitor_user_status(research_id)),
+            asyncio.create_task(self.research_status_stopper.monitor_research_status(research_id)),
+            asyncio.create_task(self.research_user_pingator.ping_users(research_id)),
+        ]
+
+    def _cancel_pending_tasks(
+            self,
+            research_id: int,
+            tasks: Optional[List[Task]]=None
+    ) -> None:
+        """
+        Отменяет все задачи исследования
+        """
+        if research_id not in self._tasks:
+            logger.info(f"Задачи для исследования {research_id} не найдены.")
+            return
+
+        tasks_to_cancel = tasks or self._tasks[research_id]
+        for task in tasks_to_cancel:
+            task.cancel()
+            logger.info(f"Задача {task} отменена.")
+
+        # Удаляем задачи из словаря
+        if not tasks:
+            del self._tasks[research_id]
+
+    @staticmethod
+    async def _cancel_scheduled_messages(
+            research_id: int,
+    )->None:
+        """
+        Отменяет все запланированые таски по первому сообщению
+        """
+        schedular = AsyncRedisApschedulerManager()
+        schedular.start()
+        try:
+            schedular.start()
+            await schedular.delete_scheduled_task(prefix=f'research:{research_id}')
+            logger.debug(f"Задачи отменена")
+
+        except Exception as e:
+            logger.error(f"Ошибка завершения запланированных работ")
+            raise e
+
+        finally:
+            schedular.shutdown()
+            del schedular
+            logger.debug(f"Объект планировщика удален")

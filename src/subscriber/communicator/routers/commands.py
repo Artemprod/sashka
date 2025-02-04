@@ -28,7 +28,6 @@ async def command_dialog_start(
             communicator.make_first_message_distribution(command_data.research_id, command_data.users)
         )
         logger.debug("ВЫЗВАЛАСЬ ТАСКА С ОЗДАНИЕМ ИСЛЕДОВНИЯ  ")
-        logger.info("reply to message ")
     except Exception as e:
         logger.error("Failed to send first message ")
         raise e

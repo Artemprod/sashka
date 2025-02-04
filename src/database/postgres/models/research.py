@@ -19,7 +19,6 @@ class Research(ModelBase):
     __tablename__ = "researches"
     __table_args__ = (
         Index("idx_research_owner_id", "owner_id"),
-        UniqueConstraint("research_uuid", name="uq_research_uuid"),
         Index("idx_research_start_date", "start_date"),
         Index("idx_research_end_date", "end_date"),
         Index("idx_research_created_at", "created_at"),

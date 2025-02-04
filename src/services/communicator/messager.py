@@ -1,5 +1,6 @@
 import asyncio
 import json
+import pickle
 
 from datetime import datetime
 from datetime import timedelta
@@ -19,7 +20,6 @@ from apscheduler.triggers.date import DateTrigger
 from loguru import logger
 from pytz import utc
 
-from configs.communicator import communicator_first_message_policy
 from configs.redis import redis_apscheduler_config
 from src.database.postgres.models.enum_types import UserStatusEnum
 from src.database.repository.storage import RepoStorage
@@ -48,6 +48,7 @@ from src.services.communicator.request import SingleRequest
 from src.services.communicator.message_waiter import MessageWaiter
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.inspector import StopWordChecker
+from src.services.scheduler.manager import BaseAsyncSchedularManager, AsyncPostgresSchedularManager
 from src.web.models.configuration import ConfigurationSchema
 
 
@@ -64,7 +65,7 @@ class MessageGeneratorTimeDelay:
 
         configuration = await self.get_configuration()
 
-        people_per_day = configuration.communicator_people_in_bunch
+        people_per_day = max(1, configuration.communicator_people_in_bunch)  # Гарантируем, что шаг в range() не будет 0
         delay_between_bunch = timedelta(hours=configuration.communicator_delay_between_bunch_hours)
         delay_between_messages = timedelta(minutes=configuration.communicator_delay_between_message_in_bunch_minutes)
 
@@ -218,17 +219,28 @@ class BaseMessageHandler:
 
 
 class MessageFirstSend(BaseMessageHandler):
-    """Отправляет первое сообщение. Для работы необходимо имя пользователя, чтобы отправить сообщение незнакомому пользователю, и его Telegram ID, чтобы сохранить сообщение в базе данных."""
+    """Отправляет первое сообщение. Для работы необходимо имя пользователя,
+     чтобы отправить сообщение незнакомому пользователю, и его Telegram ID,
+     чтобы сохранить сообщение в базе данных."""
 
     def __init__(
-        self, publisher: "NatsPublisher", repository: "RepoStorage", single_request: "SingleRequest", prompt_generator
+        self,
+            publisher: "NatsPublisher",
+            repository: "RepoStorage",
+            single_request: "SingleRequest",
+            prompt_generator,
+
     ):
         super().__init__(publisher, repository, prompt_generator)
 
         self.message_delay_generator = MessageGeneratorTimeDelay(repository=repository)
         self.single_request = single_request
 
-    async def handle(self, users: List[UserDTOBase], research_id: int, destination_configs: "NatsDestinationDTO"):
+
+    async def handle(self, users: List[UserDTOBase],
+                     research_id: int,
+                     destination_configs: "NatsDestinationDTO"):
+
         client = await self._get_client(research_id)
         assistant_id = await self.get_assistant(research_id)
         start_date = await self.get_research_start_date(research_id)
@@ -241,14 +253,19 @@ class MessageFirstSend(BaseMessageHandler):
 
         # стоит это переписать. Можно часть запросов из бд перенаправить в редис, а остальные данные
         # вытягивать одним запросом
-        async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
-            await self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
 
-        # tasks = [
-        #     self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
-        #     async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date)
-        # ]
-        # await asyncio.gather(*tasks)
+        # планирование первго сообщения можно тут
+
+        async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
+
+            self.schedular.schedular.add_job(
+                                             func=print,
+                                             args=[user, send_time, research_id, client, assistant_id, destination_configs],
+                                             trigger=DateTrigger(run_date=send_time,
+                                                                 timezone=pytz.utc),
+                id=f"first_message:research:{research_id}:user:{user}:{int(datetime.now().timestamp())}",
+                name=f"first_message_generation:{research_id}:{user}")
+
 
     async def _get_client(self, research_id: int) -> "TelegramClientDTOGet":
         client = await self.get_client_name(research_id)
@@ -280,7 +297,14 @@ class MessageFirstSend(BaseMessageHandler):
             )
 
             logger.debug(f"СООБЩЕНИЕ К ОТПРАВКЕ  {content}")
-            await self._publish_message(content, user, send_time, client, destination_configs)
+            await self._publish_message(
+                content=content,
+                user=user,
+                send_time=send_time,
+                client=client,
+                destination_configs=destination_configs,
+                research_id=research_id
+            )
             await self._update_user_status(user.tg_user_id)
 
         except Exception as e:
@@ -294,30 +318,52 @@ class MessageFirstSend(BaseMessageHandler):
         send_time: datetime,
         client: "TelegramClientDTOGet",
         destination_configs: "NatsDestinationDTO",
+        research_id: int
     ):
-        publish_message = await self._create_publish_message(content, user, send_time, client, destination_configs)
+        publish_message = await self._create_publish_message_(
+            content=content,
+            user=user,
+            client=client,
+            destination_configs=destination_configs,
+            research_id=research_id
+        )
         await self.publisher.publish_message_to_stream(stream_message=publish_message)
 
-    async def _create_publish_message(
-        self,
-        content: "SingleResponseDTO",
-        user: UserDTOBase,
-        send_time: datetime,
-        client: "TelegramClientDTOGet",
-        destination_configs: "NatsDestinationDTO",
+
+    async def _create_publish_message_(
+            self,
+            content: "SingleResponseDTO",
+            user: UserDTOBase,
+            client: "TelegramClientDTOGet",
+            destination_configs: "NatsDestinationDTO",
+            research_id: int,
     ) -> "NatsQueueMessageDTOStreem":
-        headers = TelegramTimeDelaHeadersDTO(
-            tg_client_name=str(client.name),
-            user=json.dumps(user.model_dump()),
-            send_time_msg_timestamp=str(datetime.now(tz=timezone.utc).timestamp()),
-            send_time_next_message_timestamp=str(send_time.timestamp()),
-        )
+        data = {
+            "message": content.response,
+            "tg_client": str(client.name),
+            "user": user.model_dump(),
+            "research_id": research_id
+        }
         return self.publisher.form_stream_message(
-            message=content.response,
-            subject=destination_configs.subject,
-            stream=destination_configs.stream,
-            headers=headers.model_dump(),
+            message=json.dumps(data), subject=destination_configs.subject, stream=destination_configs.stream
         )
+
+    @staticmethod
+    def _make_send_time_delay(
+            send_time: datetime
+    ) -> datetime:
+        """
+        Checks if the time of sending a message is less than the current time.
+
+        If the time of sending a message is less than the current time, then returns the current time plus 10 seconds.
+        Otherwise, returns the original send time plus 10 seconds.
+        """
+
+        current_time = datetime.now(tz=pytz.utc).replace(tzinfo=None)
+        if send_time < current_time:
+            return current_time + timedelta(seconds=10)
+        return send_time + timedelta(seconds=10)
+
 
     async def _update_user_status(self, telegram_id: int) -> bool:
         try:
@@ -358,6 +404,7 @@ class ScheduledFirstMessage(MessageFirstSend):
         destination_configs: "NatsDestinationDTO",
     ):
         try:
+            send_time = self._make_send_time_delay(send_time)
             single_request_object = await self.form_single_request(
                 telegram_user_id=user.tg_user_id, research_id=research_id
             )
@@ -372,8 +419,13 @@ class ScheduledFirstMessage(MessageFirstSend):
                 assistant_id=assistant_id,
                 client_id=client.client_id,
             )
-            publish_message = await self._create_publish_message_(content, user, client, destination_configs)
-
+            publish_message = await self._create_publish_message_(
+                content=content,
+                user=user,
+                client=client,
+                destination_configs=destination_configs,
+                research_id=research_id
+            )
             # Добавляем асинхронную корутину в планировщик
             self.scheduler.add_job(
                 self.publisher.publish_message_to_stream,
@@ -382,8 +434,6 @@ class ScheduledFirstMessage(MessageFirstSend):
             )
 
             logger.debug("CООБЩЕНИЕ ЗАПЛАНИРОВАНО К ОТПРОАВКЕ ")
-            # TODO делать апдейт статуса когда ? когда отпралися  ?
-            await self._update_user_status(user.tg_user_id)
 
         except Exception as e:
             logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
@@ -395,12 +445,33 @@ class ScheduledFirstMessage(MessageFirstSend):
         user: UserDTOBase,
         client: "TelegramClientDTOGet",
         destination_configs: "NatsDestinationDTO",
+        research_id: int,
     ) -> "NatsQueueMessageDTOStreem":
-        data = {"message": content.response, "tg_client": str(client.name), "user": user.dict()}
+        data = {
+            "message": content.response,
+            "tg_client": str(client.name),
+            "user": user.model_dump(),
+            "research_id": research_id
+        }
         return self.publisher.form_stream_message(
             message=json.dumps(data), subject=destination_configs.subject, stream=destination_configs.stream
         )
 
+    @staticmethod
+    def _make_send_time_delay(
+            send_time: datetime
+    ) -> datetime:
+        """
+        Checks if the time of sending a message is less than the current time.
+
+        If the time of sending a message is less than the current time, then returns the current time plus 10 seconds.
+        Otherwise, returns the original send time plus 10 seconds.
+        """
+
+        current_time = datetime.now(tz=pytz.utc).replace(tzinfo=None)
+        if send_time < current_time:
+            return current_time + timedelta(seconds=10)
+        return send_time + timedelta(seconds=10)
 
 @create_publish_message
 class MessageAnswer(BaseMessageHandler):
@@ -469,7 +540,10 @@ class ResearchMessageAnswer(MessageAnswer):
         self._message_waiters: dict[int, MessageWaiter] = {}
 
     async def handle(
-        self, message_object: IncomeUserMessageDTOQueue, destination_configs: NatsDestinationDTO, research_id: int
+            self,
+            message_object: IncomeUserMessageDTOQueue,
+            destination_configs: NatsDestinationDTO,
+            research_id: int
     ):
         # Получение информации об ассистенте и клиенте
         assistant = await self.get_assistant(research_id=research_id)
@@ -584,7 +658,17 @@ class ResearchMessageAnswer(MessageAnswer):
     async def _get_random_timeout_before_publish(self) -> int:
         # Выбор рандомной задержки перед отправкой
         configuration: ConfigurationSchema = await self.repository.configuration_repo.get()
-        return randint(configuration.min_response_time, configuration.max_response_time)
+        min_response_time = configuration.min_response_time
+        max_response_time = configuration.max_response_time
+        # Защита от "Дурака" если максимальное время меньше поменять местами
+        if min_response_time > max_response_time:
+            min_response_time, max_response_time = max_response_time, min_response_time
+            # Если минимальное и максимальное время одинаковы, просто возвращаем его
+
+        if min_response_time == max_response_time:
+            return min_response_time
+
+        return randint(min_response_time, max_response_time)
 
     async def _publish_response(
         self,

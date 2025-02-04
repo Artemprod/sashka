@@ -23,6 +23,7 @@ from src.database.postgres.models.user import User
 from src.database.repository.base import BaseRepository
 from src.schemas.service.user import UserDTOFull
 from src.schemas.service.user import UserDTORel
+from src.services.cache.service import redis_cache_decorator
 
 
 class UserRepository(BaseRepository):
@@ -83,6 +84,9 @@ class UserRepository(BaseRepository):
                 # Возвращаем список добавленных пользователей
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in new_users]
 
+    @redis_cache_decorator(
+        key="user:telegram_id:{telegram_id}",
+    )
     async def get_user_by_telegram_id(self, telegram_id: int) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
@@ -91,6 +95,9 @@ class UserRepository(BaseRepository):
                 user = result.scalars().first()
                 return UserDTOFull.model_validate(user, from_attributes=True) if user else None
 
+    @redis_cache_decorator(
+        key="user:research_id:{research_id}",
+    )
     async def get_users_by_research_id(self, research_id: int) -> Optional[List[UserDTOFull]]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
@@ -99,6 +106,9 @@ class UserRepository(BaseRepository):
                 users = result.scalars().all()
                 return [UserDTOFull.model_validate(user, from_attributes=True) for user in users]
 
+    @redis_cache_decorator(
+        key="user:username:{username}",
+    )
     async def get_user_by_username(self, username: str) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
@@ -108,6 +118,9 @@ class UserRepository(BaseRepository):
                 user = result.scalar_one()
                 return UserDTOFull.model_validate(user, from_attributes=True)
 
+    @redis_cache_decorator(
+        key="user:check_user:telegram_id:{telegram_id}",
+    )
     async def check_user(self, telegram_id: int) -> Optional[UserDTOFull]:
         async with self.db_session_manager.async_session_factory() as session:
             stmt = select(User).filter(User.tg_user_id == telegram_id)
@@ -177,6 +190,9 @@ class UserRepository(BaseRepository):
                     logger.error(f"error in update status {updated}")
                     raise e
 
+    @redis_cache_decorator(
+        key="user:user_status:telegram_id:{telegram_id}",
+    )
     async def get_user_status(self, telegram_id: int) -> UserStatusEnum:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
@@ -240,6 +256,9 @@ class UserRepository(BaseRepository):
                 result = await session.execute(stmt)
                 return [row[0] for row in result.fetchall()]
 
+    @redis_cache_decorator(
+        key="user:users_info_status:{user_telegram_id}:{username}",
+    )
     async def get_users_info_status(self, user_telegram_id: int = None, username: str = None) -> bool:
         if not user_telegram_id and not username:
             logger.error("No parameter provided")
@@ -279,6 +298,9 @@ class UserRepository(BaseRepository):
 
                 return usernames
 
+    @redis_cache_decorator(
+        key="user:first_name:telegram_id:{telegram_id}",
+    )
     async def get_first_name_by_telegram_id(self, telegram_id) -> Optional[List[str]]:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():

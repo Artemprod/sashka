@@ -4,6 +4,8 @@ from pydantic import BaseModel
 
 
 class ConfigurationCreateSchema(BaseModel):
+    ban_check_interval_in_minutes: int
+
     min_response_time: int
     max_response_time: int
 

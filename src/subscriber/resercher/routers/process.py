@@ -29,3 +29,48 @@ async def new_message_handler(
     task = asyncio.create_task(run_research(processor, research_id))
     logger.debug("ВЫЗВАЛАСЬ ТАСКА НАЧАЛЬНОГО ЗАПУСКА ИСЛЕДОВАНИЯ ")
     task.add_done_callback(lambda t: task_completion_callback(t, research_id))
+
+
+@router.subscriber(subject=nats_subscriber_researcher_settings.researches.ban_telegram_research)
+async def ban_research_handler(
+        body: str,
+        msg: NatsMessage,
+        context: Context = Context(),
+        research_id: int = Depends(get_data_from_headers)
+):
+    """
+    Останавливает и переводит статус исследования в бан
+    """
+    logger.info(f"Banning research: {research_id}")
+
+    processor: ResearchProcess = context.get("processor")
+
+    if not processor:
+        logger.error("ResearchProcess not found in context")
+        return
+
+    await processor.ban(
+        research_id=research_id,
+    )
+
+@router.subscriber(subject=nats_subscriber_researcher_settings.researches.unban_telegram_research)
+async def unban_research_handler(
+        body: str,
+        msg: NatsMessage,
+        context: Context = Context(),
+        research_id: int = Depends(get_data_from_headers)
+):
+    """
+    Возобновляет исследование
+    """
+    logger.info(f"Unbanning research: {research_id}")
+
+    processor: ResearchProcess = context.get("processor")
+
+    if not processor:
+        logger.error("ResearchProcess not found in context")
+        return
+
+    await processor.unban(
+        research_id=research_id,
+    )

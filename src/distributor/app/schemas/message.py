@@ -6,8 +6,10 @@ from pydantic import BaseModel
 from pyrogram import Client
 from telethon import TelegramClient
 
+from src.distributor.services.ban_checker import ClientBanChecker
 from src.distributor.telegram_client.pyro.client.container import ClientsManager
 from src.distributor.telegram_client.telethoncl.manager.container import TelethonClientsContainer
+from src.services.publisher.publisher import NatsPublisher
 
 
 class NatsHeaders(BaseModel):
@@ -55,3 +57,19 @@ class MessageToSendData(BaseModel):
 
 
 Datas.model_rebuild()
+
+
+class MessageContext:
+    def __init__(
+            self,
+            client: TelegramClient,
+            publisher: NatsPublisher,
+            research_id: Optional[int] = None,
+            client_name: Optional[str] = None,
+            client_ban_checker: Optional[ClientBanChecker] = None
+    ):
+        self.client = client
+        self.publisher = publisher
+        self.research_id = research_id
+        self.client_name = client_name
+        self.client_ban_checker = client_ban_checker
