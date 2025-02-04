@@ -104,7 +104,7 @@ class BaseAsyncSchedularManager:
     @async_wrap
     def delete_scheduled_task(
             self,
-            prefix: str
+            prefix: str,
     ) -> int:
         """
         Removes scheduled tasks based on the job id prefix.
@@ -112,6 +112,7 @@ class BaseAsyncSchedularManager:
         :param prefix: Prefix to identify the task.
         :return: Number of removed jobs.
         """
+
         removed_jobs_count = 0
         for job in self._schedular.get_jobs():
             if job.id.startswith(prefix):

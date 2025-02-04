@@ -693,7 +693,7 @@ class ResearchProcess:
         schedular.start()
         try:
             schedular.start()
-            await schedular.delete_scheduled_task(prefix=f'first_message:research:{research_id}')
+            await schedular.delete_scheduled_task(prefix=f'research:{research_id}')
             logger.debug(f"Задачи отменена")
 
         except Exception as e:

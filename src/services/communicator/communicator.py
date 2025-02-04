@@ -115,7 +115,7 @@ class TelegramCommunicator:
                     trigger=DateTrigger(run_date=send_time,
                                         timezone=pytz.utc),
 
-                    id=f"first_message:research:{research_id}:user:{user}:{int(datetime.now().timestamp())}",
+                    id=f"research:{research_id}:user:{user.tg_user_id}:first_message",
                     name=f"first_message_generation:{research_id}:{user}")
 
             logger.debug("ВСЕ СООБЩЕНИЯ ЗАПЛАНИРОВАНЫ")
