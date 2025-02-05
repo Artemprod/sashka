@@ -16,6 +16,7 @@ from telethon.errors.rpcerrorlist import UserDeactivatedBanError
 from src.distributor.app.schemas.message import MessageContext
 from src.distributor.app.schemas.message import MessageToSendData
 from src.distributor.app.schemas.message import UserDTOBase
+from src.services.exceptions.telegram_clients import AllClientsBannedError
 
 
 async def process_message(
@@ -33,13 +34,15 @@ async def process_message(
         logger.warning("There is no message to send,, skipping")
         return False
 
-    if is_first_message and await context.client_ban_checker.check_is_account_banned(client=context.client):
-        await context.client_ban_checker.start_check_ban(
-            client=context.client,
-            research_id=context.research_id
-        )
-        return False
     try:
+        if is_first_message and await context.client_ban_checker.check_is_account_banned(client=context.client):
+            await context.client_ban_checker.start_check_ban(
+                client=context.client,
+                research_id=context.research_id
+            )
+            context.client = await context.telethon_container.get_telethon_client_by_research_id(
+                research_id=context.research_id
+            )
 
         if is_first_message is True:
             logger.debug("First message")
@@ -74,6 +77,13 @@ async def process_message(
 
         logger.info(f"Message sent: {msg_data}")
         return True
+
+    except AllClientsBannedError:
+        logger.warning(f"All clients banned for research_id: {context.research_id}. Publishing ban on research.")
+        await context.client_ban_checker.publisher.publish_ban_on_research(
+            research_id=context.research_id
+        )
+        return False
 
     except Exception as e:
         logger.error(

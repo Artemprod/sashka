@@ -158,19 +158,19 @@ class ClientBanChecker:
             logger.warning(f"No ban check running for client: {client_info.username}")
             return
 
-        await self._repository.client_repo.update(
-            telegram_client_id=client_info.id,
-            values={
-                "is_banned": False
-            }
-        )
-
         try:
             if await self._check_is_publish_unban_research(research_id=research_id):
                 await self.publisher.publish_unban_research(research_id=research_id)
 
         except AllClientsBannedError:
             logger.error(f"Что-то пошло не так.")
+
+        await self._repository.client_repo.update(
+            telegram_client_id=client_info.id,
+            values={
+                "is_banned": False
+            }
+        )
 
         task = self._tasks.pop(client)
         task.cancel()

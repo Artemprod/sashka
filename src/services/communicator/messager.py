@@ -280,7 +280,6 @@ class MessageFirstSend(BaseMessageHandler):
                 destination_configs=destination_configs,
                 research_id=research_id
             )
-            await self._update_user_status(user.tg_user_id)
 
         except Exception as e:
             logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
