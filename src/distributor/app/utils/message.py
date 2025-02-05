@@ -124,7 +124,7 @@ async def send_message(
         user: UserDTOBase,
         message: str,
         context: MessageContext,
-        read_message_delay: float = 4.0,
+        read_message_delay: float = 5.0,
         typing_delay: float = 7.0,
 
 ):
@@ -132,7 +132,8 @@ async def send_message(
     try:
 
         # Пробуем получить сущность по ID или имени
-        user_entity = await context.client.get_input_entity(user.name)
+        user_entity = await context.client.get_input_entity(user.tg_user_id)
+        # user_entity = await context.client.get_input_entity(user.name)
 
         await context.client(functions.messages.ReadHistoryRequest(
             peer=user_entity,
