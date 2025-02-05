@@ -100,7 +100,7 @@ async def send_message_subscriber(
 
     # Создаем задачу отправки сообщения на фоне
     asyncio.create_task(
-        await process_message(
+        process_message(
             data=data,
             msg=msg,
             context=message_context,

@@ -205,3 +205,5 @@ class TelegramResearchManager(BaseResearchManager):
             await self._database_repository.user_in_research_repo.short.bind_research(
                 user_id=user_id, research_id=research_id
             )
+            logger.debug(f"Привязал пользователя {user_id}")
+

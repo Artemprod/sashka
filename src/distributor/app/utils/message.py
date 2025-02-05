@@ -42,11 +42,15 @@ async def process_message(
     try:
 
         if is_first_message is True:
+            logger.debug("First message")
             msg_data = await send_first_message(
                 user=data.user,
                 message=data.message,
                 context=context)
+
         else:
+            logger.debug("Usual message")
+
             msg_data = await send_message(
                 user=data.user,
                 message=data.message,
@@ -153,6 +157,7 @@ async def send_message(
 
     except (UserDeactivatedBanError, ChatWriteForbiddenError, PeerFloodError) as e:
         logger.error(f"Аккаунт, скорее всего, заблокирован! Ошибка: {e} ")
+
         if await context.client_ban_checker.check_is_account_banned(client=context.client):
             logger.info(f"Проверил через бан чекера. Клиент {context.client} имеет бан.")
             await context.client_ban_checker.start_check_ban(
