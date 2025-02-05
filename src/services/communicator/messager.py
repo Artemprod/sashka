@@ -237,35 +237,6 @@ class MessageFirstSend(BaseMessageHandler):
         self.single_request = single_request
 
 
-    async def handle(self, users: List[UserDTOBase],
-                     research_id: int,
-                     destination_configs: "NatsDestinationDTO"):
-
-        client = await self._get_client(research_id)
-        assistant_id = await self.get_assistant(research_id)
-        start_date = await self.get_research_start_date(research_id)
-
-        if not users:
-            raise ValueError("No users found for the given research ID")
-
-        if not client:
-            raise ValueError("No client available for the given research ID")
-
-        # стоит это переписать. Можно часть запросов из бд перенаправить в редис, а остальные данные
-        # вытягивать одним запросом
-
-        # планирование первго сообщения можно тут
-
-        async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
-
-            self.schedular.schedular.add_job(
-                                             func=print,
-                                             args=[user, send_time, research_id, client, assistant_id, destination_configs],
-                                             trigger=DateTrigger(run_date=send_time,
-                                                                 timezone=pytz.utc),
-                id=f"first_message:research:{research_id}:user:{user}:{int(datetime.now().timestamp())}",
-                name=f"first_message_generation:{research_id}:{user}")
-
 
     async def _get_client(self, research_id: int) -> "TelegramClientDTOGet":
         client = await self.get_client_name(research_id)
