@@ -27,7 +27,6 @@ async def process_message(
 
     await msg.ack()
 
-
     logger.info("Sending message...")
 
     if not data.message or not data.message:
@@ -42,12 +41,17 @@ async def process_message(
         return False
     try:
 
-        msg_data = await send_message(
-            client=context.client,
-            user=data.user,
-            message=data.message,
-            context=context
-        )
+        if is_first_message is True:
+            msg_data = await send_first_message(
+                user=data.user,
+                message=data.message,
+                context=context)
+        else:
+            msg_data = await send_message(
+                user=data.user,
+                message=data.message,
+                context=context
+            )
 
 
         if isinstance(msg_data, types.Message):
@@ -75,9 +79,44 @@ async def process_message(
             }
         )
 
+async def send_first_message(
+        user: UserDTOBase,
+        message: str,
+        context: MessageContext
+):
+    try:
+        user_entity = await context.client.get_input_entity(user.tg_user_id)
+        return await context.client.send_message(
+            entity=user_entity,
+            message=message
+        )
+
+    except (UserDeactivatedBanError, ChatWriteForbiddenError, PeerFloodError) as e:
+        logger.error(f"Аккаунт, скорее всего, заблокирован! Ошибка: {e} ")
+        if await context.client_ban_checker.check_is_account_banned(client=context.client):
+            logger.info(f"Проверил через бан чекера. Клиент {context.client} имеет бан.")
+            await context.client_ban_checker.start_check_ban(
+                client=context.client,
+                research_id=context.research_id
+            )
+            return
+        logger.warning(f"Проверил через бан чекера. Клиент {context.client} не имеет бан. ")
+
+
+    except ValueError as e:
+        logger.warning(f"Cant send vy ID Trying to send by name. {e}")
+        if not user.name:
+            logger.warning(f"No username {e}")
+        user_entity = await context.client.get_input_entity(user.name)
+        return await context.client.send_message(
+            entity=user_entity,
+            message=message
+        )
+    except Exception as e:
+        logger.warning(f" Faild to send. {e}")
+
 
 async def send_message(
-        client: TelegramClient,
         user: UserDTOBase,
         message: str,
         context: MessageContext,
@@ -89,9 +128,9 @@ async def send_message(
     try:
 
         # Пробуем получить сущность по ID или имени
-        user_entity = await client.get_input_entity(user.name)
+        user_entity = await context.client.get_input_entity(user.name)
 
-        await client(functions.messages.ReadHistoryRequest(
+        await context.client(functions.messages.ReadHistoryRequest(
             peer=user_entity,
             max_id=0
         ))
@@ -99,7 +138,7 @@ async def send_message(
         # Добавляем задержку для эффекта чтения
         await asyncio.sleep(read_message_delay)
         # Устанавливаем статус "печатает"
-        await client(functions.messages.SetTypingRequest(
+        await context.client(functions.messages.SetTypingRequest(
             peer=user_entity,
             action=types.SendMessageTypingAction()
         ))
@@ -107,7 +146,7 @@ async def send_message(
         # Добавляем задержку для эффекта печатания
         await asyncio.sleep(typing_delay)
 
-        return await client.send_message(
+        return await context.client.send_message(
             entity=user_entity,
             message=message
         )
@@ -129,9 +168,9 @@ async def send_message(
         if not user.name:
             logger.warning(f"No username {e}")
 
-        user_entity = await client.get_input_entity(user.tg_user_id)
+        user_entity = await context.client.get_input_entity(user.tg_user_id)
 
-        await client(functions.messages.ReadHistoryRequest(
+        await context.client(functions.messages.ReadHistoryRequest(
             peer=user_entity,
             max_id=0
         ))
@@ -139,7 +178,7 @@ async def send_message(
         await asyncio.sleep(read_message_delay)
 
         # Устанавливаем статус "печатает"
-        await client(functions.messages.SetTypingRequest(
+        await context.client(functions.messages.SetTypingRequest(
             peer=user_entity,
             action=types.SendMessageTypingAction()
         ))
@@ -147,7 +186,7 @@ async def send_message(
         # Добавляем задержку для эффекта печатания
         await asyncio.sleep(typing_delay)
 
-        return await client.send_message(
+        return await context.client.send_message(
             entity=user_entity,
             message=message
         )
