@@ -9,14 +9,16 @@ from telethon import TelegramClient
 
 from configs.clients import telethon_container_settings
 from src.database.exceptions.read import EmptyTableError
+from src.database.repository.storage import RepoStorage
 from src.dispatcher.communicators.consol import ConsoleCommunicator
 from src.distributor.telegram_client.interface.container import InterfaceClientsContainer
 from src.distributor.telegram_client.pyro.client.model import ClientConfigDTO
 from src.distributor.telegram_client.telethoncl.manager.manager import TelethonManager
+from src.services.exceptions.telegram_clients import AllClientsBannedError
 
 
 class TelethonClientsContainer(InterfaceClientsContainer):
-    def __init__(self, repository, handlers: List = None):
+    def __init__(self, repository: RepoStorage, handlers: List = None):
         self.repository = repository
         self.handlers = handlers or []
         self.dev_mode = telethon_container_settings.def_mode
@@ -90,6 +92,25 @@ class TelethonClientsContainer(InterfaceClientsContainer):
     def get_telethon_client_by_name(self, name: str) -> Optional[TelegramClient]:
         manager: TelethonManager = self.managers.get(name)
         return manager.run_strategy.client
+
+    async def get_telethon_client_by_research_id(self, research_id: int) -> TelegramClient:
+        """
+        Возвращает первого не забаненного клиента для исследования
+        """
+        clients = await self.repository.client_repo.get_clients_by_research_id(
+            research_id=research_id
+        )
+        logger.debug(f"Clients for research {research_id}: {clients}")
+        logger.debug(f"Clients manager {self.managers.values()}")
+        for client in clients:
+            logger.debug(f"Client: {client.name} {client.is_banned}")
+            if client.name in self.managers and not client.is_banned:
+                manager: TelethonManager = self.managers.get(client.name)
+                return manager.run_strategy.client
+
+        raise AllClientsBannedError(
+            f'All clients for research {research_id} are banned'
+        )
 
     def get_client_manager_by_telegram_id(self, telegram_id: int) -> Optional[TelethonManager]:
         for manager in self.managers.values():

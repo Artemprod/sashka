@@ -1,3 +1,8 @@
+import asyncio
+
+from typing import Optional
+
+
 from faststream import Context
 from faststream import Depends
 from faststream.nats import JStream
@@ -6,8 +11,10 @@ from faststream.nats import NatsRouter
 from loguru import logger
 from nats.js.api import DeliverPolicy
 from nats.js.api import RetentionPolicy
+from telethon.tl import types
 
 from configs.nats_queues import nats_distributor_settings
+
 from src.database.postgres import UserStatusEnum
 from src.database.repository.storage import RepoStorage
 from src.distributor.app.dependency.message import get_data_from_body, get_research_id, get_telegram_client_name
@@ -17,7 +24,6 @@ from src.distributor.app.schemas.message import MessageContext
 
 # Создаем маршрутизатор NATS и две очереди JStream
 router = NatsRouter()
-
 
 @router.subscriber(
     stream=JStream(
@@ -41,6 +47,7 @@ async def send_first_message_subscriber(
     message_context = MessageContext(
         client=client,
         publisher=context.get("publisher"),
+        telethon_container=context.get("telethon_container"),
         client_ban_checker=context.get("client_ban_checker"),
         research_id=research_id,
         client_name=client_name
@@ -60,6 +67,8 @@ async def send_first_message_subscriber(
         status=UserStatusEnum.IN_PROGRESS
     )
 
+
+
 @router.subscriber(
     stream=JStream(
         name=nats_distributor_settings.message.send_message.stream,
@@ -72,21 +81,36 @@ async def send_first_message_subscriber(
 async def send_message_subscriber(
         body: str,
         msg: NatsMessage,
+
         context=Context(),
         data=Depends(get_data_from_body),
         client=Depends(get_telegram_client),
 ):
     """Send a conversation message."""
+    message_id = getattr(data, 'message_id', 'unknown')
+    logger.info(f"Message {message_id} acknowledged")
+
     message_context = MessageContext(
         client=client,
         publisher=context.get("publisher"),
+        telethon_container=context.get("telethon_container"),
         research_id=None,
         client_name=None
     )
 
-    await process_message(
-        data=data,
-        msg=msg,
-        context=message_context,
-        is_first_message=False
+    # Создаем задачу отправки сообщения на фоне
+    asyncio.create_task(
+        await process_message(
+            data=data,
+            msg=msg,
+            context=message_context,
+            is_first_message=False
+        ),
+        name=f"send_message_{message_id}"
     )
+
+    logger.info(f"Created send task for message {message_id}")
+
+
+
+

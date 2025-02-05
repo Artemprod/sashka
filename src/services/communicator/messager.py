@@ -48,7 +48,6 @@ from src.services.communicator.request import SingleRequest
 from src.services.communicator.message_waiter import MessageWaiter
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.inspector import StopWordChecker
-from src.services.scheduler.manager import BaseAsyncSchedularManager, AsyncPostgresSchedularManager
 from src.web.models.configuration import ConfigurationSchema
 
 
@@ -145,9 +144,9 @@ class BaseMessageHandler:
         users = await self.repository.user_in_research_repo.short.get_users_by_research_id(research_id=research_id)
         return [int(user.tg_user_id) for user in users] if users else None
 
-    async def get_client_name(self, research_id=None, client_telegram_id=None) -> Optional[TelegramClientDTOGet]:
+    async def get_client_name(self, research_id=None, client_telegram_id=None) -> Optional[list[TelegramClientDTOGet]]:
         if research_id is not None and client_telegram_id is None:
-            return await self.repository.client_repo.get_client_by_research_id(research_id)
+            return await self.repository.client_repo.get_clients_by_research_id(research_id)
         elif client_telegram_id is not None and research_id is None:
             return await self.repository.client_repo.get_client_by_telegram_id(client_telegram_id)
         return None
@@ -233,16 +232,22 @@ class MessageFirstSend(BaseMessageHandler):
     ):
         super().__init__(publisher, repository, prompt_generator)
 
+        self.schedular = None
         self.message_delay_generator = MessageGeneratorTimeDelay(repository=repository)
         self.single_request = single_request
 
 
 
     async def _get_client(self, research_id: int) -> "TelegramClientDTOGet":
-        client = await self.get_client_name(research_id)
-        if not client:
+        clients = await self.get_client_name(research_id)
+
+        if not clients:
             raise ValueError(f"No client found for research ID: {research_id}")
-        return client
+
+        for client in clients:
+            if not client.is_banned:
+                return client
+        raise ValueError(f"No unbanned client found for research ID: {research_id}")
 
     async def _process_user(
         self,
@@ -305,6 +310,7 @@ class MessageFirstSend(BaseMessageHandler):
             self,
             content: "SingleResponseDTO",
             user: UserDTOBase,
+            send_time: datetime,
             client: "TelegramClientDTOGet",
             destination_configs: "NatsDestinationDTO",
             research_id: int,
@@ -682,7 +688,8 @@ class PingMessage(MessageAnswer):
         await self._publish_response(response, client, user, destination_configs)
 
     async def _get_client_by_research_id(self, research_id: int) -> TelegramClientDTOGet:
-        return await self.repository.client_repo.get_client_by_research_id(research_id)
+        clients = await self.repository.client_repo.get_clients_by_research_id(research_id)
+        return clients[0]
 
     async def _form_context(
         self, user: UserDTOBase, research_id: int, telegram_client_id: int, assistant_id: int

@@ -17,7 +17,7 @@ from src.database.postgres.models.assistants import Assistant
 from src.database.postgres.models.enum_types import ResearchStatusEnum
 from src.database.postgres.models.message import UserMessage
 from src.database.postgres.models.message import VoiceMessage
-from src.database.postgres.models.research import Research
+from src.database.postgres.models.research import Research, ResearchTelegramClient
 from src.database.postgres.models.research_owner import ResearchOwner
 from src.database.postgres.models.status import ResearchStatus
 from src.database.postgres.models.user import User
@@ -32,14 +32,29 @@ class ResearchRepository(BaseRepository):
     Когда мне нужны просты CRUD операции я использую этот класс
     """
 
-    async def save_new_research(self, values: dict) -> ResearchDTOFull:
+    async def save_new_research(self, values: dict) -> int:
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
                 stmt = insert(Research).values(**values).returning(Research)
                 new_research = await session.execute(stmt)
                 await session.commit()
                 result = new_research.scalar_one()
-                return ResearchDTOFull.model_validate(result, from_attributes=True)
+                return result.research_id
+
+    async def add_telegram_client_to_research(
+            self,
+            research_id: int,
+            client_id: int
+    ):
+        async with self.db_session_manager.async_session_factory() as session:
+            async with session.begin():
+                stmt = insert(ResearchTelegramClient).values(
+                    research_id=research_id,
+                    client_id=client_id
+                )
+                await session.execute(stmt)
+                await session.commit()
+
 
     @redis_cache_decorator(
         key="research:short:research_id:{research_id}",
@@ -53,10 +68,14 @@ class ResearchRepository(BaseRepository):
         """
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():  # использовать транзакцию
-                query = select(Research).filter(Research.research_id == research_id)
+                query = (
+                    select(Research)
+                    .options(joinedload(Research.telegram_clients))
+                    .filter(Research.research_id == research_id)
+                )
 
                 execute = await session.execute(query)
-                research = execute.scalars().first()
+                research = execute.scalars().unique().first()
                 if research:
                     return ResearchDTOFull.model_validate(research, from_attributes=True)
                 else:
@@ -101,16 +120,22 @@ class ResearchRepository(BaseRepository):
         """
         async with self.db_session_manager.async_session_factory() as session:
             try:
-                query = select(Research).where(
-                    and_(
-                        Research.users.any(User.tg_user_id == user_telegram_id),
-                        Research.telegram_client.has(TelegramClient.telegram_client_id == client_telegram_id),
+                query = (
+                    select(Research)
+                    .options(selectinload(Research.telegram_clients))
+                    .join(User, Research.users)
+                    .join(TelegramClient, Research.telegram_clients)
+                    .where(
+                        User.tg_user_id == user_telegram_id,
+                        TelegramClient.telegram_client_id == client_telegram_id,
                     )
                 )
+
                 result = await session.execute(query)
                 research = result.scalars().first()
 
                 if research:
+                    await session.refresh(research, ["telegram_clients"])
                     return ResearchDTOFull.model_validate(research, from_attributes=True)
 
                 raise ObjectDoesNotExist(
@@ -139,8 +164,7 @@ class ResearchRepository(BaseRepository):
                     "descriptions": research.descriptions,
                     "additional_information": research.additional_information,
                     "assistant_id": research.assistant_id,
-                    "owner_id": research.owner_id,
-                    "telegram_client_id": research.telegram_client_id,
+                    "owner_id": research.owner_id
                 }
                 stmt = (
                     update(Research)
@@ -180,7 +204,6 @@ class ResearchRepositoryFullModel(BaseRepository):
                 execute = await session.execute(query)
                 research = execute.unique().scalars().first()
                 if research:
-                    print()
                     return ResearchDTORel.model_validate(research, from_attributes=True)
                 else:
                     raise ObjectDoesNotExist(
@@ -244,7 +267,7 @@ class ResearchRepositoryFullModel(BaseRepository):
             )
             .options(joinedload(Research.assistant).options(joinedload(Assistant.messages)))
             .options(joinedload(Research.status).load_only(ResearchStatus.status_name))
-            .options(joinedload(Research.telegram_client))
+            .options(selectinload(Research.telegram_clients))
         )
         return query
 

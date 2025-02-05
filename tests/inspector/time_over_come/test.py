@@ -1,9 +1,9 @@
 from datetime import timedelta
 
 import pytest
-from pytest_mock import mocker
-from utils import time_generator
-from test_cases import TEST_CASES, TestDataCases
+
+from . utils import time_generator
+from . cases import TEST_CASES, TestDataCases
 
 
 @pytest.mark.parametrize(

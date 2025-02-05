@@ -1,273 +1,179 @@
-#name: Insighter worker prod deployment
-#on:
-#  workflow_dispatch:
-#  push:
-#    branches:
-#      - main
-#jobs:
-#    lint:
-#      runs-on: ubuntu-latest
-#      steps:
-#        - name: Get the code from repo
-#          uses: actions/checkout@v4
-#        - name: Install pipx
-#          run: pip install pipx
-#        - name: Install poetry
-#          run: pipx install poetry
-#        - name: Install dependencies
-#          run: poetry install --no-root
-#        - name: Run lint check
-#          run: poetry run ruff check --fix
-#
-#    build:
-#      runs-on: ubuntu-latest
-#      steps:
-#        - name: Checkout
-#          uses: actions/checkout@v4
-#        - name: Set up QEMU
-#          uses: docker/setup-qemu-action@v3
-#        - name: Set up Docker Buildx
-#          uses: docker/setup-buildx-action@v3
-#        - name: Login to Docker Hub
-#          uses: docker/login-action@v3
-#          with:
-#            username: ${{secrets.DOCKERHUB_USERNAME}}
-#            password: ${{secrets.DOCKERHUB_PASSWORD}}
-#        - name: Docker meta
-#          id: meta
-#          uses: docker/metadata-action@v5
-#          with:
-#            # list of Docker images to use as base name for tags
-#            images: |
-#              artemprod/insighter_worker
-#            # generate Docker tags based on the following events/attributes
-#            tags: |
-#              type=ref,event=branch
-#              type=sha
-#        - name: Build and push
-#          uses: docker/build-push-action@v5
-#          with:
-#            cache-from: type=gha
-#            cache-to: type=gha,mode=max
-#            context: .
-#            push: true
-#            tags: ${{steps.meta.outputs.tags}}
-#
-#
-#    cleanup:
-#      needs: build
-#      runs-on: ubuntu-latest
-#      steps:
-#        - name: Checkout repository
-#          uses: actions/checkout@v2
-#
-#        - name: Set short sha
-#          id: set_sha
-#          run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-#
-#        - name: Load SSH aws key
-#          uses: webfactory/ssh-agent@v0.9.0
-#          with:
-#            ssh-private-key: ${{secrets.PRODUCTION_SERVER_PRIVAT_KEY}}
-#
-#        - name: Add SSH key to known_hosts
-#          run: ssh-keyscan -H "${{vars.PRODUCTION_SERVER_HOST}}" >> ~/.ssh/known_hosts
-#
-#        - name: Create Docker Context
-#          run: docker context create prod_worker_context --docker "host=ssh://${{ vars.PRODUCTION_SERVER_SSH_ROUTE }}" || true
-#
-#        - name: Check if services exist
-#          id: check_services
-#          run: |
-#            SERVICES_EXIST=$(docker --context prod_worker_context ps -q --filter "name=postgres_container" --filter "name=migration_alembic" --filter "name=server_redis_cache" --filter "name=nats_worker" --filter "name=rabbit_worker" --filter "name=insighter_worker" --filter "name=insighter_fast_api_server")
-#            echo "Services Exist: $SERVICES_EXIST"
-#            if [ -n "$SERVICES_EXIST" ]; then
-#              echo "true"
-#            else
-#              echo "false"
-#            fi | tee /tmp/services_exist.txt
-#            echo "::set-output name=services_exist::$(cat /tmp/services_exist.txt)"
-#
-#        - name: Cleanup services if they exist
-#          if: steps.check_services.outputs.services_exist == 'true'
-#          run: |
-#            echo "${{ vars.PRODUCTION_ENV_FILE }}" >> ./deploy/prod/.env
-#            docker --context prod_worker_context compose -f deploy/prod/docker-compose.yml down
-#            docker --context prod_worker_context system prune -af
-#            if ! docker --context prod_worker_context network ls --filter name=insighter_worker_prod_new --format '{{.Name}}' | grep -w insighter_worker_prod_new; then
-#            docker --context prod_worker_context network create insighter_worker_prod_new
-#            fi
-#
-#
-#    deploy:
-#      needs: cleanup
-#      runs-on: ubuntu-latest
-#      steps:
-#        - name: Checkout repository
-#          uses: actions/checkout@v2
-#          with:
-#            sparse-checkout: |
-#              deploy/prod/docker-compose.yml
-#            sparse-checkout-cone-mode: false
-#
-#
-#        - name: Set short sha
-#          id: set_sha
-#          run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-#
-#        - name: Load SSH aws key
-#          uses: webfactory/ssh-agent@v0.9.0
-#          with:
-#            ssh-private-key: ${{secrets.PRODUCTION_SERVER_PRIVAT_KEY}}
-#
-#        - name: Add SSH key to known_hosts
-#          run: ssh-keyscan -H "${{vars.PRODUCTION_SERVER_HOST}}" >> ~/.ssh/known_hosts
-#
-#        - name: Create Docker Context
-#          run: docker context create prod_worker_context --docker "host=ssh://${{ vars.PRODUCTION_SERVER_SSH_ROUTE }}" || true
-#
-#        - name: Deploy
-#          run: |
-#            echo "${{vars.PRODUCTION_ENV_FILE}}" >> ./deploy/prod/.env
-#            export IMAGE_TAG=sha-${{ steps.set_sha.outputs.sha_short }}
-#            docker --context prod_worker_context compose -f deploy/prod/docker-compose.yml up -d --wait --wait-timeout 60
-#
-##name: Insighter worker prod deployment
-##on:
-##  workflow_dispatch:
-##  push:
-##    branches:
-##      - main
-##
-##jobs:
-##  lint:
-##    runs-on: ubuntu-latest
-##    steps:
-##      - name: Get the code from repo
-##        uses: actions/checkout@v4
-##
-##      - name: Install pipx
-##        run: pip install pipx
-##
-##      - name: Install poetry
-##        run: pipx install poetry
-##
-##      - name: Install dependencies
-##        run: poetry install --no-root
-##
-##      - name: Run lint check
-##        run: poetry run ruff check --fix
-##
-##  build:
-##    runs-on: ubuntu-latest
-##    steps:
-##      - name: Checkout
-##        uses: actions/checkout@v4
-##
-##      - name: Set up QEMU
-##        uses: docker/setup-qemu-action@v3
-##
-##      - name: Set up Docker Buildx
-##        uses: docker/setup-buildx-action@v3
-##
-##      - name: Login to Docker Hub
-##        uses: docker/login-action@v3
-##        with:
-##          username: ${{secrets.DOCKERHUB_USERNAME}}
-##          password: ${{secrets.DOCKERHUB_PASSWORD}}
-##
-##      - name: Docker meta
-##        id: meta
-##        uses: docker/metadata-action@v5
-##        with:
-##          images: artemprod/insighter_worker
-##          tags: |
-##            type=ref,event=branch
-##            type=sha
-##
-##      - name: Build and push
-##        uses: docker/build-push-action@v5
-##        with:
-##          cache-from: type=gha
-##          cache-to: type=gha,mode=max
-##          context: .
-##          push: true
-##          tags: ${{steps.meta.outputs.tags}}
-##
-##  cleanup:
-##    needs: build
-##    runs-on: ubuntu-latest
-##    steps:
-##      - name: Checkout repository
-##        uses: actions/checkout@v2
-##
-##      - name: Load SSH aws key
-##        uses: webfactory/ssh-agent@v0.9.0
-##        with:
-##          ssh-private-key: ${{secrets.PRODUCTION_SERVER_PRIVAT_KEY}}
-##
-##      - name: Add SSH key to known_hosts
-##        run: ssh-keyscan -H "${{vars.PRODUCTION_SERVER_HOST}}" >> ~/.ssh/known_hosts
-##
-##      - name: Create Docker Context
-##        run: |
-##          export DOCKER_SSH_OPTIONS="-o ConnectTimeout=300"
-##          docker context create prod_worker_context --docker "host=ssh://${{ vars.PRODUCTION_SERVER_SSH_ROUTE }}"
-##
-##      - name: Use Docker Context
-##        run: docker context use prod_worker_context
-##
-##      - name: Check if services exist
-##        id: check_services
-##        run: |
-##          SERVICES_EXIST=$(docker --context prod_worker_context ps -q --filter "name=postgres_container" --filter "name=migration_alembic" --filter "name=server_redis_cache" --filter "name=nats_worker" --filter "name=rabbit_worker" --filter "name=insighter_worker" --filter "name=insighter_fast_api_server")
-##          echo "Services Exist: $SERVICES_EXIST"
-##          if [ -n "$SERVICES_EXIST" ]; then
-##            echo "true"
-##          else
-##            echo "false"
-##          fi | tee /tmp/services_exist.txt
-##          echo "::set-output name=services_exist::$(cat /tmp/services_exist.txt)"
-##
-##      - name: Cleanup services if they exist
-##        if: steps.check_services.outputs.services_exist == 'true'
-##        run: |
-##          echo "${{ vars.PRODUCTION_ENV_FILE }}" >> ./deploy/prod/.env
-##          docker --context prod_worker_context compose -f deploy/prod/docker-compose.yml down
-##          docker --context prod_worker_context system prune -af
-##          if ! docker --context prod_worker_context network ls --filter name=insighter_worker_prod_new --format '{{.Name}}' | grep -w insighter_worker_prod_new; then
-##            docker --context prod_worker_context network create insighter_worker_prod_new
-##          fi
-##
-##  deploy:
-##    needs: cleanup
-##    runs-on: ubuntu-latest
-##    steps:
-##      - name: Checkout repository
-##        uses: actions/checkout@v2
-##        with:
-##          sparse-checkout: |
-##            deploy/prod/docker-compose.yml
-##          sparse-checkout-cone-mode: false
-##
-##      - name: Load SSH aws key
-##        uses: webfactory/ssh-agent@v0.9.0
-##        with:
-##          ssh-private-key: ${{secrets.PRODUCTION_SERVER_PRIVAT_KEY}}
-##
-##      - name: Add SSH key to known_hosts
-##        run: ssh-keyscan -H "${{vars.PRODUCTION_SERVER_HOST}}" >> ~/.ssh/known_hosts
-##
-##      - name: Create Docker Context
-##        run: |
-##          export DOCKER_SSH_OPTIONS="-o ConnectTimeout=300"
-##          docker context create prod_worker_context --docker "host=ssh://${{ vars.PRODUCTION_SERVER_SSH_ROUTE }}"
-##
-##      - name: Use Docker Context
-##        run: docker context use prod_worker_context
-##
-##      - name: Deploy
-##        run: |
-##          echo "${{vars.PRODUCTION_ENV_FILE}}" >> ./deploy/prod/.env
-##          export IMAGE_TAG=sha-${{ steps.set_sha.outputs.sha_short }}
-##          docker --context prod_worker_context compose -f deploy/prod/docker-compose.yml up -d --wait --wait-timeout 60
+name: custdever production
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - production
+
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+
+
+      - name: Get the code from repo
+        uses: actions/checkout@v4
+
+      - name: Install pipx
+        run: pip install pipx
+
+      - name: Install poetry
+        run: pipx install poetry
+
+      - name: Install dependencies
+        run: poetry install --no-root
+
+      - name: Install Docker Compose
+        uses: ndeloof/install-compose-action@v0.0.1
+
+      - name: Set up Docker Compose
+        uses: docker/setup-buildx-action@v2
+
+      - name: Compose database
+        working-directory: deploy/prod/test_services
+        run: |
+          echo "${{ vars.TEST_ENV }}" >> .env
+          docker-compose up -d
+
+      - name: Get Env for the server
+        run: echo "${{ vars.TEST_ENV }}" >> .env
+
+      - name: Run tests
+        run: |
+          poetry run coverage run -m pytest -v -s
+
+      - name: Generate Coverage Report
+        run: poetry run coverage report -m
+
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{secrets.DOCKERHUB_USERNAME}}
+          password: ${{secrets.DOCKERHUB_PASSWORD}}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            artemprod/sashka
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=ref,event=branch
+            type=sha
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          context: .
+          push: true
+          tags: ${{steps.meta.outputs.tags}}
+
+
+  cleanup:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set short sha
+        id: set_sha
+        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+
+      - name: Load SSH aws key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{secrets.PRODUCTION_SERVER_PRIVAT_KEY}}
+
+      - name: Add SSH key to known_hosts
+        run: ssh-keyscan -H "${{vars.PRODUCTION_SERVER_HOST}}" >> ~/.ssh/known_hosts
+
+      - name: Create Docker Context
+        run: docker context create ${{vars.PRUDUCTION_DOCKER_CONTEXT}} --docker "host=ssh://${{ vars.PRODUCTION_SERVER_SSH_ROUTE }}" || true
+
+      - name: Check if services exist
+        id: check_services
+        run: |
+          SERVICES_EXIST=$(docker --context ${{vars.PRUDUCTION_DOCKER_CONTEXT}} ps -q --filter "name=custdever_api_getaway_main_worker" --filter "name=custdever_subscriber_researcher_worker" --filter "name=custdever_subscriber_communicator_worker" --filter "name=custdever_distributor")
+          
+          echo "Services Exist: $SERVICES_EXIST"
+          if [ -n "$SERVICES_EXIST" ]; then
+            echo "true"
+          else
+            echo "false"
+          fi | tee /tmp/services_exist.txt
+          echo "::set-output name=services_exist::$(cat /tmp/services_exist.txt)"
+
+      - name: Cleanup services if they exist
+        if: steps.check_services.outputs.services_exist == 'true'
+        run: |
+          
+          echo "${{ vars.PRODUCTION_ENV_FILE }}" >> ./${{vars.PRODUCTION_DEPLOY_FOLDER}}/.env
+          
+          docker --context ${{vars.PRUDUCTION_DOCKER_CONTEXT}} compose -f ${{vars.PRODUCTION_DEPLOY_FOLDER}}/docker-compose.yml down
+          docker --context ${{vars.PRUDUCTION_DOCKER_CONTEXT}} system prune -af
+          if ! docker --context ${{vars.PRUDUCTION_DOCKER_CONTEXT}} network ls --filter name="${{vars.PRODUCTION_DOCKER_NETWORK}}" --format '{{.Name}}' | grep -w ${{vars.PRODUCTION_DOCKER_NETWORK}}; then
+          docker --context ${{vars.PRUDUCTION_DOCKER_CONTEXT}} network create ${{vars.PRODUCTION_DOCKER_NETWORK}}
+          fi
+          
+
+  deploy:
+    needs: cleanup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          sparse-checkout: |
+            ${{vars.PRODUCTION_DEPLOY_FOLDER}}/docker-compose.yml
+          sparse-checkout-cone-mode: false
+
+
+      - name: Set short sha
+        id: set_sha
+        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+
+      - name: Load SSH aws key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{secrets.PRODUCTION_SERVER_PRIVAT_KEY}}
+
+      - name: Add SSH key to known_hosts
+        run: ssh-keyscan -H "${{vars.PRODUCTION_SERVER_HOST}}" >> ~/.ssh/known_hosts
+
+      - name: Create Docker Context
+        run: docker context create ${{vars.PRUDUCTION_DOCKER_CONTEXT}} --docker "host=ssh://${{ vars.PRODUCTION_SERVER_SSH_ROUTE }}" || true
+
+      - name: Ensure remote directory exists and Copy nats config
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ vars.PRODUCTION_SERVER_SSH_ROUTE }} "
+            rm -rf /remote &&
+            mkdir -p /remote/nats/config &&
+            chmod -R 755 /remote/nats/config
+          "
+          scp -o StrictHostKeyChecking=no deploy/prod/nats/config/server.conf ${{ vars.PRODUCTION_SERVER_SSH_ROUTE }}:/remote/nats/config/
+
+
+      - name: Deploy
+        run: |                      
+          echo "${{ vars.PRODUCTION_ENV_FILE }}" >> ./${{vars.PRODUCTION_DEPLOY_FOLDER}}/.env
+          export IMAGE_TAG=sha-${{ steps.set_sha.outputs.sha_short }}
+          docker --context ${{vars.PRUDUCTION_DOCKER_CONTEXT}} compose -f ${{vars.PRODUCTION_DEPLOY_FOLDER}}/docker-compose.yml up -d --wait --wait-timeout 60
+        
+        

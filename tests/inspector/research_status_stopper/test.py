@@ -1,6 +1,7 @@
 import pytest
-from test_cases import STOP_TEST_CASES, TestDataCases
-from utils import status_generator
+
+from . cases import STOP_TEST_CASES, TestDataCases
+from . utils import status_generator
 
 
 @pytest.mark.parametrize(

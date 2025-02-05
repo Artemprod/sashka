@@ -1,11 +1,8 @@
 import sys
 from dataclasses import dataclass
-from datetime import datetime
-from pathlib import Path
+
 from typing import Union, Any, List
 from contextlib import nullcontext as does_not_raise
-
-from src.database.postgres import ResearchStatusEnum
 
 
 @dataclass
