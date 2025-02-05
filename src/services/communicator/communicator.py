@@ -94,14 +94,15 @@ class TelegramCommunicator:
                 stream=nats_distributor_settings.message.first_message_message.stream,
             ),
         }
-
+    #TODO Возможно рандомное получение клиента
     async def make_first_message_distribution(self, research_id: int, users: List[UserDTOBase]):
 
         try:
             # Для рпассылки первого сообшения получаем данные
             research = await self._repository.research_repo.short.get_research_by_id(research_id=research_id)
             start_date = research.start_date
-            client = await self._repository.client_repo.get_clients_by_research_id(research_id)
+            clients = await self._repository.client_repo.get_clients_by_research_id(research_id)
+            client = clients[0]
             assistant_id = research.assistant_id
             logger.debug("ПЛАНИРОВАНИЕ ПЕРВОГО СООБЩЗЕНИЯ")
 
@@ -199,6 +200,8 @@ class TelegramCommunicator:
             )
         except Exception as e:
             raise e
+
+
 
     async def _handle_message(self, message_object: "IncomeUserMessageDTOQueue", user_research_id: int):
         try:

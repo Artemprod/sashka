@@ -43,7 +43,7 @@ async def send_first_message_subscriber(
     client_name=Depends(get_telegram_client_name),
     research_id=Depends(get_research_id),
 ):
-    print()
+
     message_context = MessageContext(
         client=client,
         publisher=context.get("publisher"),

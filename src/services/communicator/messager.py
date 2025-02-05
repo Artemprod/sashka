@@ -276,7 +276,6 @@ class MessageFirstSend(BaseMessageHandler):
             await self._publish_message(
                 content=content,
                 user=user,
-                send_time=send_time,
                 client=client,
                 destination_configs=destination_configs,
                 research_id=research_id
@@ -291,7 +290,6 @@ class MessageFirstSend(BaseMessageHandler):
         self,
         content: "SingleResponseDTO",
         user: UserDTOBase,
-        send_time: datetime,
         client: "TelegramClientDTOGet",
         destination_configs: "NatsDestinationDTO",
         research_id: int
@@ -310,7 +308,6 @@ class MessageFirstSend(BaseMessageHandler):
             self,
             content: "SingleResponseDTO",
             user: UserDTOBase,
-            send_time: datetime,
             client: "TelegramClientDTOGet",
             destination_configs: "NatsDestinationDTO",
             research_id: int,
