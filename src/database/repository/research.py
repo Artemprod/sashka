@@ -17,7 +17,7 @@ from src.database.postgres.models.assistants import Assistant
 from src.database.postgres.models.enum_types import ResearchStatusEnum
 from src.database.postgres.models.message import UserMessage
 from src.database.postgres.models.message import VoiceMessage
-from src.database.postgres.models.research import Research, research_telegram_client
+from src.database.postgres.models.research import Research, ResearchTelegramClient
 from src.database.postgres.models.research_owner import ResearchOwner
 from src.database.postgres.models.status import ResearchStatus
 from src.database.postgres.models.user import User
@@ -48,7 +48,7 @@ class ResearchRepository(BaseRepository):
     ):
         async with self.db_session_manager.async_session_factory() as session:
             async with session.begin():
-                stmt = insert(research_telegram_client).values(
+                stmt = insert(ResearchTelegramClient).values(
                     research_id=research_id,
                     client_id=client_id
                 )

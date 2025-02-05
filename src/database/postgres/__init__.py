@@ -11,7 +11,7 @@ from src.database.postgres.models.message import UserMessage
 from src.database.postgres.models.message import VoiceMessage
 from src.database.postgres.models.ping import PingPrompt
 from src.database.postgres.models.research import Research
-from src.database.postgres.models.research import research_telegram_client
+from src.database.postgres.models.research import ResearchTelegramClient
 from src.database.postgres.models.research_owner import ResearchOwner
 from src.database.postgres.models.services import Services
 from src.database.postgres.models.status import ResearchStatus

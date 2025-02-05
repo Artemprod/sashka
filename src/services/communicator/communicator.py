@@ -101,7 +101,7 @@ class TelegramCommunicator:
             # Для рпассылки первого сообшения получаем данные
             research = await self._repository.research_repo.short.get_research_by_id(research_id=research_id)
             start_date = research.start_date
-            client = await self._repository.client_repo.get_client_by_research_id(research_id)
+            client = await self._repository.client_repo.get_clients_by_research_id(research_id)
             assistant_id = research.assistant_id
             logger.debug("ПЛАНИРОВАНИЕ ПЕРВОГО СООБЩЗЕНИЯ")
 

@@ -15,12 +15,15 @@ from src.database.postgres.models.base import intpk
 from src.database.postgres.models.base import updated_at
 
 
-research_telegram_client = Table(
-    "research_telegram_client",
-    ModelBase.metadata,
-    Column("research_id", ForeignKey("researches.research_id"), primary_key=True),
-    Column("client_id", ForeignKey("telegram_clients.client_id"), primary_key=True),
-)
+class ResearchTelegramClient(ModelBase):
+    __tablename__ = "research_telegram_client"
+    __table_args__ = (
+        Index("idx_research_telegram_client_research_id", "research_id"),
+        Index("idx_research_telegram_client_client_id", "client_id"),
+    )
+
+    research_id: Mapped[int] = mapped_column(ForeignKey("researches.research_id"), primary_key=True)
+    client_id: Mapped[int] = mapped_column(ForeignKey("telegram_clients.client_id"), primary_key=True)
 
 
 class Research(ModelBase):
@@ -63,5 +66,5 @@ class Research(ModelBase):
 
     telegram_clients: Mapped[list["TelegramClient"]] = relationship(
         back_populates="researches",
-        secondary=research_telegram_client
+        secondary="research_telegram_client"
     )

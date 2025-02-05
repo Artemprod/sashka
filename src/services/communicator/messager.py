@@ -232,6 +232,7 @@ class MessageFirstSend(BaseMessageHandler):
     ):
         super().__init__(publisher, repository, prompt_generator)
 
+        self.schedular = None
         self.message_delay_generator = MessageGeneratorTimeDelay(repository=repository)
         self.single_request = single_request
 
@@ -256,7 +257,6 @@ class MessageFirstSend(BaseMessageHandler):
         # планирование первго сообщения можно тут
 
         async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
-
             self.schedular.schedular.add_job(
                                              func=print,
                                              args=[user, send_time, research_id, client, assistant_id, destination_configs],
