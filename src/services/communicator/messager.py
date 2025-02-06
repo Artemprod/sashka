@@ -258,17 +258,11 @@ class MessageFirstSend(BaseMessageHandler):
         destination_configs: "NatsDestinationDTO",
     ):
         try:
-            single_request_object = await self.form_single_request(
-                telegram_user_id=user.tg_user_id, research_id=research_id
-            )
-            content = await self.single_request.get_response(single_obj=single_request_object)
-
-            await self.save_assistant_message(
+            content = await self._get_content(
+                user=user,
+                client=client,
                 research_id=research_id,
-                content=content.response,
-                user_telegram_id=user.tg_user_id,
                 assistant_id=assistant_id,
-                client_id=client.client_id,
             )
 
             logger.debug(f"СООБЩЕНИЕ К ОТПРАВКЕ  {content}")
@@ -283,6 +277,54 @@ class MessageFirstSend(BaseMessageHandler):
         except Exception as e:
             logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
             raise e
+
+    async def _get_content(
+            self,
+            user: UserDTOBase,
+            client: TelegramClientDTOGet,
+            research_id: int,
+            assistant_id: int
+    ) -> SingleResponseDTO:
+
+        # проверка на наличие сообщения в бд (после разбана клиента)
+        last_message = await self.repository.message_repo.assistant.get_last_assistents_message_by_user_telegram_id(
+            telegram_id=user.tg_user_id
+        )
+
+        if (
+                last_message
+                and last_message.research_id == research_id
+                and last_message.telegram_client_id == client.client_id
+        ):
+            return SingleResponseDTO(
+                user_message=last_message.text,
+                response=last_message.text
+            )
+
+        content =  await self._form_content(
+            research_id=research_id,
+            user=user
+        )
+
+        await self.save_assistant_message(
+            research_id=research_id,
+            content=content.response,
+            user_telegram_id=user.tg_user_id,
+            assistant_id=assistant_id,
+            client_id=client.client_id,
+        )
+        return content
+
+    async def _form_content(
+            self,
+            user: UserDTOBase,
+            research_id: int
+    ) -> SingleResponseDTO:
+
+        single_request_object = await self.form_single_request(
+            telegram_user_id=user.tg_user_id, research_id=research_id
+        )
+        return await self.single_request.get_response(single_obj=single_request_object)
 
     async def _publish_message(
         self,

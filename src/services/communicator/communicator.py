@@ -109,14 +109,15 @@ class TelegramCommunicator:
             async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
 
                 # Для каждого пользователя создается задача
-               self.schedular.schedular.add_job(
-                        func=plan_first_message,
+                self.schedular.schedular.add_job(
+                    func=plan_first_message,
                     args=[user, research_id, client, assistant_id, self._destination_configs["firs_message"]],
                     trigger=DateTrigger(run_date=send_time,
                                         timezone=pytz.utc),
 
                     id=f"research:{research_id}:user:{user.tg_user_id}:first_message",
-                    name=f"first_message_generation:{research_id}:{user}")
+                    name=f"first_message_generation:{research_id}:{user}"
+                )
 
             logger.debug("ВСЕ СООБЩЕНИЯ ЗАПЛАНИРОВАНЫ")
         except Exception as e:

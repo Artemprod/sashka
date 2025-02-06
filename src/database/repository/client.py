@@ -66,7 +66,7 @@ class ClientRepository(BaseRepository):
     )
     async def get_client_by_name(self, name: str) -> Optional[TelegramClientDTOGet]:
         async with self.db_session_manager.async_session_factory() as session:
-            query = select(ClientModel).where(ClientModel.name == name)
+            query = select(ClientModel).where(ClientModel.name == name).order_by(ClientModel.client_id)
             results = await session.execute(query)
             result = results.scalars().first()
             if result:
