@@ -111,7 +111,7 @@ class TelegramCommunicator:
                 # Для каждого пользователя создается задача
                self.schedular.schedular.add_job(
                         func=plan_first_message,
-                    args=[user, send_time, research_id, client, assistant_id, self._destination_configs["firs_message"]],
+                    args=[user, research_id, client, assistant_id, self._destination_configs["firs_message"]],
                     trigger=DateTrigger(run_date=send_time,
                                         timezone=pytz.utc),
 
