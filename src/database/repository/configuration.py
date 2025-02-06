@@ -3,6 +3,7 @@ from sqlalchemy import select
 
 from src.database.postgres import Configuration
 from src.database.repository.base import BaseRepository
+from src.services.cache.service import redis_cache_decorator
 from src.web.models.configuration import ConfigurationCreateSchema
 from src.web.models.configuration import ConfigurationSchema
 
@@ -27,6 +28,9 @@ class ConfigurationRepository(BaseRepository):
 
             return ConfigurationSchema.model_validate(config_instance, from_attributes=True)
 
+    @redis_cache_decorator(
+        key='configuration'
+    )
     async def get(self) -> ConfigurationSchema:
         async with self.db_session_manager.async_session_factory() as session:
             existing_config = await session.execute(select(Configuration).where(Configuration.configuration_id == 1))

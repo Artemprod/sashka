@@ -30,6 +30,7 @@ class TelegramClientDTOPost(BaseModel):
 
 class TelegramClientDTOGet(TelegramClientDTOPost):
     client_id: int
+    is_banned: bool
 
     class Config:
         from_attributes = True

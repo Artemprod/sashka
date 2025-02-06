@@ -32,6 +32,7 @@ class TelegramClient(ModelBase):
     system_version: Mapped[str] = mapped_column(nullable=False)
     lang_code: Mapped[str_10] = mapped_column(nullable=True)
     test_mode: Mapped[bool] = mapped_column(nullable=False, default=False)
+    is_banned: Mapped[bool] = mapped_column(default=False)
     session_string: Mapped[str_2048] = mapped_column(nullable=True)  # увеличено до 2048
     phone_number: Mapped[str] = mapped_column(nullable=True)
     password: Mapped[str_1024] = mapped_column(nullable=True)
@@ -41,8 +42,10 @@ class TelegramClient(ModelBase):
 
     messages: Mapped[list["AssistantMessage"]] = relationship(back_populates="telegram_client")
 
-    researches: Mapped[list["Research"]] = relationship(back_populates="telegram_client")
-
+    researches: Mapped[list["Research"]] = relationship(
+        back_populates="telegram_clients",
+        secondary="research_telegram_client"
+    )
     user_messages: Mapped[list["UserMessage"]] = relationship(back_populates="telegram_client")
 
     def __repr__(self):

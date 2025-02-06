@@ -1,8 +1,11 @@
 import asyncio
+from datetime import datetime, timedelta
 from typing import Dict
 from typing import List
 from typing import Optional
 
+import pytz
+from apscheduler.triggers.date import DateTrigger
 from loguru import logger
 
 from configs.nats_queues import nats_distributor_settings
@@ -10,20 +13,22 @@ from src.database.repository.storage import RepoStorage
 from src.schemas.communicator.distanation import NatsDestinationDTO
 from src.schemas.communicator.message import IncomeUserMessageDTOQueue
 from src.schemas.service.client import TelegramClientDTOGet
-from src.schemas.service.user import UserDTO
+from src.schemas.service.user import UserDTO, UserDTORel
 from src.schemas.service.user import UserDTOBase
 from src.schemas.service.user import UserDTOFull
 from src.services.communicator.checker import Checker
 
-from src.services.communicator.messager import MessageFirstSend, ScheduledFirstMessage
+from src.services.communicator.messager import MessageFirstSend, MessageGeneratorTimeDelay
 from src.services.communicator.messager import PingMessage
 from src.services.communicator.messager import ResearchMessageAnswer
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
 from src.services.communicator.request import ContextRequest, TranscribeRequest
 from src.services.communicator.request import SingleRequest
+from src.services.communicator.tasks.message import plan_first_message
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.inspector import StopWordChecker
+from src.services.scheduler.manager import BaseAsyncSchedularManager
 
 
 class TelegramCommunicator:
@@ -39,7 +44,10 @@ class TelegramCommunicator:
             transcribe_request: "TranscribeRequest",
             prompt_generator: "ExtendedPingPromptGenerator",
             stop_word_checker: "StopWordChecker",
+            schedular: "BaseAsyncSchedularManager",
             destination_configs: Optional[Dict] = None,
+
+
     ):
         self._repository = repository
         self._info_collector = info_collector
@@ -47,11 +55,12 @@ class TelegramCommunicator:
         self._checker = Checker(repository=repository)
         # Инициализация компонентов для обработки сообщений
 
-        self._first_message_distributes = ScheduledFirstMessage(
+        self._first_message_distributes = MessageFirstSend(
             publisher=publisher,
             repository=repository,
             single_request=single_request,
-            prompt_generator=prompt_generator
+            prompt_generator=prompt_generator,
+
         )
         self._message_research_answer = ResearchMessageAnswer(
             publisher=publisher,
@@ -67,6 +76,8 @@ class TelegramCommunicator:
             prompt_generator=prompt_generator,
             context_request=context_request,
         )
+        self.schedular = schedular
+        self.message_delay_generator = MessageGeneratorTimeDelay(repository=repository)
 
     # TODO Вынести конфиги и закгрузку конфигов в отдельный модуль
     # TODO Вынести чекекр из коммуниктаора
@@ -82,13 +93,33 @@ class TelegramCommunicator:
                 stream=nats_distributor_settings.message.first_message_message.stream,
             ),
         }
-
+    #TODO Возможно рандомное получение клиента
     async def make_first_message_distribution(self, research_id: int, users: List[UserDTOBase]):
+
         try:
-            logger.debug("ВЫЗОВ ФУНКЦИИ ОТПРАВКИ ПЕРВОГО СООБЩЗЕНИЯ ")
-            await self._first_message_distributes.handle(
-                users=users, destination_configs=self._destination_configs["reply"], research_id=research_id
-            )
+            # Для рпассылки первого сообшения получаем данные
+            research = await self._repository.research_repo.short.get_research_by_id(research_id=research_id)
+            start_date = self._make_send_time_delay(research.start_date)
+            clients = await self._repository.client_repo.get_clients_by_research_id(research_id)
+            client = clients[0]
+            assistant_id = research.assistant_id
+            logger.debug("ПЛАНИРОВАНИЕ ПЕРВОГО СООБЩЗЕНИЯ")
+
+            # Генерирую время отправки первого сообщения для каждого пользователя
+            async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
+
+                # Для каждого пользователя создается задача
+                self.schedular.schedular.add_job(
+                    func=plan_first_message,
+                    args=[user, research_id, client, assistant_id, self._destination_configs["firs_message"]],
+                    trigger=DateTrigger(run_date=send_time,
+                                        timezone=pytz.utc),
+
+                    id=f"research:{research_id}:user:{user.tg_user_id}:first_message",
+                    name=f"first_message_generation:{research_id}:{user}"
+                )
+
+            logger.debug("ВСЕ СООБЩЕНИЯ ЗАПЛАНИРОВАНЫ")
         except Exception as e:
             raise e
 
@@ -151,7 +182,7 @@ class TelegramCommunicator:
             for user in user_info:
                 user.is_info = True
                 await self._repository.user_in_research_repo.short.update_user_info(
-                    telegram_id=message_object.from_user, values=user.dict()
+                    telegram_id=message_object.from_user, values=user.model_dump()
                 )
                 logger.info(f"User {user.tg_user_id} information updated in database")
 
@@ -169,6 +200,8 @@ class TelegramCommunicator:
             )
         except Exception as e:
             raise e
+
+
 
     async def _handle_message(self, message_object: "IncomeUserMessageDTOQueue", user_research_id: int):
         try:
@@ -194,3 +227,19 @@ class TelegramCommunicator:
             new_users.append(await self._repository.user_in_research_repo.short.add_user(values=user.dict()))
             logger.info("Add new user in database")
         return new_users
+
+    @staticmethod
+    def _make_send_time_delay(
+            send_time: datetime
+    ) -> datetime:
+        """
+        Checks if the time of sending a message is less than the current time.
+
+        If the time of sending a message is less than the current time, then returns the current time plus 10 seconds.
+        Otherwise, returns the original send time plus 10 seconds.
+        """
+
+        current_time = datetime.now(tz=pytz.utc).replace(tzinfo=None)
+        if send_time < current_time:
+            return current_time + timedelta(seconds=10)
+        return send_time + timedelta(seconds=10)

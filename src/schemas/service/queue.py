@@ -15,6 +15,7 @@ class TelegramTimeDelaHeadersDTO(NatsHeaders):
     user: str
     send_time_msg_timestamp: str
     send_time_next_message_timestamp: str
+    research_id: str
 
 
 class TelegramSimpleHeadersDTO(NatsHeaders):

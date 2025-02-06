@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import BigInteger
+from sqlalchemy import BigInteger, Table, Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Index
 from sqlalchemy import UniqueConstraint
@@ -15,17 +15,26 @@ from src.database.postgres.models.base import intpk
 from src.database.postgres.models.base import updated_at
 
 
+class ResearchTelegramClient(ModelBase):
+    __tablename__ = "research_telegram_client"
+    __table_args__ = (
+        Index("idx_research_telegram_client_research_id", "research_id"),
+        Index("idx_research_telegram_client_client_id", "client_id"),
+    )
+
+    research_id: Mapped[int] = mapped_column(ForeignKey("researches.research_id"), primary_key=True)
+    client_id: Mapped[int] = mapped_column(ForeignKey("telegram_clients.client_id"), primary_key=True)
+
+
 class Research(ModelBase):
     __tablename__ = "researches"
     __table_args__ = (
         Index("idx_research_owner_id", "owner_id"),
-        UniqueConstraint("research_uuid", name="uq_research_uuid"),
         Index("idx_research_start_date", "start_date"),
         Index("idx_research_end_date", "end_date"),
         Index("idx_research_created_at", "created_at"),
         Index("idx_research_updated_at", "updated_at"),
-        Index("idx_research_assistant_id", "assistant_id"),
-        Index("idx_research_telegram_client_id", "telegram_client_id"),
+        Index("idx_research_assistant_id", "assistant_id")
     )
 
     research_id: Mapped[intpk]
@@ -42,7 +51,6 @@ class Research(ModelBase):
     additional_information: Mapped[Optional[str]]
 
     assistant_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("assistants.assistant_id"))
-    telegram_client_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("telegram_clients.client_id"))
 
     owner: Mapped["ResearchOwner"] = relationship(back_populates="researches")
 
@@ -52,8 +60,11 @@ class Research(ModelBase):
 
     status: Mapped["ResearchStatus"] = relationship(back_populates="researches")
 
-    telegram_client: Mapped["TelegramClient"] = relationship(back_populates="researches")
-
     user_messages: Mapped[list["UserMessage"]] = relationship(back_populates="research")
 
     assistant_messages: Mapped[list["AssistantMessage"]] = relationship(back_populates="research")
+
+    telegram_clients: Mapped[list["TelegramClient"]] = relationship(
+        back_populates="researches",
+        secondary="research_telegram_client"
+    )

@@ -39,9 +39,9 @@ class TelegramResearchManager(BaseResearchManager):
         try:
             # Создаем овнера в базе, если нет
             owner = await self._create_new_owner(owner_dto=owner)
-            # Получаем telegram клиента
+            # Получаем telegram клиента. По дефолту - первого
             telegram_client: TelegramClientDTOGet = await self._get_telegram_client(
-                client_id=research.telegram_client_id
+                client_id=research.telegram_clients_id[0]
             )
             # Создать и сохранить исследование
             research_dto: ResearchDTOBeDb = self._create_research_dto(research, owner)
@@ -139,9 +139,17 @@ class TelegramResearchManager(BaseResearchManager):
         return ResearchDTOBeDb(owner_id=owner.owner_id, **research.model_dump())
 
     async def _save_new_research(self, research_dto: ResearchDTOBeDb) -> ResearchDTOFull:
-        return await self._database_repository.research_repo.short.save_new_research(
-            values=research_dto.model_dump(exclude={"examinees_user_names"})
-        )
+        research_data = research_dto.model_dump(exclude={"examinees_user_names", "telegram_clients_id"})
+
+        research_id = await self._database_repository.research_repo.short.save_new_research(values=research_data)
+
+        for client_id in research_dto.telegram_clients_id:
+            await self._database_repository.research_repo.short.add_telegram_client_to_research(
+                research_id=research_id,
+                client_id=client_id
+            )
+
+        return await self._database_repository.research_repo.short.get_research_by_id(research_id=research_id)
 
     async def _get_saved_research(self, research_id: int) -> ResearchDTORel:
         return await self._database_repository.research_repo.full.get_research_by_id(research_id=research_id)
@@ -197,3 +205,5 @@ class TelegramResearchManager(BaseResearchManager):
             await self._database_repository.user_in_research_repo.short.bind_research(
                 user_id=user_id, research_id=research_id
             )
+            logger.debug(f"Привязал пользователя {user_id}")
+

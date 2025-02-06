@@ -1,5 +1,6 @@
 import asyncio
 import json
+import pickle
 
 from datetime import datetime
 from datetime import timedelta
@@ -19,7 +20,6 @@ from apscheduler.triggers.date import DateTrigger
 from loguru import logger
 from pytz import utc
 
-from configs.communicator import communicator_first_message_policy
 from configs.redis import redis_apscheduler_config
 from src.database.postgres.models.enum_types import UserStatusEnum
 from src.database.repository.storage import RepoStorage
@@ -64,7 +64,7 @@ class MessageGeneratorTimeDelay:
 
         configuration = await self.get_configuration()
 
-        people_per_day = configuration.communicator_people_in_bunch
+        people_per_day = max(1, configuration.communicator_people_in_bunch)  # Гарантируем, что шаг в range() не будет 0
         delay_between_bunch = timedelta(hours=configuration.communicator_delay_between_bunch_hours)
         delay_between_messages = timedelta(minutes=configuration.communicator_delay_between_message_in_bunch_minutes)
 
@@ -144,9 +144,9 @@ class BaseMessageHandler:
         users = await self.repository.user_in_research_repo.short.get_users_by_research_id(research_id=research_id)
         return [int(user.tg_user_id) for user in users] if users else None
 
-    async def get_client_name(self, research_id=None, client_telegram_id=None) -> Optional[TelegramClientDTOGet]:
+    async def get_client_name(self, research_id=None, client_telegram_id=None) -> Optional[list[TelegramClientDTOGet]]:
         if research_id is not None and client_telegram_id is None:
-            return await self.repository.client_repo.get_client_by_research_id(research_id)
+            return await self.repository.client_repo.get_clients_by_research_id(research_id)
         elif client_telegram_id is not None and research_id is None:
             return await self.repository.client_repo.get_client_by_telegram_id(client_telegram_id)
         return None
@@ -218,106 +218,166 @@ class BaseMessageHandler:
 
 
 class MessageFirstSend(BaseMessageHandler):
-    """Отправляет первое сообщение. Для работы необходимо имя пользователя, чтобы отправить сообщение незнакомому пользователю, и его Telegram ID, чтобы сохранить сообщение в базе данных."""
+    """Отправляет первое сообщение. Для работы необходимо имя пользователя,
+     чтобы отправить сообщение незнакомому пользователю, и его Telegram ID,
+     чтобы сохранить сообщение в базе данных."""
 
     def __init__(
-        self, publisher: "NatsPublisher", repository: "RepoStorage", single_request: "SingleRequest", prompt_generator
+        self,
+            publisher: "NatsPublisher",
+            repository: "RepoStorage",
+            single_request: "SingleRequest",
+            prompt_generator,
+
     ):
         super().__init__(publisher, repository, prompt_generator)
 
+        self.schedular = None
         self.message_delay_generator = MessageGeneratorTimeDelay(repository=repository)
         self.single_request = single_request
 
-    async def handle(self, users: List[UserDTOBase], research_id: int, destination_configs: "NatsDestinationDTO"):
-        client = await self._get_client(research_id)
-        assistant_id = await self.get_assistant(research_id)
-        start_date = await self.get_research_start_date(research_id)
 
-        if not users:
-            raise ValueError("No users found for the given research ID")
-
-        if not client:
-            raise ValueError("No client available for the given research ID")
-
-        # стоит это переписать. Можно часть запросов из бд перенаправить в редис, а остальные данные
-        # вытягивать одним запросом
-        async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date):
-            await self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
-
-        # tasks = [
-        #     self._process_user(user, send_time, research_id, client, assistant_id, destination_configs)
-        #     async for send_time, user in self.message_delay_generator.generate(users=users, start_time=start_date)
-        # ]
-        # await asyncio.gather(*tasks)
 
     async def _get_client(self, research_id: int) -> "TelegramClientDTOGet":
-        client = await self.get_client_name(research_id)
-        if not client:
+        clients = await self.get_client_name(research_id)
+
+        if not clients:
             raise ValueError(f"No client found for research ID: {research_id}")
-        return client
+
+        for client in clients:
+            if not client.is_banned:
+                return client
+        raise ValueError(f"No unbanned client found for research ID: {research_id}")
 
     async def _process_user(
         self,
         user: UserDTOBase,
-        send_time: datetime,
         research_id: int,
         client: "TelegramClientDTOGet",
         assistant_id: int,
         destination_configs: "NatsDestinationDTO",
     ):
         try:
-            single_request_object = await self.form_single_request(
-                telegram_user_id=user.tg_user_id, research_id=research_id
-            )
-            content = await self.single_request.get_response(single_obj=single_request_object)
-
-            await self.save_assistant_message(
+            content = await self._get_content(
+                user=user,
+                client=client,
                 research_id=research_id,
-                content=content.response,
-                user_telegram_id=user.tg_user_id,
                 assistant_id=assistant_id,
-                client_id=client.client_id,
             )
 
             logger.debug(f"СООБЩЕНИЕ К ОТПРАВКЕ  {content}")
-            await self._publish_message(content, user, send_time, client, destination_configs)
-            await self._update_user_status(user.tg_user_id)
+            await self._publish_message(
+                content=content,
+                user=user,
+                client=client,
+                destination_configs=destination_configs,
+                research_id=research_id
+            )
 
         except Exception as e:
             logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
             raise e
 
+    async def _get_content(
+            self,
+            user: UserDTOBase,
+            client: TelegramClientDTOGet,
+            research_id: int,
+            assistant_id: int
+    ) -> SingleResponseDTO:
+
+        # проверка на наличие сообщения в бд (после разбана клиента)
+        last_message = await self.repository.message_repo.assistant.get_last_assistents_message_by_user_telegram_id(
+            telegram_id=user.tg_user_id
+        )
+
+        if (
+                last_message
+                and last_message.research_id == research_id
+                and last_message.telegram_client_id == client.client_id
+        ):
+            return SingleResponseDTO(
+                user_message=last_message.text,
+                response=last_message.text
+            )
+
+        content =  await self._form_content(
+            research_id=research_id,
+            user=user
+        )
+
+        await self.save_assistant_message(
+            research_id=research_id,
+            content=content.response,
+            user_telegram_id=user.tg_user_id,
+            assistant_id=assistant_id,
+            client_id=client.client_id,
+        )
+        return content
+
+    async def _form_content(
+            self,
+            user: UserDTOBase,
+            research_id: int
+    ) -> SingleResponseDTO:
+
+        single_request_object = await self.form_single_request(
+            telegram_user_id=user.tg_user_id, research_id=research_id
+        )
+        return await self.single_request.get_response(single_obj=single_request_object)
+
     async def _publish_message(
         self,
         content: "SingleResponseDTO",
         user: UserDTOBase,
-        send_time: datetime,
         client: "TelegramClientDTOGet",
         destination_configs: "NatsDestinationDTO",
+        research_id: int
     ):
-        publish_message = await self._create_publish_message(content, user, send_time, client, destination_configs)
+        publish_message = await self._create_publish_message_(
+            content=content,
+            user=user,
+            client=client,
+            destination_configs=destination_configs,
+            research_id=research_id
+        )
         await self.publisher.publish_message_to_stream(stream_message=publish_message)
 
-    async def _create_publish_message(
-        self,
-        content: "SingleResponseDTO",
-        user: UserDTOBase,
-        send_time: datetime,
-        client: "TelegramClientDTOGet",
-        destination_configs: "NatsDestinationDTO",
+
+    async def _create_publish_message_(
+            self,
+            content: "SingleResponseDTO",
+            user: UserDTOBase,
+            client: "TelegramClientDTOGet",
+            destination_configs: "NatsDestinationDTO",
+            research_id: int,
     ) -> "NatsQueueMessageDTOStreem":
-        headers = TelegramTimeDelaHeadersDTO(
-            tg_client_name=str(client.name),
-            user=json.dumps(user.model_dump()),
-            send_time_msg_timestamp=str(datetime.now(tz=timezone.utc).timestamp()),
-            send_time_next_message_timestamp=str(send_time.timestamp()),
-        )
+        data = {
+            "message": content.response,
+            "tg_client": str(client.name),
+            "user": user.model_dump(),
+            "research_id": research_id
+        }
         return self.publisher.form_stream_message(
-            message=content.response,
-            subject=destination_configs.subject,
-            stream=destination_configs.stream,
-            headers=headers.model_dump(),
+            message=json.dumps(data), subject=destination_configs.subject, stream=destination_configs.stream
         )
+
+    @staticmethod
+    def _make_send_time_delay(
+            send_time: datetime
+    ) -> datetime:
+        """
+        Checks if the time of sending a message is less than the current time.
+
+        If the time of sending a message is less than the current time, then returns the current time plus 10 seconds.
+        Otherwise, returns the original send time plus 10 seconds.
+        """
+
+        current_time = datetime.now(tz=pytz.utc).replace(tzinfo=None)
+        if send_time < current_time:
+            return current_time + timedelta(seconds=10)
+        return send_time + timedelta(seconds=10)
+
 
     async def _update_user_status(self, telegram_id: int) -> bool:
         try:
@@ -329,77 +389,7 @@ class MessageFirstSend(BaseMessageHandler):
             raise e
 
 
-class ScheduledFirstMessage(MessageFirstSend):
-    def __init__(self, publisher, repository, single_request, prompt_generator):
-        super().__init__(publisher, repository, single_request, prompt_generator)
-        self.scheduler = self._configure_scheduler()
 
-    def _configure_scheduler(self):
-        jobstores = {
-            "default": RedisJobStore(
-                jobs_key=redis_apscheduler_config.jobs_key,
-                run_times_key=redis_apscheduler_config.run_times_key,
-                host=redis_apscheduler_config.host,
-                port=redis_apscheduler_config.port,
-                db=redis_apscheduler_config.first_message_database,
-            )
-        }
-        scheduler = AsyncIOScheduler(jobstores=jobstores, timezone=utc)
-        scheduler.start()
-        return scheduler
-
-    async def _process_user(
-        self,
-        user: UserDTOBase,
-        send_time: datetime,
-        research_id: int,
-        client: "TelegramClientDTOGet",
-        assistant_id: int,
-        destination_configs: "NatsDestinationDTO",
-    ):
-        try:
-            single_request_object = await self.form_single_request(
-                telegram_user_id=user.tg_user_id, research_id=research_id
-            )
-            logger.debug(f"ВОТ ТАКОЙ ПРОМПТ {single_request_object}")
-
-            content: SingleResponseDTO = await self.single_request.get_response(single_obj=single_request_object)
-
-            await self.save_assistant_message(
-                research_id=research_id,
-                content=content.response,
-                user_telegram_id=user.tg_user_id,
-                assistant_id=assistant_id,
-                client_id=client.client_id,
-            )
-            publish_message = await self._create_publish_message_(content, user, client, destination_configs)
-
-            # Добавляем асинхронную корутину в планировщик
-            self.scheduler.add_job(
-                self.publisher.publish_message_to_stream,
-                args=[publish_message],
-                trigger=DateTrigger(run_date=send_time + timedelta(seconds=20), timezone=pytz.utc),
-            )
-
-            logger.debug("CООБЩЕНИЕ ЗАПЛАНИРОВАНО К ОТПРОАВКЕ ")
-            # TODO делать апдейт статуса когда ? когда отпралися  ?
-            await self._update_user_status(user.tg_user_id)
-
-        except Exception as e:
-            logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
-            raise e
-
-    async def _create_publish_message_(
-        self,
-        content: "SingleResponseDTO",
-        user: UserDTOBase,
-        client: "TelegramClientDTOGet",
-        destination_configs: "NatsDestinationDTO",
-    ) -> "NatsQueueMessageDTOStreem":
-        data = {"message": content.response, "tg_client": str(client.name), "user": user.dict()}
-        return self.publisher.form_stream_message(
-            message=json.dumps(data), subject=destination_configs.subject, stream=destination_configs.stream
-        )
 
 
 @create_publish_message
@@ -469,12 +459,14 @@ class ResearchMessageAnswer(MessageAnswer):
         self._message_waiters: dict[int, MessageWaiter] = {}
 
     async def handle(
-        self, message_object: IncomeUserMessageDTOQueue, destination_configs: NatsDestinationDTO, research_id: int
+            self,
+            message_object: IncomeUserMessageDTOQueue,
+            destination_configs: NatsDestinationDTO,
+            research_id: int
     ):
         # Получение информации об ассистенте и клиенте
         assistant = await self.get_assistant(research_id=research_id)
-        client = await self._get_client_by_telegram_id(message_object.client_telegram_id)
-
+        client:TelegramClientDTOGet = await self._get_client_by_telegram_id(message_object.client_telegram_id)
         # Сохранение сообщения пользователя
         await self._save_user_message(message_object, research_id, client, assistant)
 
@@ -482,9 +474,9 @@ class ResearchMessageAnswer(MessageAnswer):
         if not await self._wait_for_new_messages(client_telegram_id=message_object.from_user):
             logger.info(f"This is not first message: {message_object.from_user}")
             return
-
         # Формирование контекста и генерация промпта
         context = await self._form_context(message_object, research_id, client.client_id, assistant)
+
         prompt = await self._generate_prompt(research_id, telegram_user_id=message_object.from_user)
 
         # Получение ответа от контекста
@@ -584,7 +576,17 @@ class ResearchMessageAnswer(MessageAnswer):
     async def _get_random_timeout_before_publish(self) -> int:
         # Выбор рандомной задержки перед отправкой
         configuration: ConfigurationSchema = await self.repository.configuration_repo.get()
-        return randint(configuration.min_response_time, configuration.max_response_time)
+        min_response_time = configuration.min_response_time
+        max_response_time = configuration.max_response_time
+        # Защита от "Дурака" если максимальное время меньше поменять местами
+        if min_response_time > max_response_time:
+            min_response_time, max_response_time = max_response_time, min_response_time
+            # Если минимальное и максимальное время одинаковы, просто возвращаем его
+
+        if min_response_time == max_response_time:
+            return min_response_time
+
+        return randint(min_response_time, max_response_time)
 
     async def _publish_response(
         self,
@@ -627,7 +629,8 @@ class PingMessage(MessageAnswer):
         await self._publish_response(response, client, user, destination_configs)
 
     async def _get_client_by_research_id(self, research_id: int) -> TelegramClientDTOGet:
-        return await self.repository.client_repo.get_client_by_research_id(research_id)
+        clients = await self.repository.client_repo.get_clients_by_research_id(research_id)
+        return clients[0]
 
     async def _form_context(
         self, user: UserDTOBase, research_id: int, telegram_client_id: int, assistant_id: int

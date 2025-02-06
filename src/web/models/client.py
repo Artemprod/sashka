@@ -15,6 +15,7 @@ class ClientConfigDTO(BaseModel):
     app_version: Optional[str]
     device_model: Optional[str]
     system_version: Optional[str]
+    is_banned: bool
     lang_code: str = "ru"
     test_mode: bool = False
     phone_number: Optional[str] = None

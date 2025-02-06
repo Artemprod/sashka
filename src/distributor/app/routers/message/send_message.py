@@ -1,3 +1,8 @@
+import asyncio
+
+from typing import Optional
+
+
 from faststream import Context
 from faststream import Depends
 from faststream.nats import JStream
@@ -6,67 +11,106 @@ from faststream.nats import NatsRouter
 from loguru import logger
 from nats.js.api import DeliverPolicy
 from nats.js.api import RetentionPolicy
+from telethon.tl import types
 
 from configs.nats_queues import nats_distributor_settings
-from src.distributor.app.dependency.message import _get_data_from_headers, get_telegram_client, get_data_from_body
-from src.distributor.app.schemas.message import Datas
-from src.distributor.app.utils.message import send_message
+
+from src.database.postgres import UserStatusEnum
+from src.database.repository.storage import RepoStorage
+from src.distributor.app.dependency.message import get_data_from_body, get_research_id, get_telegram_client_name
+from src.distributor.app.dependency.message import get_telegram_client
+from src.distributor.app.utils.message import process_message
+from src.distributor.app.schemas.message import MessageContext
 
 # Создаем маршрутизатор NATS и две очереди JStream
 router = NatsRouter()
 
-
 @router.subscriber(
     stream=JStream(
-        name=nats_distributor_settings.message.first_message_message.stream, retention=RetentionPolicy.WORK_QUEUE
+        name=nats_distributor_settings.message.first_message_message.stream,
+        retention=RetentionPolicy.WORK_QUEUE
     ),
     subject=nats_distributor_settings.message.first_message_message.subject,
     deliver_policy=DeliverPolicy.ALL,
     no_ack=True,
 )
 async def send_first_message_subscriber(
-    body: str, msg: NatsMessage, context=Context(), data: Datas = Depends(_get_data_from_headers)
-):
-    """Send the first message with delay"""
-
-    if data.current_time < data.send_time:
-        delay = (data.send_time - data.current_time).total_seconds()
-        await msg.nack(delay=delay)
-        logger.info(f"Message {data.user, body}  delayed for {delay} ")
-    else:
-        try:
-            await msg.ack()
-            msg_data = await send_message(data.client, data.user, message=body)
-            logger.info(f"Message sent at {data.current_time}: {msg_data}")
-        except Exception as e:
-            logger.error(f"Error while sending message: {e}")
-            raise e
-
-
-@router.subscriber(
-    stream=JStream(name=nats_distributor_settings.message.send_message.stream, retention=RetentionPolicy.WORK_QUEUE),
-    subject=nats_distributor_settings.message.send_message.subject,
-    deliver_policy=DeliverPolicy.ALL,
-    no_ack=True,
-)
-async def send_message_subscriber(
     body: str,
     msg: NatsMessage,
     context=Context(),
     data=Depends(get_data_from_body),
     client=Depends(get_telegram_client),
+    client_name=Depends(get_telegram_client_name),
+    research_id=Depends(get_research_id),
+):
+
+    message_context = MessageContext(
+        client=client,
+        publisher=context.get("publisher"),
+        telethon_container=context.get("telethon_container"),
+        client_ban_checker=context.get("client_ban_checker"),
+        research_id=research_id,
+        client_name=client_name
+    )
+
+    if not await process_message(
+        data=data,
+        msg=msg,
+        context=message_context,
+        is_first_message=True
+    ):
+        return
+
+    repository: RepoStorage = context.get("repository")
+    await repository.user_in_research_repo.short.update_user_status(
+        telegram_id=data.user.tg_user_id,
+        status=UserStatusEnum.IN_PROGRESS
+    )
+
+
+
+@router.subscriber(
+    stream=JStream(
+        name=nats_distributor_settings.message.send_message.stream,
+        retention=RetentionPolicy.WORK_QUEUE
+    ),
+    subject=nats_distributor_settings.message.send_message.subject,
+    deliver_policy=DeliverPolicy.ALL,
+    no_ack=True,
+)
+async def send_message_subscriber(
+        body: str,
+        msg: NatsMessage,
+
+        context=Context(),
+        data=Depends(get_data_from_body),
+        client=Depends(get_telegram_client),
 ):
     """Send a conversation message."""
-    await msg.ack()
-    logger.warning("message acked")
-    try:
-        logger.info("Sending message...")
-        if not data.message:
-            logger.warning(f"There is no message to send, i will not send anything")
-        else:
-            msg_data = await send_message(client=client, user=data.user, message=data.message)
-            logger.info(f"Message sent: {msg_data}")
+    message_id = getattr(data, 'message_id', 'unknown')
+    logger.info(f"Message {message_id} acknowledged")
 
-    except Exception as e:
-        logger.error(f"Failed to send message: {e}")
-        raise e
+    message_context = MessageContext(
+        client=client,
+        publisher=context.get("publisher"),
+        telethon_container=context.get("telethon_container"),
+        research_id=None,
+        client_name=None
+    )
+
+    # Создаем задачу отправки сообщения на фоне
+    asyncio.create_task(
+        process_message(
+            data=data,
+            msg=msg,
+            context=message_context,
+            is_first_message=False
+        ),
+        name=f"send_message_{message_id}"
+    )
+
+    logger.info(f"Created send task for message {message_id}")
+
+
+
+

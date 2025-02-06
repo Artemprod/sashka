@@ -6,6 +6,8 @@ class UserStatusEnum(enum.Enum):
     WAIT = "WAIT"  # Пользователь в ислодоавнии но не начат
     IN_PROGRESS = "IN_PROGRESS"
     DONE = "DONE"
+    NOT_ANSWERED = "NOT_ANSWERED"
+
     # WAIT_FIRST_MESSAGE: WAIT_FIRST_MESSAGE
 
 
@@ -15,3 +17,4 @@ class ResearchStatusEnum(enum.Enum):
     DONE = "DONE"
     PAUSE = "PAUSE"
     ABORTED = "ABORTED"
+    BANNED = "BANNED"

@@ -55,6 +55,7 @@ class Filter:
         "@LotteryBot",
         "@GroupButler_bot",
         "@Stickers",
+        "SpamBot"
     ]
 
     RESTRICTED_USERS: Optional[List[Union[str, int]]] = []
