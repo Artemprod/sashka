@@ -424,8 +424,7 @@ class ResearchMessageAnswer(MessageAnswer):
     ):
         # Получение информации об ассистенте и клиенте
         assistant = await self.get_assistant(research_id=research_id)
-        client = await self._get_client_by_telegram_id(message_object.client_telegram_id)
-
+        client:TelegramClientDTOGet = await self._get_client_by_telegram_id(message_object.client_telegram_id)
         # Сохранение сообщения пользователя
         await self._save_user_message(message_object, research_id, client, assistant)
 
@@ -433,9 +432,9 @@ class ResearchMessageAnswer(MessageAnswer):
         if not await self._wait_for_new_messages(client_telegram_id=message_object.from_user):
             logger.info(f"This is not first message: {message_object.from_user}")
             return
-
         # Формирование контекста и генерация промпта
         context = await self._form_context(message_object, research_id, client.client_id, assistant)
+
         prompt = await self._generate_prompt(research_id, telegram_user_id=message_object.from_user)
 
         # Получение ответа от контекста
