@@ -18,9 +18,8 @@ from src.schemas.service.user import UserDTOBase
 from src.schemas.service.user import UserDTOFull
 from src.services.communicator.checker import Checker
 
-from src.services.communicator.messager import MessageFirstSend, ScheduledFirstMessage, MessageGeneratorTimeDelay
+from src.services.communicator.messager import MessageFirstSend, MessageGeneratorTimeDelay
 from src.services.communicator.messager import PingMessage
-from src.services.communicator.messager import PingMessage, ScheduledFirstMessage
 from src.services.communicator.messager import ResearchMessageAnswer
 from src.services.communicator.prompt_generator import ExtendedPingPromptGenerator
 from src.services.communicator.request import ContextRequest, TranscribeRequest
@@ -29,7 +28,7 @@ from src.services.communicator.tasks.message import plan_first_message
 from src.services.parser.user.gather_info import TelegramUserInformationCollector
 from src.services.publisher.publisher import NatsPublisher
 from src.services.research.telegram.inspector import StopWordChecker
-from src.services.scheduler.manager import AsyncPostgresSchedularManager, BaseAsyncSchedularManager
+from src.services.scheduler.manager import BaseAsyncSchedularManager
 
 
 class TelegramCommunicator:
@@ -100,7 +99,7 @@ class TelegramCommunicator:
         try:
             # Для рпассылки первого сообшения получаем данные
             research = await self._repository.research_repo.short.get_research_by_id(research_id=research_id)
-            start_date = research.start_date
+            start_date = self._make_send_time_delay(research.start_date)
             clients = await self._repository.client_repo.get_clients_by_research_id(research_id)
             client = clients[0]
             assistant_id = research.assistant_id
@@ -227,3 +226,19 @@ class TelegramCommunicator:
             new_users.append(await self._repository.user_in_research_repo.short.add_user(values=user.dict()))
             logger.info("Add new user in database")
         return new_users
+
+    @staticmethod
+    def _make_send_time_delay(
+            send_time: datetime
+    ) -> datetime:
+        """
+        Checks if the time of sending a message is less than the current time.
+
+        If the time of sending a message is less than the current time, then returns the current time plus 10 seconds.
+        Otherwise, returns the original send time plus 10 seconds.
+        """
+
+        current_time = datetime.now(tz=pytz.utc).replace(tzinfo=None)
+        if send_time < current_time:
+            return current_time + timedelta(seconds=10)
+        return send_time + timedelta(seconds=10)

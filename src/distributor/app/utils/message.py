@@ -35,15 +35,19 @@ async def process_message(
         return False
 
     try:
+        # Проверка на бан клиента
         if is_first_message and await context.client_ban_checker.check_is_account_banned(client=context.client):
+            # Если клиент забанен то заводим задачу на чек бана ( функция возвращает None )
             await context.client_ban_checker.start_check_ban(
                 client=context.client,
                 research_id=context.research_id
             )
+            # Берем свободного не забаненного клиента который указан в ресерче
             context.client = await context.telethon_container.get_telethon_client_by_research_id(
                 research_id=context.research_id
             )
 
+        # Просто сделал явную проверку на True
         if is_first_message is True:
             logger.debug("First message")
             msg_data = await send_first_message(
@@ -53,7 +57,6 @@ async def process_message(
 
         else:
             logger.debug("Usual message")
-
             msg_data = await send_message(
                 user=data.user,
                 message=data.message,

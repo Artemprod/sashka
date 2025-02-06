@@ -53,7 +53,6 @@ class MessageService:
 
 async def plan_first_message(
         user: UserDTOBase,
-        send_time: datetime,
         research_id: int,
         client: "TelegramClientDTOGet",
         assistant_id: int,
@@ -62,7 +61,7 @@ async def plan_first_message(
     """Планирование первого сообщения"""
     message_sender = MessageService().create_first_message_sender()
     await message_sender._process_user(
-        user, send_time, research_id, client, assistant_id, destination_configs
+        user, research_id, client, assistant_id, destination_configs
     )
 
 

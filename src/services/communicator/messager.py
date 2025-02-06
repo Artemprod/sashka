@@ -252,7 +252,6 @@ class MessageFirstSend(BaseMessageHandler):
     async def _process_user(
         self,
         user: UserDTOBase,
-        send_time: datetime,
         research_id: int,
         client: "TelegramClientDTOGet",
         assistant_id: int,
@@ -348,103 +347,8 @@ class MessageFirstSend(BaseMessageHandler):
             raise e
 
 
-class ScheduledFirstMessage(MessageFirstSend):
-    def __init__(self, publisher, repository, single_request, prompt_generator):
-        super().__init__(publisher, repository, single_request, prompt_generator)
-        self.scheduler = self._configure_scheduler()
 
-    def _configure_scheduler(self):
-        jobstores = {
-            "default": RedisJobStore(
-                jobs_key=redis_apscheduler_config.jobs_key,
-                run_times_key=redis_apscheduler_config.run_times_key,
-                host=redis_apscheduler_config.host,
-                port=redis_apscheduler_config.port,
-                db=redis_apscheduler_config.first_message_database,
-            )
-        }
-        scheduler = AsyncIOScheduler(jobstores=jobstores, timezone=utc)
-        scheduler.start()
-        return scheduler
 
-    async def _process_user(
-        self,
-        user: UserDTOBase,
-        send_time: datetime,
-        research_id: int,
-        client: "TelegramClientDTOGet",
-        assistant_id: int,
-        destination_configs: "NatsDestinationDTO",
-    ):
-        try:
-            send_time = self._make_send_time_delay(send_time)
-            single_request_object = await self.form_single_request(
-                telegram_user_id=user.tg_user_id, research_id=research_id
-            )
-            logger.debug(f"ВОТ ТАКОЙ ПРОМПТ {single_request_object}")
-
-            content: SingleResponseDTO = await self.single_request.get_response(single_obj=single_request_object)
-
-            await self.save_assistant_message(
-                research_id=research_id,
-                content=content.response,
-                user_telegram_id=user.tg_user_id,
-                assistant_id=assistant_id,
-                client_id=client.client_id,
-            )
-            publish_message = await self._create_publish_message_(
-                content=content,
-                user=user,
-                client=client,
-                destination_configs=destination_configs,
-                research_id=research_id
-            )
-            # Добавляем асинхронную корутину в планировщик
-            self.scheduler.add_job(
-                self.publisher.publish_message_to_stream,
-                args=[publish_message],
-                trigger=DateTrigger(run_date=send_time + timedelta(seconds=20), timezone=pytz.utc),
-            )
-
-            logger.debug("CООБЩЕНИЕ ЗАПЛАНИРОВАНО К ОТПРОАВКЕ ")
-
-        except Exception as e:
-            logger.error(f"Error processing user {user.tg_user_id}: {e}", exc_info=True)
-            raise e
-
-    async def _create_publish_message_(
-        self,
-        content: "SingleResponseDTO",
-        user: UserDTOBase,
-        client: "TelegramClientDTOGet",
-        destination_configs: "NatsDestinationDTO",
-        research_id: int,
-    ) -> "NatsQueueMessageDTOStreem":
-        data = {
-            "message": content.response,
-            "tg_client": str(client.name),
-            "user": user.model_dump(),
-            "research_id": research_id
-        }
-        return self.publisher.form_stream_message(
-            message=json.dumps(data), subject=destination_configs.subject, stream=destination_configs.stream
-        )
-
-    @staticmethod
-    def _make_send_time_delay(
-            send_time: datetime
-    ) -> datetime:
-        """
-        Checks if the time of sending a message is less than the current time.
-
-        If the time of sending a message is less than the current time, then returns the current time plus 10 seconds.
-        Otherwise, returns the original send time plus 10 seconds.
-        """
-
-        current_time = datetime.now(tz=pytz.utc).replace(tzinfo=None)
-        if send_time < current_time:
-            return current_time + timedelta(seconds=10)
-        return send_time + timedelta(seconds=10)
 
 @create_publish_message
 class MessageAnswer(BaseMessageHandler):
